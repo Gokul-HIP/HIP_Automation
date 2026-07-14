@@ -1,0 +1,8 @@
+/* Base button tokens — see Button.module.css for component styles */
+.btnReset {
+  appearance: none;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+}

@@ -1,0 +1,117 @@
+:root {
+  /* Primary */
+  --primary-color: #0da2e7;
+  --primary-hover: #0086c1;
+  --primary-light: #bde8fc;
+
+  /* Background */
+  --background: #101418;
+  --surface: #1a1f27;
+  --surface-light: #252b36;
+  --sidebar-bg: #171b22;
+  --header-bg: #171b22;
+
+  /* Text */
+  --text-primary: #ffffff;
+  --text-secondary: #b5bdc9;
+  --text-muted: #7d8793;
+
+  /* Border */
+  --border-color: #2e3642;
+
+  /* Status */
+  --success: #22c55e;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --info: #3b82f6;
+
+  /* Sidebar */
+  --sidebar-width: 260px;
+  --sidebar-collapsed-width: 80px;
+  --sidebar-link-color: var(--text-secondary);
+  --sidebar-active-bg: #0da2e720;
+  --sidebar-active-color: #0da2e7;
+
+  /* Header */
+  --header-height: 72px;
+
+  /* Card */
+  --card-bg: var(--surface);
+  --card-border: var(--border-color);
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-pill: 9999px;
+
+  /* Shadow */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.15);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.25);
+
+  /* Transition */
+  --transition: 0.3s ease;
+
+  /* Spacing scale — theme-switchable */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* Typography */
+  --font-sans: var(--font-dm-sans), "Segoe UI", system-ui, sans-serif;
+  --font-display: var(--font-dm-sans), "Segoe UI", system-ui, sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.5rem;
+  --font-size-2xl: 2rem;
+
+  /* Overlay / focus */
+  --overlay-bg: rgba(0, 0, 0, 0.55);
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--primary-color) 40%, transparent);
+
+  /* Chart */
+  --chart-bar: var(--primary-color);
+  --chart-bar-muted: var(--surface-light);
+
+  /* Direction (LTR default; flip for RTL) */
+  --dir-start: left;
+  --dir-end: right;
+}
+
+/* Light theme — toggle via data-theme="light" on <html> */
+[data-theme="light"] {
+  --background: #f4f6f9;
+  --surface: #ffffff;
+  --surface-light: #eef1f6;
+  --sidebar-bg: #ffffff;
+  --header-bg: #ffffff;
+
+  --text-primary: #101418;
+  --text-secondary: #5a6472;
+  --text-muted: #8a93a0;
+
+  --border-color: #e2e6ec;
+
+  --sidebar-active-bg: #0da2e71a;
+  --sidebar-active-color: #0da2e7;
+
+  --card-bg: var(--surface);
+  --card-border: var(--border-color);
+
+  --shadow-sm: 0 2px 8px rgba(16, 20, 24, 0.06);
+  --shadow-md: 0 8px 24px rgba(16, 20, 24, 0.1);
+
+  --overlay-bg: rgba(16, 20, 24, 0.35);
+  --chart-bar-muted: #dce3ec;
+}
+
+/* RTL support — set dir="rtl" on <html> */
+[dir="rtl"] {
+  --dir-start: right;
+  --dir-end: left;
+}

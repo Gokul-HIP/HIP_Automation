@@ -1,0 +1,7 @@
+/* Base card surface tokens used across modules */
+.cardSurface {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}

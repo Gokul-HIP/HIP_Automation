@@ -1,0 +1,6 @@
+/* Shared header tokens — component styles live in Header.module.css */
+.headerSticky {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
