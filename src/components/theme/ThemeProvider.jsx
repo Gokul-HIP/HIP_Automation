@@ -49,7 +49,9 @@ function ThemeMotionInner({ children }) {
     setMounted(true);
   }, []);
 
-  const activeTheme = resolvedTheme || theme || "dark";
+  const activeTheme = !mounted
+    ? "dark"
+    : resolvedTheme || theme || "dark";
 
   const applyTheme = useCallback(
     (nextTheme) => {

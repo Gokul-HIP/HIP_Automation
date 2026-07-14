@@ -24,14 +24,21 @@
 }
 
 .top {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-sm);
-  height: var(--header-height);
-  padding-inline: var(--space-md);
-  border-bottom: 1px solid var(--border-color);
+  min-height: 0;
+  height: auto;
+  padding-inline: 0;
+  border-bottom: none;
   flex-shrink: 0;
+}
+
+.sidebar[data-collapsed="true"] .top {
+  justify-content: center;
+  padding-block: 4px;
 }
 
 .mobileClose {
@@ -248,6 +255,11 @@
   }
 
   .mobileClose {
+    position: absolute;
+    inset-inline-end: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1;
     display: inline-flex;
   }
 

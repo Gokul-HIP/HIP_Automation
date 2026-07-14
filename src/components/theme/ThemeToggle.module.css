@@ -77,6 +77,12 @@
   color: inherit;
 }
 
+.iconMotion {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .icon[data-mode="dark"] {
   color: var(--warning);
 }

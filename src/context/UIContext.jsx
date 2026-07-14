@@ -16,7 +16,7 @@ const STORAGE_KEYS = {
   locale: "crm-locale",
 };
 
-export function UIProvider({ children }) {
+export function UIProvider({ children, logo = null }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [locale, setLocaleState] = useState("en");
@@ -63,6 +63,7 @@ export function UIProvider({ children }) {
 
   const value = useMemo(
     () => ({
+      logo,
       sidebarCollapsed,
       toggleSidebar,
       setSidebarCollapsed,
@@ -75,8 +76,10 @@ export function UIProvider({ children }) {
       mounted,
     }),
     [
+      logo,
       sidebarCollapsed,
       toggleSidebar,
+      setSidebarCollapsed,
       mobileSidebarOpen,
       openMobileSidebar,
       closeMobileSidebar,

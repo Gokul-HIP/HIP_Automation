@@ -29,6 +29,7 @@ const NAV_ITEMS = [
 export default function Sidebar() {
   const pathname = usePathname();
   const {
+    logo,
     sidebarCollapsed,
     toggleSidebar,
     mobileSidebarOpen,
@@ -54,7 +55,7 @@ export default function Sidebar() {
         aria-label="Main navigation"
       >
         <div className={styles.top}>
-          <Logo collapsed={collapsed} />
+          <Logo logo={logo} collapsed={collapsed} />
           <button
             type="button"
             className={styles.mobileClose}

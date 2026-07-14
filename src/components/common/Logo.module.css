@@ -1,34 +1,105 @@
 .logo {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  justify-content: center;
+  flex-shrink: 0;
   min-width: 0;
+  overflow: hidden;
+  transition:
+    width 0.28s ease,
+    height 0.28s ease,
+    padding 0.28s ease,
+    background-color 0.28s ease,
+    border-color 0.28s ease,
+    transform 0.28s ease;
 }
 
-.mark {
+.logoExpanded {
+  width: 100%;
+  height: 80px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.logoCollapsed {
+  width: 56px;
+  height: 56px;
+  padding: 8px;
+  margin-inline: auto;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.imageWrap {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
-  border-radius: var(--radius-md);
-  background: linear-gradient(
-    145deg,
-    var(--primary-color),
-    var(--primary-hover)
-  );
-  color: var(--text-primary);
-  font-weight: 700;
-  font-size: var(--font-size-lg);
-  box-shadow: var(--shadow-sm);
+  max-width: 100%;
+  max-height: 100%;
+  transition:
+    width 0.28s ease,
+    height 0.28s ease,
+    transform 0.28s ease,
+    opacity 0.28s ease;
 }
 
-.text {
+.logoExpanded .imageWrap {
+  width: 100%;
+  height: 100%;
+  max-height: 50px;
+}
+
+.logoCollapsed .imageWrap {
+  width: 32px;
+  height: 32px;
+}
+
+.logoImage {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: center;
+  transition:
+    width 0.28s ease,
+    height 0.28s ease,
+    transform 0.28s ease,
+    opacity 0.28s ease;
+}
+
+.logoExpanded .logoImage {
+  max-height: 48px;
+  max-width: 100%;
+}
+
+.logoCollapsed .logoImage {
+  width: 32px;
+  height: 32px;
+  max-width: 32px;
+  max-height: 32px;
+}
+
+.logoText {
   display: flex;
   flex-direction: column;
-  line-height: 1.2;
-  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.15;
+  text-align: center;
+  opacity: 1;
+  transform: scale(1);
+  transition:
+    opacity 0.28s ease,
+    transform 0.28s ease;
+}
+
+.logoCollapsed .logoText {
+  opacity: 0;
+  transform: scale(0.85);
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 
 .brand {
@@ -44,6 +115,24 @@
   font-weight: 500;
 }
 
-.logo[data-collapsed="true"] {
+.mark {
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(
+    145deg,
+    var(--primary-color),
+    var(--primary-hover)
+  );
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: var(--font-size-sm);
+  transition:
+    width 0.28s ease,
+    height 0.28s ease,
+    transform 0.28s ease,
+    opacity 0.28s ease;
 }

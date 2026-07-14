@@ -267,9 +267,7 @@ export function ActivityChart({
                   height={barH}
                   rx="7"
                 >
-                  <title>
-                    {item.label}: {item.value}
-                  </title>
+                  <title>{`${item.label}: ${item.value}`}</title>
                 </rect>
                 {isPeak && (
                   <circle

@@ -18,7 +18,9 @@ export default function ThemeToggle({ className = "" }) {
   const { theme, mounted, isAnimating, toggleTheme } = useThemeMotion();
   const [rippleKey, setRippleKey] = useState(0);
   const [glow, setGlow] = useState(false);
-  const isDark = theme === "dark";
+
+  // Match SSR until next-themes has hydrated
+  const isDark = !mounted || theme === "dark";
 
   const handleClick = () => {
     if (isAnimating || !mounted) return;
@@ -44,7 +46,7 @@ export default function ThemeToggle({ className = "" }) {
       disabled={!mounted}
       data-theme-toggle="true"
       data-glow={glow ? "true" : "false"}
-      whileTap={{ scale: 0.92 }}
+      whileTap={mounted ? { scale: 0.92 } : undefined}
       transition={iconSpring}
     >
       <span
@@ -67,19 +69,24 @@ export default function ThemeToggle({ className = "" }) {
         )}
       </AnimatePresence>
 
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.span
-          key={isDark ? "sun" : "moon"}
-          className={styles.icon}
-          data-mode={isDark ? "dark" : "light"}
-          initial={{ rotate: -180, scale: 0.85 }}
-          animate={{ rotate: 0, scale: 1 }}
-          exit={{ rotate: 180, scale: 0.85 }}
-          transition={iconSpring}
-        >
-          {isDark ? <HiOutlineSun /> : <HiOutlineMoon />}
-        </motion.span>
-      </AnimatePresence>
+      <span className={styles.icon} data-mode={isDark ? "dark" : "light"}>
+        {mounted ? (
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.span
+              key={isDark ? "sun" : "moon"}
+              className={styles.iconMotion}
+              initial={{ rotate: -180, scale: 0.85 }}
+              animate={{ rotate: 0, scale: 1 }}
+              exit={{ rotate: 180, scale: 0.85 }}
+              transition={iconSpring}
+            >
+              {isDark ? <HiOutlineSun /> : <HiOutlineMoon />}
+            </motion.span>
+          </AnimatePresence>
+        ) : (
+          <HiOutlineSun />
+        )}
+      </span>
     </motion.button>
   );
 }
