@@ -1,0 +1,45 @@
+:root {
+  --ease-theme: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-theme: 560ms;
+  --duration-theme-fast: 450ms;
+  --duration-theme-slow: 650ms;
+
+  --theme-paint-transition:
+    background-color var(--duration-theme) var(--ease-theme),
+    color var(--duration-theme) var(--ease-theme),
+    border-color var(--duration-theme) var(--ease-theme),
+    box-shadow var(--duration-theme) var(--ease-theme),
+    fill var(--duration-theme) var(--ease-theme),
+    stroke var(--duration-theme) var(--ease-theme),
+    outline-color var(--duration-theme) var(--ease-theme),
+    caret-color var(--duration-theme) var(--ease-theme);
+
+  --theme-token-transition:
+    --background var(--duration-theme) var(--ease-theme),
+    --surface var(--duration-theme) var(--ease-theme),
+    --surface-light var(--duration-theme) var(--ease-theme),
+    --sidebar-bg var(--duration-theme) var(--ease-theme),
+    --header-bg var(--duration-theme) var(--ease-theme),
+    --text-primary var(--duration-theme) var(--ease-theme),
+    --text-secondary var(--duration-theme) var(--ease-theme),
+    --text-muted var(--duration-theme) var(--ease-theme),
+    --border-color var(--duration-theme) var(--ease-theme),
+    --sidebar-link-color var(--duration-theme) var(--ease-theme),
+    --sidebar-active-bg var(--duration-theme) var(--ease-theme),
+    --sidebar-active-color var(--duration-theme) var(--ease-theme),
+    --card-bg var(--duration-theme) var(--ease-theme),
+    --card-border var(--duration-theme) var(--ease-theme),
+    --chart-bar var(--duration-theme) var(--ease-theme),
+    --chart-bar-muted var(--duration-theme) var(--ease-theme),
+    --overlay-bg var(--duration-theme) var(--ease-theme),
+    --primary-color var(--duration-theme) var(--ease-theme),
+    --primary-hover var(--duration-theme) var(--ease-theme),
+    --primary-light var(--duration-theme) var(--ease-theme);
+
+  --theme-transition: var(--theme-paint-transition);
+}
+
+/* Token morph when View Transitions are not active */
+html:not(.theme-reveal-active):not(.theme-vt-instant) {
+  transition: var(--theme-token-transition);
+}

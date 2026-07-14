@@ -6,7 +6,13 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  transition: box-shadow var(--transition), border-color var(--transition);
+  transition:
+    box-shadow var(--duration-theme) var(--ease-theme),
+    border-color var(--duration-theme) var(--ease-theme),
+    background-color var(--duration-theme) var(--ease-theme),
+    color var(--duration-theme) var(--ease-theme),
+    transform var(--duration-theme) var(--ease-theme),
+    opacity var(--duration-theme) var(--ease-theme);
 }
 
 .card:hover {

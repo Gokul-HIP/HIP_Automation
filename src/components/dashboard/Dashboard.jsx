@@ -61,7 +61,7 @@ export function WelcomeCard({
   message = "Here’s what’s happening across your pipeline today.",
 }) {
   return (
-    <section className={styles.welcomeCard}>
+    <section className={`${styles.welcomeCard} themeMotionCard`} data-theme-motion="card">
       <div className={styles.welcomeContent}>
         <span className={styles.welcomeEyebrow}>
           <HiOutlineSparkles aria-hidden="true" />
@@ -142,7 +142,7 @@ export function StatCard({
   const TrendIcon = changeTone === "danger" ? HiOutlineTrendingDown : HiOutlineTrendingUp;
 
   return (
-    <article className={styles.statCard} data-tone={tone}>
+    <article className={`${styles.statCard} themeMotionCard`} data-tone={tone} data-theme-motion="card">
       <div className={styles.statTop}>
         <span className={styles.statIcon} aria-hidden="true">
           {Icon && <Icon />}
@@ -209,7 +209,7 @@ export function ActivityChart({
         </Button>
       }
     >
-      <div className={styles.chartWrap}>
+      <div className={`${styles.chartWrap} themeMotionChart`} data-theme-motion="chart">
         <div className={styles.chartLegend}>
           <span className={styles.chartLegendItem}>
             <span className={styles.chartLegendDot} />

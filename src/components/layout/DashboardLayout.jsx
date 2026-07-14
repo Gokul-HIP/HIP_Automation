@@ -2,6 +2,7 @@
 
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
+import ThemeReveal from "@/components/theme/ThemeReveal";
 import { useUI } from "@/context/UIContext";
 import styles from "./DashboardLayout.module.css";
 
@@ -18,6 +19,7 @@ export default function DashboardLayout({ children }) {
         <Header />
         <main className={`${styles.content} dashboardContent`}>{children}</main>
       </div>
+      <ThemeReveal />
     </div>
   );
 }

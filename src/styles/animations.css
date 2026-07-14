@@ -1,0 +1,140 @@
+/*
+  Circular theme reveal = View Transition clip-path mask
+  Old UI stays visible outside the circle.
+  New UI is revealed inside the circle.
+  NEVER a solid white/black fullscreen paint layer.
+*/
+
+:root {
+  --theme-reveal-x: 50%;
+  --theme-reveal-y: 50%;
+  --theme-reveal-r: 100vmax;
+}
+
+/* During VT snapshot capture, freeze paint so old/new frames are crisp themes */
+html.theme-vt-instant,
+html.theme-vt-instant *,
+html.theme-vt-instant *::before,
+html.theme-vt-instant *::after {
+  transition: none !important;
+}
+
+/* Keep card / chart / shell motion during the reveal window */
+html.theme-transitioning [data-theme-motion="card"],
+html.theme-transitioning .themeMotionCard {
+  animation: themeCardLift 0.56s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html.theme-transitioning [data-theme-motion="chart"],
+html.theme-transitioning .themeMotionChart {
+  animation: themeChartNudge 0.56s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html.theme-transitioning [data-theme-motion="sidebar"],
+html.theme-transitioning [data-theme-motion="header"] {
+  transition:
+    background-color 0.56s cubic-bezier(0.22, 1, 0.36, 1),
+    color 0.56s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.56s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.56s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── View Transition circular reveal ── */
+html.theme-reveal-active::view-transition-old(root),
+html.theme-reveal-active::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+  /* Prevent default cross-fade (that causes “flash / disappear”) */
+  opacity: 1;
+}
+
+html.theme-reveal-active::view-transition-old(root) {
+  z-index: 1;
+}
+
+html.theme-reveal-active::view-transition-new(root) {
+  z-index: 2;
+  animation: themeCircleReveal 0.56s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes themeCircleReveal {
+  from {
+    clip-path: circle(0px at var(--theme-reveal-x) var(--theme-reveal-y));
+  }
+  to {
+    clip-path: circle(
+      var(--theme-reveal-r) at var(--theme-reveal-x) var(--theme-reveal-y)
+    );
+  }
+}
+
+@keyframes themeCardLift {
+  0% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-8px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes themeChartNudge {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(0.98);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Fallback morph when View Transitions API is unavailable */
+@supports not (view-transition-name: none) {
+  html.theme-transitioning,
+  html.theme-transitioning body,
+  html.theme-transitioning *,
+  html.theme-transitioning *::before,
+  html.theme-transitioning *::after {
+    transition:
+      background-color 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+      color 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+      fill 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+      stroke 0.45s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  }
+}
+
+body,
+[data-theme-motion="sidebar"],
+[data-theme-motion="header"],
+[data-theme-motion="card"],
+.themeMotionCard,
+.themeMotionChart,
+[data-theme-motion="chart"] {
+  transition:
+    background-color 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    color 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    fill 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    stroke 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-reveal-active::view-transition-old(root),
+  html.theme-reveal-active::view-transition-new(root) {
+    animation: none !important;
+  }
+
+  html.theme-transitioning [data-theme-motion="card"],
+  html.theme-transitioning .themeMotionCard,
+  html.theme-transitioning [data-theme-motion="chart"],
+  html.theme-transitioning .themeMotionChart {
+    animation: none !important;
+  }
+}

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LayoutGroup, motion } from "framer-motion";
 import {
   HiOutlineHome,
   HiOutlineInbox,
@@ -49,6 +50,7 @@ export default function Sidebar() {
         className={styles.sidebar}
         data-collapsed={collapsed ? "true" : "false"}
         data-mobile-open={mobileSidebarOpen ? "true" : "false"}
+        data-theme-motion="sidebar"
         aria-label="Main navigation"
       >
         <div className={styles.top}>
@@ -76,34 +78,48 @@ export default function Sidebar() {
         </div>
 
         <nav className={`${styles.nav} sidebarScroll`}>
-          <ul className={styles.menu}>
-            {NAV_ITEMS.map(({ href, label, icon: Icon, badge }) => {
-              const active =
-                pathname === href || pathname.startsWith(`${href}/`);
+          <LayoutGroup id="sidebar-nav">
+            <ul className={styles.menu}>
+              {NAV_ITEMS.map(({ href, label, icon: Icon, badge }) => {
+                const active =
+                  pathname === href || pathname.startsWith(`${href}/`);
 
-              return (
-                <li key={href}>
-                  <Link
-                    href={href}
-                    className={styles.link}
-                    data-active={active ? "true" : "false"}
-                    title={collapsed ? label : undefined}
-                    onClick={closeMobileSidebar}
-                  >
-                    <Icon className={styles.linkIcon} aria-hidden="true" />
-                    {!collapsed && (
-                      <>
-                        <span className={styles.linkLabel}>{label}</span>
-                        {badge != null && (
-                          <span className={styles.badge}>{badge}</span>
-                        )}
-                      </>
-                    )}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+                return (
+                  <li key={href} className={styles.item}>
+                    <Link
+                      href={href}
+                      className={styles.link}
+                      data-active={active ? "true" : "false"}
+                      title={collapsed ? label : undefined}
+                      onClick={closeMobileSidebar}
+                    >
+                      {active && (
+                        <motion.span
+                          layoutId="sidebar-active-pill"
+                          className={styles.activePill}
+                          transition={{
+                            type: "spring",
+                            stiffness: 380,
+                            damping: 34,
+                          }}
+                          aria-hidden="true"
+                        />
+                      )}
+                      <Icon className={styles.linkIcon} aria-hidden="true" />
+                      {!collapsed && (
+                        <>
+                          <span className={styles.linkLabel}>{label}</span>
+                          {badge != null && (
+                            <span className={styles.badge}>{badge}</span>
+                          )}
+                        </>
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </LayoutGroup>
         </nav>
 
         <div className={styles.footer}>

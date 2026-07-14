@@ -1,12 +1,13 @@
-import { DM_Sans } from "next/font/google";
+import { Poppins } from "next/font/google";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { UIProvider } from "@/context/UIContext";
 import "./globals.css";
-
-import { Poppins } from "next/font/google";
 
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-dm-sans",
+  display: "swap",
 });
 
 export const metadata = {
@@ -18,7 +19,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" data-theme="dark" suppressHydrationWarning>
       <body className={poppins.className}>
-        <UIProvider>{children}</UIProvider>
+        <ThemeProvider>
+          <UIProvider>{children}</UIProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

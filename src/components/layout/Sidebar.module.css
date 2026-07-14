@@ -14,7 +14,9 @@
   border-inline-end: 1px solid var(--border-color);
   transition:
     width var(--transition),
-    transform var(--transition);
+    transform var(--transition),
+    background-color var(--duration-theme) var(--ease-theme),
+    border-color var(--duration-theme) var(--ease-theme);
 }
 
 .sidebar[data-collapsed="true"] {
@@ -111,7 +113,12 @@
   gap: var(--space-xs);
 }
 
+.item {
+  position: relative;
+}
+
 .link {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-md);
@@ -121,9 +128,18 @@
   color: var(--sidebar-link-color);
   font-size: var(--font-size-sm);
   font-weight: 500;
+  z-index: 0;
   transition:
-    background var(--transition),
-    color var(--transition);
+    background var(--duration-theme) var(--ease-theme),
+    color var(--duration-theme) var(--ease-theme);
+}
+
+.activePill {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-md);
+  background: var(--sidebar-active-bg);
+  z-index: -1;
 }
 
 .sidebar[data-collapsed="true"] .link {
@@ -137,8 +153,12 @@
 }
 
 .link[data-active="true"] {
-  background: var(--sidebar-active-bg);
+  background: transparent;
   color: var(--sidebar-active-color);
+}
+
+.link[data-active="true"]:hover {
+  background: transparent;
 }
 
 .linkIcon {

@@ -1,4 +1,7 @@
+@import "../styles/theme-properties.css";
 @import "../styles/variables.css";
+@import "../styles/theme.css";
+@import "../styles/animations.css";
 @import "../styles/layout.css";
 @import "../styles/sidebar.css";
 @import "../styles/header.css";
@@ -17,6 +20,11 @@
 html {
   font-size: 16px;
   scroll-behavior: smooth;
+  color-scheme: dark;
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
 }
 
 html,
@@ -65,7 +73,6 @@ ol {
   color: var(--text-primary);
 }
 
-/* Utility for page shells */
 .pageShell {
   display: flex;
   flex-direction: column;

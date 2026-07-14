@@ -4,40 +4,18 @@
   --primary-hover: #0086c1;
   --primary-light: #bde8fc;
 
-  /* Background */
-  --background: #101418;
-  --surface: #1a1f27;
-  --surface-light: #252b36;
-  --sidebar-bg: #171b22;
-  --header-bg: #171b22;
-
-  /* Text */
-  --text-primary: #ffffff;
-  --text-secondary: #b5bdc9;
-  --text-muted: #7d8793;
-
-  /* Border */
-  --border-color: #2e3642;
-
   /* Status */
   --success: #22c55e;
   --danger: #ef4444;
   --warning: #f59e0b;
   --info: #3b82f6;
 
-  /* Sidebar */
+  /* Sidebar layout */
   --sidebar-width: 260px;
   --sidebar-collapsed-width: 80px;
-  --sidebar-link-color: var(--text-secondary);
-  --sidebar-active-bg: #0da2e720;
-  --sidebar-active-color: #0da2e7;
 
   /* Header */
   --header-height: 72px;
-
-  /* Card */
-  --card-bg: var(--surface);
-  --card-border: var(--border-color);
 
   /* Radius */
   --radius-sm: 8px;
@@ -45,14 +23,10 @@
   --radius-lg: 18px;
   --radius-pill: 9999px;
 
-  /* Shadow */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.15);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.25);
-
   /* Transition */
   --transition: 0.3s ease;
 
-  /* Spacing scale — theme-switchable */
+  /* Spacing */
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 16px;
@@ -70,47 +44,91 @@
   --font-size-xl: 1.5rem;
   --font-size-2xl: 2rem;
 
-  /* Overlay / focus */
-  --overlay-bg: rgba(0, 0, 0, 0.55);
-  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--primary-color) 40%, transparent);
-
-  /* Chart */
-  --chart-bar: var(--primary-color);
-  --chart-bar-muted: var(--surface-light);
-
-  /* Direction (LTR default; flip for RTL) */
+  /* Direction */
   --dir-start: left;
   --dir-end: right;
+
+  /* Focus */
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--primary-color) 40%, transparent);
+
+  /*
+    Theme colors — concrete values only (required for @property interpolation).
+    Default = dark (matches data-theme="dark" before hydration).
+  */
+  --background: #101418;
+  --surface: #1a1f27;
+  --surface-light: #252b36;
+  --sidebar-bg: #171b22;
+  --header-bg: #171b22;
+  --text-primary: #ffffff;
+  --text-secondary: #b5bdc9;
+  --text-muted: #7d8793;
+  --border-color: #2e3642;
+  --sidebar-link-color: #b5bdc9;
+  --sidebar-active-bg: #0da2e720;
+  --sidebar-active-color: #0da2e7;
+  --card-bg: #1a1f27;
+  --card-border: #2e3642;
+  --chart-bar: #0da2e7;
+  --chart-bar-muted: #252b36;
+  --overlay-bg: #0000008c;
+
+  /* Shadows (not @property colors — transitioned via box-shadow on elements) */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.15);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.25);
+
+  /* Semantic aliases */
+  --sidebar: var(--sidebar-bg);
+  --header: var(--header-bg);
+  --text: var(--text-primary);
+  --border: var(--border-color);
+  --card: var(--card-bg);
 }
 
-/* Light theme — toggle via data-theme="light" on <html> */
 [data-theme="light"] {
   --background: #f4f6f9;
   --surface: #ffffff;
   --surface-light: #eef1f6;
   --sidebar-bg: #ffffff;
   --header-bg: #ffffff;
-
   --text-primary: #101418;
   --text-secondary: #5a6472;
   --text-muted: #8a93a0;
-
   --border-color: #e2e6ec;
-
+  --sidebar-link-color: #5a6472;
   --sidebar-active-bg: #0da2e71a;
   --sidebar-active-color: #0da2e7;
-
-  --card-bg: var(--surface);
-  --card-border: var(--border-color);
-
+  --card-bg: #ffffff;
+  --card-border: #e2e6ec;
+  --chart-bar: #0da2e7;
+  --chart-bar-muted: #dce3ec;
+  --overlay-bg: #10141859;
   --shadow-sm: 0 2px 8px rgba(16, 20, 24, 0.06);
   --shadow-md: 0 8px 24px rgba(16, 20, 24, 0.1);
-
-  --overlay-bg: rgba(16, 20, 24, 0.35);
-  --chart-bar-muted: #dce3ec;
 }
 
-/* RTL support — set dir="rtl" on <html> */
+[data-theme="dark"] {
+  --background: #101418;
+  --surface: #1a1f27;
+  --surface-light: #252b36;
+  --sidebar-bg: #171b22;
+  --header-bg: #171b22;
+  --text-primary: #ffffff;
+  --text-secondary: #b5bdc9;
+  --text-muted: #7d8793;
+  --border-color: #2e3642;
+  --sidebar-link-color: #b5bdc9;
+  --sidebar-active-bg: #0da2e720;
+  --sidebar-active-color: #0da2e7;
+  --card-bg: #1a1f27;
+  --card-border: #2e3642;
+  --chart-bar: #0da2e7;
+  --chart-bar-muted: #252b36;
+  --overlay-bg: #0000008c;
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.15);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
 [dir="rtl"] {
   --dir-start: right;
   --dir-end: left;

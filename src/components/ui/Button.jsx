@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import styles from "./Button.module.css";
 
 const VARIANTS = {
@@ -13,17 +14,20 @@ const SIZES = {
   lg: styles.lg,
 };
 
-export default function Button({
-  children,
-  variant = "primary",
-  size = "md",
-  fullWidth = false,
-  icon: Icon,
-  iconPosition = "start",
-  className = "",
-  type = "button",
-  ...props
-}) {
+const Button = forwardRef(function Button(
+  {
+    children,
+    variant = "primary",
+    size = "md",
+    fullWidth = false,
+    icon: Icon,
+    iconPosition = "start",
+    className = "",
+    type = "button",
+    ...props
+  },
+  ref
+) {
   const classes = [
     styles.button,
     VARIANTS[variant] || VARIANTS.primary,
@@ -35,7 +39,7 @@ export default function Button({
     .join(" ");
 
   return (
-    <button type={type} className={classes} {...props}>
+    <button ref={ref} type={type} className={classes} {...props}>
       {Icon && iconPosition === "start" && (
         <Icon className={styles.icon} aria-hidden="true" />
       )}
@@ -45,4 +49,6 @@ export default function Button({
       )}
     </button>
   );
-}
+});
+
+export default Button;

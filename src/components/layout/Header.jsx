@@ -6,12 +6,11 @@ import {
   HiOutlineBell,
   HiOutlineCog,
   HiOutlineMenu,
-  HiOutlineMoon,
-  HiOutlineSun,
   HiOutlineChevronDown,
 } from "react-icons/hi";
 import Avatar from "@/components/ui/Avatar";
 import Badge from "@/components/ui/Badge";
+import ThemeToggle from "@/components/theme/ThemeToggle";
 import { useUI } from "@/context/UIContext";
 import styles from "./Header.module.css";
 
@@ -30,13 +29,7 @@ const LOCALES = [
 
 export default function Header() {
   const pathname = usePathname();
-  const {
-    theme,
-    toggleTheme,
-    locale,
-    setLocale,
-    openMobileSidebar,
-  } = useUI();
+  const { locale, setLocale, openMobileSidebar } = useUI();
 
   const segments = pathname.split("/").filter(Boolean);
   const crumbs = segments.length
@@ -47,7 +40,7 @@ export default function Header() {
     : [{ label: "Home", href: "/" }];
 
   return (
-    <header className={`${styles.header} headerSticky`}>
+    <header className={`${styles.header} headerSticky`} data-theme-motion="header">
       <div className={styles.start}>
         <button
           type="button"
@@ -92,14 +85,7 @@ export default function Header() {
           <HiOutlineChevronDown className={styles.localeIcon} aria-hidden="true" />
         </div>
 
-        <button
-          type="button"
-          className={styles.iconBtn}
-          onClick={toggleTheme}
-          aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-        >
-          {theme === "dark" ? <HiOutlineSun /> : <HiOutlineMoon />}
-        </button>
+        <ThemeToggle className={styles.themeToggleSlot} />
 
         <button type="button" className={styles.iconBtn} aria-label="Notifications">
           <HiOutlineBell />
