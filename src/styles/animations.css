@@ -138,3 +138,9 @@ body,
     animation: none !important;
   }
 }
+
+@keyframes workflow-dash {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
