@@ -1,0 +1,560 @@
+/* Login page — uses global tokens from styles/variables.css
+   Change colors in variables.css (imported by globals.css) and this page updates. */
+
+.page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 560px) 1fr;
+  background: var(--background);
+  color: var(--text-primary);
+}
+
+.themeToggleWrap {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 40;
+}
+
+/* Form panel */
+.formPanel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 48px clamp(28px, 8vw, 96px);
+  background: var(--background);
+}
+
+.formWrap {
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+}
+
+.brandRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: 44px;
+}
+
+.brandMark {
+  width: auto;
+  height: 72px;
+  max-width: 220px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.brandMarkFallback {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--primary-color) 35%, transparent);
+  color: #fff;
+}
+
+.brandMarkImg {
+  width: auto;
+  height: 72px;
+  max-width: 220px;
+  object-fit: contain;
+  object-position: left center;
+  display: block;
+}
+
+.brandWord {
+  font-weight: 800;
+  font-size: 19px;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--text-primary);
+}
+
+.brandAccent {
+  color: var(--primary-color);
+  font-weight: 800;
+}
+
+.heading {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 8px;
+  color: var(--text-primary);
+}
+
+.subheading {
+  font-size: 14.5px;
+  color: var(--text-secondary);
+  margin: 0 0 32px;
+  line-height: 1.5;
+}
+
+.field {
+  margin-bottom: 18px;
+}
+
+.fieldLabel {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 7px;
+  color: var(--text-primary);
+}
+
+.inputWrap {
+  position: relative;
+}
+
+.leadingIcon {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.input {
+  width: 100%;
+  padding: 11px 14px 11px 38px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 14.5px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.inputWithToggle {
+  padding-right: 42px;
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+}
+
+.input:focus {
+  border-color: var(--primary-color);
+  box-shadow: var(--focus-ring);
+}
+
+.toggleVisibility {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  border-radius: 6px;
+}
+
+.toggleVisibility:hover {
+  color: var(--text-secondary);
+}
+
+.toggleVisibility svg {
+  width: 16px;
+  height: 16px;
+}
+
+.rowBetween {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 4px 0 26px;
+}
+
+.remember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  user-select: none;
+  cursor: pointer;
+}
+
+.remember input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--primary-color);
+  cursor: pointer;
+}
+
+.forgot {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--primary-hover);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0;
+}
+
+.forgot:hover {
+  text-decoration: underline;
+}
+
+.btnPrimary {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--primary-color) 28%, transparent);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+}
+
+.btnPrimary:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--primary-color) 36%, transparent);
+}
+
+.btnPrimary:active {
+  transform: translateY(1px);
+}
+
+.btnPrimary svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.15s;
+}
+
+.btnPrimary:hover svg {
+  transform: translateX(2px);
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 26px 0;
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border-color);
+}
+
+.btnOauth {
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btnOauth:hover {
+  background: var(--surface-light);
+}
+
+.btnOauth svg {
+  width: 17px;
+  height: 17px;
+}
+
+.signupLine {
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  margin-top: 30px;
+}
+
+.signupLine a,
+.signupLink {
+  color: var(--primary-hover);
+  font-weight: 700;
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  padding: 0;
+}
+
+.signupLink:hover {
+  text-decoration: underline;
+}
+
+/* Brand / hero panel */
+.brandPanel {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--primary-color) 28%, var(--background)) 0%,
+    color-mix(in srgb, var(--primary-color) 14%, var(--background)) 45%,
+    var(--background) 100%
+  );
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 64px;
+}
+
+.decoDot {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--primary-color);
+  opacity: 0.55;
+}
+
+.decoDotD1 {
+  width: 8px;
+  height: 8px;
+  top: 14%;
+  right: 22%;
+}
+
+.decoDotD2 {
+  width: 6px;
+  height: 6px;
+  top: 22%;
+  right: 12%;
+}
+
+.decoDotD3 {
+  width: 5px;
+  height: 5px;
+  top: 9%;
+  right: 33%;
+}
+
+.decoLine {
+  position: absolute;
+  background: var(--primary-color);
+  opacity: 0.35;
+  height: 1px;
+}
+
+.decoLineL1 {
+  width: 70px;
+  top: 16%;
+  right: 15%;
+  transform: rotate(28deg);
+}
+
+.decoLineL2 {
+  width: 50px;
+  top: 12%;
+  right: 29%;
+  transform: rotate(-18deg);
+}
+
+.heroCopy {
+  max-width: 420px;
+  position: relative;
+  z-index: 2;
+}
+
+.heroEyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--primary-hover);
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 22px;
+}
+
+.heroTitle {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin: 0 0 14px;
+  color: var(--text-primary);
+}
+
+.heroSub {
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0 0 40px;
+}
+
+.vitalsCard {
+  position: relative;
+  z-index: 2;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 22px 22px 18px;
+  box-shadow: var(--shadow-md);
+  max-width: 400px;
+}
+
+.vitalsHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.vitalsLabel {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.vitalsLive {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 16%, transparent);
+  padding: 4px 9px;
+  border-radius: var(--radius-pill);
+}
+
+.vitalsDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  animation: pulseDot 1.6s ease-in-out infinite;
+}
+
+@keyframes pulseDot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.vitalsGraph {
+  width: 100%;
+  height: 64px;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.vitalsLine {
+  fill: none;
+  stroke: var(--primary-color);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 340;
+  stroke-dashoffset: 340;
+  animation: draw 2.6s ease-out forwards, glide 3.2s linear 2.6s infinite;
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes glide {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -340;
+  }
+}
+
+.vitalsFoot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.vitalsNumber {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.vitalsDelta {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--success);
+}
+
+.vitalsCaption {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+@media (max-width: 940px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+
+  .brandPanel {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vitalsLine {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+
+  .vitalsDot {
+    animation: none;
+  }
+}
