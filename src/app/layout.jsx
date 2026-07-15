@@ -1,6 +1,8 @@
 import { Poppins } from "next/font/google";
-import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { ThemeProvider } from "@wrksz/themes/next";
+import { ThemeMotionProvider } from "@/components/theme/ThemeProvider";
 import { UIProvider } from "@/context/UIContext";
+import { AuthProvider } from "@/context/AuthContext";
 import { getLogo } from "@/services/uiService";
 import "./globals.css";
 
@@ -28,8 +30,19 @@ export default async function RootLayout({ children }) {
   return (
     <html lang="en" data-theme="dark" suppressHydrationWarning>
       <body className={poppins.className}>
-        <ThemeProvider>
-          <UIProvider logo={logo}>{children}</UIProvider>
+        <ThemeProvider
+          attribute="data-theme"
+          defaultTheme="dark"
+          enableSystem={false}
+          disableTransitionOnChange={false}
+          storageKey="crm-theme"
+          themes={["light", "dark"]}
+        >
+          <ThemeMotionProvider>
+            <UIProvider logo={logo}>
+              <AuthProvider>{children}</AuthProvider>
+            </UIProvider>
+          </ThemeMotionProvider>
         </ThemeProvider>
       </body>
     </html>

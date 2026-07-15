@@ -1,12 +1,6 @@
-import {
-  HiOutlineUsers,
-  HiOutlineCurrencyDollar,
-  HiOutlineChatAlt2,
-  HiOutlineTrendingUp,
-} from "react-icons/hi";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import WelcomeCard from "@/components/dashboard/WelcomeCard";
 import {
-  WelcomeCard,
   StatCard,
   ActivityChart,
   ChatbotCard,
@@ -15,6 +9,14 @@ import {
   QuickActions,
 } from "@/components/dashboard/Dashboard";
 import styles from "./dashboard.module.css";
+import {
+  HiOutlineUsers,
+  HiOutlineCurrencyDollar,
+  HiOutlineChatAlt2,
+  HiOutlineTrendingUp,
+} from "react-icons/hi";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Dashboard · HIP Automation",

@@ -8,7 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes";
+import { useTheme } from "@wrksz/themes/client";
 import { LayoutGroup } from "framer-motion";
 
 const ThemeMotionContext = createContext(null);
@@ -100,7 +100,6 @@ function ThemeMotionInner({ children }) {
         window.setTimeout(clearRevealClasses, 40);
       };
 
-      // Circular clip-path reveal via View Transitions (UI snapshots, not solid paint)
       if (supportsViewTransition()) {
         root.classList.add("theme-vt-instant");
         void root.offsetWidth;
@@ -113,7 +112,6 @@ function ThemeMotionInner({ children }) {
         return;
       }
 
-      // Fallback: @property color morph (no overlay)
       void root.offsetWidth;
       applyTheme(nextTheme);
       window.setTimeout(finish, DURATION_MS);
@@ -148,24 +146,18 @@ function ThemeMotionInner({ children }) {
   );
 }
 
+export function ThemeMotionProvider({ children }) {
+  return <ThemeMotionInner>{children}</ThemeMotionInner>;
+}
+
 export function ThemeProvider({ children }) {
-  return (
-    <NextThemesProvider
-      attribute="data-theme"
-      defaultTheme="dark"
-      enableSystem={false}
-      disableTransitionOnChange={false}
-      storageKey="crm-theme"
-    >
-      <ThemeMotionInner>{children}</ThemeMotionInner>
-    </NextThemesProvider>
-  );
+  return <ThemeMotionProvider>{children}</ThemeMotionProvider>;
 }
 
 export function useThemeMotion() {
   const ctx = useContext(ThemeMotionContext);
   if (!ctx) {
-    throw new Error("useThemeMotion must be used within ThemeProvider");
+    throw new Error("useThemeMotion must be used within ThemeMotionProvider");
   }
   return ctx;
 }

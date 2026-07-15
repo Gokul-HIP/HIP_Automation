@@ -11,18 +11,36 @@ import {
 } from "react-icons/hi";
 import ThemeToggle from "@/components/theme/ThemeToggle";
 import { useUI } from "@/context/UIContext";
+import { useAuth } from "@/context/AuthContext";
 import styles from "./login.module.css";
 
 export default function LoginView() {
   const { logo } = useUI();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    // Login API will be wired here later
+    setError("");
+
+    if (!email.trim() || !password) {
+      setError("Please enter your email and password.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await login({ email: email.trim(), password });
+    } catch (err) {
+      setError(err?.message || "Login failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -135,9 +153,28 @@ export default function LoginView() {
               </button>
             </div>
 
-            <button type="submit" className={styles.btnPrimary}>
-              Sign in
-              <HiOutlineArrowRight aria-hidden="true" />
+            {error ? (
+              <p
+                role="alert"
+                style={{
+                  margin: "0 0 14px",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  color: "var(--danger)",
+                }}
+              >
+                {error}
+              </p>
+            ) : null}
+
+            <button
+              type="submit"
+              className={styles.btnPrimary}
+              disabled={loading}
+              aria-busy={loading}
+            >
+              {loading ? "Signing in…" : "Sign in"}
+              {!loading && <HiOutlineArrowRight aria-hidden="true" />}
             </button>
           </form>
 

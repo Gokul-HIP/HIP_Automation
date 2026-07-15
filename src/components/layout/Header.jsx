@@ -8,9 +8,8 @@ import {
   HiOutlineMenu,
   HiOutlineChevronDown,
 } from "react-icons/hi";
-import Avatar from "@/components/ui/Avatar";
-import Badge from "@/components/ui/Badge";
 import ThemeToggle from "@/components/theme/ThemeToggle";
+import ProfileMenu from "@/components/layout/ProfileMenu";
 import { useUI } from "@/context/UIContext";
 import styles from "./Header.module.css";
 
@@ -96,13 +95,7 @@ export default function Header() {
           <HiOutlineCog />
         </Link>
 
-        <button type="button" className={styles.profile} aria-label="Profile menu">
-          <Avatar name="Alex Morgan" size="sm" status="online" />
-          <span className={styles.profileMeta}>
-            <span className={styles.profileName}>Alex Morgan</span>
-            <Badge tone="primary">Admin</Badge>
-          </span>
-        </button>
+        <ProfileMenu />
       </div>
     </header>
   );
