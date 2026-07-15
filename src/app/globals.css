@@ -90,3 +90,6 @@ ol {
   color: var(--text-secondary);
   margin-top: var(--space-xs);
 }
+
+/* Tailwind loads LAST so it cannot override existing CSS Modules / globals above */
+@import "../styles/tailwind.css";
