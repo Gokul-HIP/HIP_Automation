@@ -10,7 +10,7 @@ export default function Logo({ logo = null, collapsed = false }) {
   const showImgFallback = Boolean(logo) && imgFailed;
   const isLocal =
     typeof logo === "string" &&
-    (logo.startsWith("http://127.0.0.1") || logo.startsWith("http://localhost"));
+    (logo.startsWith("https://api.healthinpocket.in") || logo.startsWith("http://localhost"));
 
   return (
     <div
