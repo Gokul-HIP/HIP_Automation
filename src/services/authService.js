@@ -2,6 +2,7 @@ import {
   normalizeAuthUser,
   normalizeLoginResponse,
   resolveOrganizationId,
+  resolveUserId,
 } from "@/utils/organization";
 
 const BASE_URL = "https://api.healthinpocket.in/api";
@@ -9,6 +10,7 @@ const BASE_URL = "https://api.healthinpocket.in/api";
 export const AUTH_TOKEN_KEY = "crm-auth-token";
 export const AUTH_USER_KEY = "crm-auth-user";
 export const AUTH_ORG_KEY = "crm-auth-organization-id";
+export const AUTH_USER_ID_KEY = "crm-auth-user-id";
 export const AUTH_COOKIE = "crm-token";
 export const AUTH_USER_COOKIE = "crm-user";
 
@@ -80,14 +82,21 @@ export function saveAuthSession({ token, user }) {
 
   const normalizedUser = normalizeAuthUser(user) ?? user;
   const organizationId = resolveOrganizationId(normalizedUser);
+  const userId = resolveUserId(normalizedUser);
 
   localStorage.setItem(AUTH_TOKEN_KEY, token);
   localStorage.setItem(AUTH_USER_KEY, JSON.stringify(normalizedUser));
 
-  if (organizationId) {
+  if (organizationId != null) {
     localStorage.setItem(AUTH_ORG_KEY, String(organizationId));
   } else {
     localStorage.removeItem(AUTH_ORG_KEY);
+  }
+
+  if (userId) {
+    localStorage.setItem(AUTH_USER_ID_KEY, String(userId));
+  } else {
+    localStorage.removeItem(AUTH_USER_ID_KEY);
   }
 
   setAuthCookie(token);
@@ -99,6 +108,7 @@ export function clearAuthSession() {
   localStorage.removeItem(AUTH_TOKEN_KEY);
   localStorage.removeItem(AUTH_USER_KEY);
   localStorage.removeItem(AUTH_ORG_KEY);
+  localStorage.removeItem(AUTH_USER_ID_KEY);
   clearAuthCookie();
 }
 
@@ -121,13 +131,19 @@ export function getStoredOrganizationId() {
   if (typeof window === "undefined") return null;
 
   const fromUser = resolveOrganizationId(getStoredUser());
-  if (fromUser) return fromUser;
+  if (fromUser != null) return fromUser;
 
   const stored = localStorage.getItem(AUTH_ORG_KEY);
-  if (!stored) return null;
+  return resolveOrganizationId({ organization_id: stored });
+}
 
-  const parsed = Number(stored);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+export function getStoredUserId() {
+  if (typeof window === "undefined") return null;
+
+  const fromUser = resolveUserId(getStoredUser());
+  if (fromUser) return fromUser;
+
+  return localStorage.getItem(AUTH_USER_ID_KEY);
 }
 
 export function getUserDisplayName(user) {
@@ -163,7 +179,10 @@ export async function loginRequest({ email, password }) {
   return {
     ...data,
     user,
-    organization_id: resolveOrganizationId(user) ?? data.organization_id ?? null,
+    organization_id:
+      resolveOrganizationId(user) ??
+      resolveOrganizationId(data) ??
+      null,
   };
 }
 

@@ -14,10 +14,10 @@ import {
   publishWorkflow,
   extractWorkflowId,
 } from "@/services/workflowService";
-import { getStoredOrganizationId } from "@/services/authService";
+import { getStoredOrganizationId, getStoredUserId } from "@/services/authService";
 import { serializeWorkflow } from "@/utils/flowSerializer";
 import { WORKFLOW_STATUS } from "@/utils/workflowStatus";
-import { resolveOrganizationId } from "@/utils/organization";
+import { resolveOrganizationId, resolveUserId } from "@/utils/organization";
 import { useAuth } from "@/context/AuthContext";
 import useFlowToast from "./useFlowToast";
 
@@ -223,6 +223,10 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
 
   const organizationId = useMemo(() => {
     return resolveOrganizationId(user) ?? getStoredOrganizationId();
+  }, [user]);
+
+  const createdById = useMemo(() => {
+    return resolveUserId(user) ?? getStoredUserId();
   }, [user]);
 
   const registerViewportApi = useCallback((api) => {
@@ -487,6 +491,7 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
         name: workflowName,
         status: WORKFLOW_STATUS.INACTIVE,
         organizationId,
+        createdBy: createdById,
       });
 
       let response;
@@ -516,6 +521,7 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
     workflowStatus,
     workflowId,
     organizationId,
+    createdById,
     getViewport,
     showToast,
   ]);
@@ -536,6 +542,7 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
         viewport: getViewport(),
         name: workflowName,
         organizationId,
+        createdBy: createdById,
       });
 
       const newId = extractWorkflowId(response);
@@ -556,6 +563,7 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
     workflowName,
     workflowId,
     organizationId,
+    createdById,
     getViewport,
     showToast,
   ]);

@@ -4,6 +4,7 @@
  */
 
 import { normalizeWorkflowStatus } from "./workflowStatus";
+import { normalizeOrganizationId, normalizeUserId } from "./organization";
 
 const BUILDER_VERSION = "1.0";
 const REACT_FLOW_VERSION = "12";
@@ -59,7 +60,8 @@ export function serializeEdge(edge) {
  * @param {{ x: number, y: number, zoom: number }} [params.viewport]
  * @param {string} params.name
  * @param {string} [params.status]
- * @param {number | null} [params.organizationId]
+ * @param {number | string | null} [params.organizationId]
+ * @param {string | number | null} [params.createdBy]
  * @returns {import('../types/workflow').MedicineWorkflowPayload}
  */
 export function serializeWorkflow({
@@ -69,17 +71,15 @@ export function serializeWorkflow({
   name,
   status = "inactive",
   organizationId = null,
+  createdBy = null,
 }) {
   const vp = viewport ?? { x: 0, y: 0, zoom: 1 };
+  const orgId = normalizeOrganizationId(organizationId);
+  const createdById = normalizeUserId(createdBy);
 
-  const orgId =
-    organizationId == null || organizationId === ""
-      ? null
-      : Number(organizationId);
-
-  return {
-    organization_id:
-      orgId != null && Number.isFinite(orgId) && orgId > 0 ? orgId : null,
+  /** @type {import('../types/workflow').MedicineWorkflowPayload} */
+  const payload = {
+    organization_id: orgId,
     name: String(name || "Untitled Workflow"),
     status: normalizeWorkflowStatus(status),
     configuration: {
@@ -94,4 +94,10 @@ export function serializeWorkflow({
       edges: (edges || []).map(serializeEdge),
     },
   };
+
+  if (createdById) {
+    payload.created_by = createdById;
+  }
+
+  return payload;
 }

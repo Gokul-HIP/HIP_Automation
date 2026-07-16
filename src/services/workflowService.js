@@ -210,6 +210,7 @@ export async function publishWorkflow({
   viewport,
   name,
   organizationId,
+  createdBy,
 }) {
   const payload = serializeWorkflow({
     nodes,
@@ -218,6 +219,7 @@ export async function publishWorkflow({
     name,
     status: WORKFLOW_STATUS.ACTIVE,
     organizationId,
+    createdBy,
   });
 
   if (id) {

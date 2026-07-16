@@ -1,5 +1,5 @@
 /**
- * Resolve organization id from auth user or login API payload.
+ * Resolve organization / user ids from auth user or login API payload.
  */
 
 /**
@@ -10,11 +10,13 @@ export function normalizeOrganizationId(value) {
   if (value == null || value === "") return null;
 
   if (typeof value === "number" && Number.isFinite(value) && value > 0) {
-    return value;
+    return Math.trunc(value);
   }
 
   if (typeof value === "string") {
     const trimmed = value.trim();
+    if (!trimmed) return null;
+    // Login API sends organization_id as a numeric string, e.g. "2"
     if (/^\d+$/.test(trimmed)) {
       const parsed = Number(trimmed);
       return parsed > 0 ? parsed : null;
@@ -25,68 +27,49 @@ export function normalizeOrganizationId(value) {
 }
 
 /**
+ * User id may be a UUID string or a numeric id.
  * @param {unknown} value
- * @returns {number | null}
+ * @returns {string | null}
  */
-function pickOrganizationId(value) {
-  return normalizeOrganizationId(value);
+export function normalizeUserId(value) {
+  if (value == null || value === "") return null;
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed || null;
+  }
+  return null;
 }
 
 /**
+ * Prefer direct fields from the auth user — matches login response shape:
+ * { user: { id, organization_id: "2", ... } }
  * @param {Record<string, unknown> | null | undefined} source
- * @param {number} [depth]
  * @returns {number | null}
  */
-export function findOrganizationIdDeep(source, depth = 0) {
-  if (!source || typeof source !== "object" || depth > 5) return null;
+export function resolveOrganizationId(source) {
+  if (!source || typeof source !== "object") return null;
 
-  const direct = pickOrganizationId(
-    source.organization_id ??
-      source.organisation_id ??
-      source.org_id ??
-      source.orgId ??
-      source.organizationId ??
-      source.current_organization_id ??
-      source.currentOrganizationId
-  );
-  if (direct) return direct;
+  const candidates = [
+    source.organization_id,
+    source.organisation_id,
+    source.organizationId,
+    source.org_id,
+    source.orgId,
+    source.organization?.id,
+    source.organisation?.id,
+    source.user?.organization_id,
+    source.user?.organisation_id,
+    source.user?.organization?.id,
+    source.data?.user?.organization_id,
+    source.data?.organization_id,
+  ];
 
-  const organization = source.organization ?? source.organisation;
-  if (organization != null) {
-    if (typeof organization === "object") {
-      const nested = pickOrganizationId(
-        organization.id ??
-          organization.organization_id ??
-          organization.organisation_id
-      );
-      if (nested) return nested;
-    } else {
-      const scalar = pickOrganizationId(organization);
-      if (scalar) return scalar;
-    }
-  }
-
-  const company = source.company;
-  if (company && typeof company === "object") {
-    const nested = pickOrganizationId(company.id ?? company.organization_id);
-    if (nested) return nested;
-  }
-
-  if (Array.isArray(source.organizations) && source.organizations.length) {
-    for (const item of source.organizations) {
-      const nested = findOrganizationIdDeep(item, depth + 1);
-      if (nested) return nested;
-    }
-  }
-
-  if (source.user && typeof source.user === "object") {
-    const nested = findOrganizationIdDeep(source.user, depth + 1);
-    if (nested) return nested;
-  }
-
-  if (source.data && typeof source.data === "object" && depth < 2) {
-    const nested = findOrganizationIdDeep(source.data, depth + 1);
-    if (nested) return nested;
+  for (const candidate of candidates) {
+    const id = normalizeOrganizationId(candidate);
+    if (id != null) return id;
   }
 
   return null;
@@ -94,10 +77,26 @@ export function findOrganizationIdDeep(source, depth = 0) {
 
 /**
  * @param {Record<string, unknown> | null | undefined} source
- * @returns {number | null}
+ * @returns {string | null}
  */
-export function resolveOrganizationId(source) {
-  return findOrganizationIdDeep(source);
+export function resolveUserId(source) {
+  if (!source || typeof source !== "object") return null;
+
+  const candidates = [
+    source.id,
+    source.user_id,
+    source.userId,
+    source.user?.id,
+    source.data?.user?.id,
+    source.data?.id,
+  ];
+
+  for (const candidate of candidates) {
+    const id = normalizeUserId(candidate);
+    if (id) return id;
+  }
+
+  return null;
 }
 
 /**
@@ -131,15 +130,16 @@ export function normalizeLoginResponse(data) {
   }
 
   const organizationId =
-    findOrganizationIdDeep(data) ??
-    (user && typeof user === "object" ? findOrganizationIdDeep(user) : null);
+    resolveOrganizationId(user) ?? resolveOrganizationId(data);
+  const userId = resolveUserId(user) ?? resolveUserId(data);
 
   const normalizedUser =
     user && typeof user === "object"
-      ? normalizeAuthUser(user, { organization_id: organizationId, ...data })
-      : organizationId
-        ? { organization_id: organizationId }
-        : null;
+      ? normalizeAuthUser(user, {
+          organization_id: organizationId,
+          id: userId,
+        })
+      : null;
 
   return {
     ...data,
@@ -150,21 +150,28 @@ export function normalizeLoginResponse(data) {
 }
 
 /**
- * Ensure organization_id is present on the stored auth user when login returns it.
+ * Ensure organization_id + id are present on the stored auth user.
  * @param {Record<string, unknown> | null | undefined} user
  * @param {Record<string, unknown> | null | undefined} [loginPayload]
  */
 export function normalizeAuthUser(user, loginPayload = null) {
   if (!user && !loginPayload) return null;
 
-  const normalized = user ? { ...user } : {};
+  const normalized = user && typeof user === "object" ? { ...user } : {};
+
   const organizationId =
-    resolveOrganizationId(normalized) ??
-    resolveOrganizationId(loginPayload) ??
-    findOrganizationIdDeep(loginPayload);
+    resolveOrganizationId(normalized) ?? resolveOrganizationId(loginPayload);
+
+  const userId =
+    resolveUserId(normalized) ?? resolveUserId(loginPayload);
 
   if (organizationId != null) {
+    // Store as number for consistent reads
     normalized.organization_id = organizationId;
+  }
+
+  if (userId) {
+    normalized.id = userId;
   }
 
   return normalized;
