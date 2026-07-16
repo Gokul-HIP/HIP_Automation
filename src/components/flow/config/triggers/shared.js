@@ -11,7 +11,6 @@ export const NOTIFICATION_CHANNEL_OPTIONS = [
   { value: "whatsapp", label: "WhatsApp" },
   { value: "sms", label: "SMS" },
   { value: "email", label: "Email" },
-  { value: "in_app", label: "In-App" },
 ];
 
 /** @type {SelectOption[]} */
