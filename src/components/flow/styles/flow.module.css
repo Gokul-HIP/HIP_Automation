@@ -613,3 +613,62 @@
     z-index: 9;
   }
 }
+
+.flowToast {
+  position: fixed;
+  inset-inline-end: 1.25rem;
+  inset-block-end: 1.25rem;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 220px;
+  max-width: min(420px, calc(100vw - 2rem));
+  padding: 0.75rem 0.875rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--surface);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-md);
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+
+.flowToast[data-tone="success"] {
+  border-color: color-mix(in srgb, var(--success) 45%, var(--border-color));
+}
+
+.flowToast[data-tone="error"] {
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border-color));
+}
+
+.flowToastDismiss {
+  margin-inline-start: auto;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 1.125rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.125rem 0.25rem;
+}
+
+.flowToastDismiss:hover {
+  color: var(--text-primary);
+}
+
+.btnSpinner {
+  width: 0.95rem;
+  height: 0.95rem;
+  border: 2px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: flowSpin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes flowSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}

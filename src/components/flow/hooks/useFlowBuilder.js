@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   addEdge,
   applyEdgeChanges,
@@ -9,8 +9,17 @@ import {
 import { createNodeDefaults, getWorkflowNode } from "../config/workflowNodes";
 import {
   saveWorkflow,
+  updateWorkflow,
+  loadWorkflow,
   publishWorkflow,
+  extractWorkflowId,
 } from "@/services/workflowService";
+import { getStoredOrganizationId } from "@/services/authService";
+import { serializeWorkflow } from "@/utils/flowSerializer";
+import { WORKFLOW_STATUS } from "@/utils/workflowStatus";
+import { resolveOrganizationId } from "@/utils/organization";
+import { useAuth } from "@/context/AuthContext";
+import useFlowToast from "./useFlowToast";
 
 const HISTORY_LIMIT = 40;
 const COL_GAP = 280;
@@ -192,11 +201,17 @@ export function validateWorkflowGraph(nodes, edges) {
   return { valid, issues };
 }
 
-export default function useFlowBuilder() {
+export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
+  const { user } = useAuth();
+  const { toast, showToast, clearToast } = useFlowToast();
+  const viewportApiRef = useRef(null);
+
   const [nodes, setNodes] = useState(buildInitialNodes);
   const [edges, setEdges] = useState([]);
   const [selectedNodeIds, setSelectedNodeIds] = useState([]);
   const [workflowName, setWorkflowName] = useState("Hospital workflow");
+  const [workflowId, setWorkflowId] = useState(initialWorkflowId);
+  const [workflowStatus, setWorkflowStatus] = useState(WORKFLOW_STATUS.INACTIVE);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [propertiesOpen, setPropertiesOpen] = useState(false);
   const [locked, setLocked] = useState(false);
@@ -205,6 +220,64 @@ export default function useFlowBuilder() {
   const [future, setFuture] = useState([]);
   const [validation, setValidation] = useState({ valid: true, issues: [] });
   const [busy, setBusy] = useState(null);
+
+  const organizationId = useMemo(() => {
+    return resolveOrganizationId(user) ?? getStoredOrganizationId();
+  }, [user]);
+
+  const registerViewportApi = useCallback((api) => {
+    viewportApiRef.current = api;
+  }, []);
+
+  const getViewport = useCallback(() => {
+    return (
+      viewportApiRef.current?.getViewport() ?? { x: 0, y: 0, zoom: 1 }
+    );
+  }, []);
+
+  useEffect(() => {
+    if (!initialWorkflowId) return;
+
+    let cancelled = false;
+
+    (async () => {
+      setBusy("load");
+      try {
+        const state = await loadWorkflow(initialWorkflowId);
+        if (cancelled) return;
+
+        setWorkflowId(state.id ?? initialWorkflowId);
+        setWorkflowName(state.name);
+        setWorkflowStatus(state.status ?? WORKFLOW_STATUS.INACTIVE);
+        setNodes(state.nodes?.length ? state.nodes : buildInitialNodes());
+        setEdges(state.edges ?? []);
+        setPast([]);
+        setFuture([]);
+
+        requestAnimationFrame(() => {
+          viewportApiRef.current?.setViewport?.(state.viewport, {
+            duration: 0,
+          });
+          setZoom(Math.round((state.viewport?.zoom ?? 1) * 100));
+        });
+
+        showToast("success", "Workflow loaded");
+      } catch (error) {
+        if (!cancelled) {
+          showToast(
+            "error",
+            error?.message || "Failed to load workflow"
+          );
+        }
+      } finally {
+        if (!cancelled) setBusy(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [initialWorkflowId, showToast]);
 
   const selectedNodeId = selectedNodeIds[0] ?? null;
   const selectedNode = useMemo(
@@ -403,35 +476,89 @@ export default function useFlowBuilder() {
   }, [nodes, edges]);
 
   const handleSave = useCallback(async () => {
+    if (busy) return;
+
     setBusy("save");
     try {
-      await saveWorkflow({
-        name: workflowName,
+      const payload = serializeWorkflow({
         nodes,
         edges,
+        viewport: getViewport(),
+        name: workflowName,
+        status: WORKFLOW_STATUS.INACTIVE,
+        organizationId,
       });
+
+      let response;
+      if (workflowId) {
+        response = await updateWorkflow(workflowId, payload);
+      } else {
+        response = await saveWorkflow(payload);
+        const newId = extractWorkflowId(response);
+        if (newId != null) setWorkflowId(newId);
+      }
+
+      const savedStatus = WORKFLOW_STATUS.INACTIVE;
+      setWorkflowStatus(savedStatus);
+      showToast("success", "Workflow Saved");
+      return response;
+    } catch (error) {
+      showToast("error", error?.message || "Failed to save workflow");
+      throw error;
     } finally {
       setBusy(null);
     }
-  }, [workflowName, nodes, edges]);
+  }, [
+    busy,
+    nodes,
+    edges,
+    workflowName,
+    workflowStatus,
+    workflowId,
+    organizationId,
+    getViewport,
+    showToast,
+  ]);
 
   const handlePublish = useCallback(async () => {
+    if (busy) return;
+
     const result = validateWorkflowGraph(nodes, edges);
     setValidation(result);
     if (!result.valid) return result;
 
     setBusy("publish");
     try {
-      await publishWorkflow({
-        name: workflowName,
+      const response = await publishWorkflow({
+        id: workflowId,
         nodes,
         edges,
+        viewport: getViewport(),
+        name: workflowName,
+        organizationId,
       });
+
+      const newId = extractWorkflowId(response);
+      if (newId != null) setWorkflowId(newId);
+      setWorkflowStatus(WORKFLOW_STATUS.ACTIVE);
+      showToast("success", "Workflow published");
+      return result;
+    } catch (error) {
+      showToast("error", error?.message || "Failed to publish workflow");
+      throw error;
     } finally {
       setBusy(null);
     }
-    return result;
-  }, [workflowName, nodes, edges]);
+  }, [
+    busy,
+    nodes,
+    edges,
+    workflowName,
+    workflowId,
+    organizationId,
+    getViewport,
+    showToast,
+  ]);
 
   const status = useMemo(() => {
     if (locked) return { label: "Locked", tone: "warning" };
@@ -450,6 +577,8 @@ export default function useFlowBuilder() {
     selectedNode,
     workflowName,
     setWorkflowName,
+    workflowId,
+    workflowStatus,
     sidebarOpen,
     setSidebarOpen,
     propertiesOpen,
@@ -461,6 +590,9 @@ export default function useFlowBuilder() {
     status,
     validation,
     busy,
+    toast,
+    showToast,
+    clearToast,
     canUndo: past.length > 0,
     canRedo: future.length > 0,
     onNodesChange,
@@ -477,5 +609,6 @@ export default function useFlowBuilder() {
     validate,
     handleSave,
     handlePublish,
+    registerViewportApi,
   };
 }

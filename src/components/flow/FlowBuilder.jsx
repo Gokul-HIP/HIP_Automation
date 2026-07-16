@@ -5,14 +5,16 @@ import FlowToolbar from "./FlowToolbar";
 import FlowCanvas from "./FlowCanvas";
 import NodeSidebar from "./NodeSidebar";
 import PropertyPanel from "./panels/PropertyPanel";
+import FlowToast from "./FlowToast";
 import useFlowBuilder from "./hooks/useFlowBuilder";
 import styles from "./styles/flow.module.css";
 
-export default function FlowBuilder() {
-  const flow = useFlowBuilder();
+export default function FlowBuilder({ initialWorkflowId = null }) {
+  const flow = useFlowBuilder({ initialWorkflowId });
 
   return (
     <div className={styles.shell}>
+      <FlowToast toast={flow.toast} onDismiss={flow.clearToast} />
       <FlowToolbar
         workflowName={flow.workflowName}
         onWorkflowNameChange={flow.setWorkflowName}
@@ -61,6 +63,7 @@ export default function FlowBuilder() {
           onToggleLock={() => flow.setLocked((v) => !v)}
           onDeleteSelected={() => flow.deleteNodes(flow.selectedNodeIds)}
           onDuplicateSelected={() => flow.duplicateNodes(flow.selectedNodeIds)}
+          onViewportReady={flow.registerViewportApi}
         />
 
         <PropertyPanel

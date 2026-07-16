@@ -1,7 +1,14 @@
+import {
+  normalizeAuthUser,
+  normalizeLoginResponse,
+  resolveOrganizationId,
+} from "@/utils/organization";
+
 const BASE_URL = "https://api.healthinpocket.in/api";
 
 export const AUTH_TOKEN_KEY = "crm-auth-token";
 export const AUTH_USER_KEY = "crm-auth-user";
+export const AUTH_ORG_KEY = "crm-auth-organization-id";
 export const AUTH_COOKIE = "crm-token";
 export const AUTH_USER_COOKIE = "crm-user";
 
@@ -70,16 +77,28 @@ export function clearAuthCookie() {
 
 export function saveAuthSession({ token, user }) {
   if (typeof window === "undefined") return;
+
+  const normalizedUser = normalizeAuthUser(user) ?? user;
+  const organizationId = resolveOrganizationId(normalizedUser);
+
   localStorage.setItem(AUTH_TOKEN_KEY, token);
-  localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+  localStorage.setItem(AUTH_USER_KEY, JSON.stringify(normalizedUser));
+
+  if (organizationId) {
+    localStorage.setItem(AUTH_ORG_KEY, String(organizationId));
+  } else {
+    localStorage.removeItem(AUTH_ORG_KEY);
+  }
+
   setAuthCookie(token);
-  setAuthUserCookie(user);
+  setAuthUserCookie(normalizedUser);
 }
 
 export function clearAuthSession() {
   if (typeof window === "undefined") return;
   localStorage.removeItem(AUTH_TOKEN_KEY);
   localStorage.removeItem(AUTH_USER_KEY);
+  localStorage.removeItem(AUTH_ORG_KEY);
   clearAuthCookie();
 }
 
@@ -98,6 +117,19 @@ export function getStoredUser() {
   }
 }
 
+export function getStoredOrganizationId() {
+  if (typeof window === "undefined") return null;
+
+  const fromUser = resolveOrganizationId(getStoredUser());
+  if (fromUser) return fromUser;
+
+  const stored = localStorage.getItem(AUTH_ORG_KEY);
+  if (!stored) return null;
+
+  const parsed = Number(stored);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
 export function getUserDisplayName(user) {
   if (!user) return "User";
   const name = [user.first_name, user.last_name].filter(Boolean).join(" ").trim();
@@ -114,17 +146,25 @@ export async function loginRequest({ email, password }) {
     body: JSON.stringify({ email, password }),
   });
 
-  const data = await response.json().catch(() => ({}));
+  const raw = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data?.message || "Login failed");
+    throw new Error(raw?.message || "Login failed");
   }
+
+  const data = normalizeLoginResponse(raw);
 
   if (!data?.token) {
-    throw new Error(data?.message || "Login failed: no token received");
+    throw new Error(raw?.message || "Login failed: no token received");
   }
 
-  return data;
+  const user = normalizeAuthUser(data.user, data);
+
+  return {
+    ...data,
+    user,
+    organization_id: resolveOrganizationId(user) ?? data.organization_id ?? null,
+  };
 }
 
 export async function logoutRequest(token) {

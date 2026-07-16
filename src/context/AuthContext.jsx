@@ -18,6 +18,7 @@ import {
   logoutRequest,
   saveAuthSession,
 } from "@/services/authService";
+import { normalizeAuthUser } from "@/utils/organization";
 
 const AuthContext = createContext(null);
 
@@ -29,7 +30,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const storedToken = getStoredToken();
-    const storedUser = getStoredUser();
+    const storedUser = normalizeAuthUser(getStoredUser());
     // Refresh cookies so SSR (WelcomeCard) can read the user
     if (storedToken && storedUser) {
       saveAuthSession({ token: storedToken, user: storedUser });
@@ -41,9 +42,10 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async ({ email, password }) => {
     const data = await loginRequest({ email, password });
-    saveAuthSession({ token: data.token, user: data.user });
+    const user = data.user ?? normalizeAuthUser(data.user, data);
+    saveAuthSession({ token: data.token, user });
     setToken(data.token);
-    setUser(data.user);
+    setUser(user);
     router.replace("/dashboard");
     router.refresh();
     return data;

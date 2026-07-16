@@ -5,10 +5,13 @@ export const metadata = {
   title: "Workflows · HIP Automation",
 };
 
-export default function AutomationPage() {
+export default async function AutomationPage({ searchParams }) {
+  const params = await searchParams;
+  const initialWorkflowId = params?.id ?? params?.workflowId ?? null;
+
   return (
     <DashboardLayout>
-      <FlowBuilder />
+      <FlowBuilder initialWorkflowId={initialWorkflowId} />
     </DashboardLayout>
   );
 }

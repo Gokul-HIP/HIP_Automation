@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import ReactFlow, {
   Background,
   BackgroundVariant,
@@ -83,6 +83,17 @@ function CanvasControls({ locked, onToggleLock }) {
   );
 }
 
+function ViewportBridge({ onReady }) {
+  const { getViewport, setViewport } = useReactFlow();
+
+  useEffect(() => {
+    onReady?.({ getViewport, setViewport });
+    return () => onReady?.(null);
+  }, [getViewport, setViewport, onReady]);
+
+  return null;
+}
+
 function FlowCanvasInner({
   nodes,
   edges,
@@ -95,6 +106,7 @@ function FlowCanvasInner({
   onToggleLock,
   onDeleteSelected,
   onDuplicateSelected,
+  onViewportReady,
 }) {
   const decoratedNodes = useMemo(
     () =>
@@ -182,6 +194,7 @@ function FlowCanvasInner({
           nodeColor="var(--surface-light)"
           maskColor="color-mix(in srgb, var(--background) 72%, transparent)"
         />
+        <ViewportBridge onReady={onViewportReady} />
         <CanvasControls locked={locked} onToggleLock={onToggleLock} />
       </ReactFlow>
     </div>

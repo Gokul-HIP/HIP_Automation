@@ -118,9 +118,14 @@ export default function FlowToolbar({
           className={`${styles.toolBtn} ${styles.toolBtnGhost}`}
           whileTap={{ scale: 0.96 }}
           onClick={onSave}
-          disabled={busy === "save"}
+          disabled={!!busy}
+          aria-busy={busy === "save"}
         >
-          <HiOutlineSave />
+          {busy === "save" ? (
+            <span className={styles.btnSpinner} aria-hidden="true" />
+          ) : (
+            <HiOutlineSave />
+          )}
           {busy === "save" ? "Saving…" : "Save"}
         </motion.button>
 
@@ -130,7 +135,8 @@ export default function FlowToolbar({
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
           onClick={onPublish}
-          disabled={busy === "publish"}
+          disabled={!!busy}
+          aria-busy={busy === "publish"}
         >
           <HiOutlineUpload />
           {busy === "publish" ? "Publishing…" : "Publish"}
