@@ -2,6 +2,10 @@ import { getStoredToken } from "@/services/authService";
 import { serializeWorkflow } from "@/utils/flowSerializer";
 import { extractWorkflowState } from "@/utils/flowDeserializer";
 import { WORKFLOW_STATUS } from "@/utils/workflowStatus";
+import {
+  normalizeWorkflowList,
+  normalizeWorkflowRow,
+} from "@/utils/workflowList";
 
 const BASE_URL = "https://api.healthinpocket.in/api";
 const RESOURCE_PATH = "/medicine-workflows";
@@ -127,6 +131,40 @@ export async function updateWorkflow(id, payload) {
 }
 
 /**
+ * GET /medicine-workflows
+ * @param {object} [params]
+ * @param {string} [params.search]
+ * @param {string} [params.status]
+ * @param {number} [params.page]
+ * @param {number} [params.perPage]
+ * @param {"newest"|"oldest"} [params.sort]
+ */
+export async function getWorkflows(params = {}) {
+  const query = new URLSearchParams();
+
+  if (params.search) query.set("search", params.search);
+  if (params.status && params.status !== "all") {
+    query.set("status", params.status);
+  }
+  if (params.page) query.set("page", String(params.page));
+  if (params.perPage) query.set("per_page", String(params.perPage));
+  if (params.sort === "newest") query.set("sort", "-created_at");
+  if (params.sort === "oldest") query.set("sort", "created_at");
+
+  const qs = query.toString();
+  const path = qs ? `${RESOURCE_PATH}?${qs}` : RESOURCE_PATH;
+
+  const response = await apiRequest(path, { method: "GET" });
+  const normalized = normalizeWorkflowList(response);
+
+  return {
+    ...normalized,
+    items: normalized.items.map(normalizeWorkflowRow),
+    raw: response,
+  };
+}
+
+/**
  * GET /medicine-workflows/{id}
  * @param {number | string} id
  */
@@ -200,6 +238,7 @@ export function extractWorkflowId(response) {
 }
 
 const workflowService = {
+  getWorkflows,
   saveWorkflow,
   updateWorkflow,
   getWorkflow,

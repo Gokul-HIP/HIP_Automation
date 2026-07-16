@@ -21,7 +21,7 @@ import styles from "./Sidebar.module.css";
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: HiOutlineHome },
   { href: "/inbox", label: "Inbox", icon: HiOutlineInbox, badge: 12 },
-  { href: "/automation", label: "Automation", icon: HiOutlineLightningBolt },
+  { href: "/automation/workflows", label: "Automation", icon: HiOutlineLightningBolt },
   { href: "/chatbot", label: "Chatbot", icon: HiOutlineChatAlt2 },
   { href: "/settings", label: "Settings", icon: HiOutlineCog },
 ];
