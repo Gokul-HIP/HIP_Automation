@@ -79,7 +79,8 @@ export function serializeWorkflow({
 
   /** @type {import('../types/workflow').MedicineWorkflowPayload} */
   const payload = {
-    organization_id: orgId,
+    organization_id: orgId != null ? Number(orgId) : null,
+    created_by: createdById,
     name: String(name || "Untitled Workflow"),
     status: normalizeWorkflowStatus(status),
     configuration: {
@@ -94,10 +95,6 @@ export function serializeWorkflow({
       edges: (edges || []).map(serializeEdge),
     },
   };
-
-  if (createdById) {
-    payload.created_by = createdById;
-  }
 
   return payload;
 }

@@ -11,13 +11,12 @@ import {
   saveWorkflow,
   updateWorkflow,
   loadWorkflow,
-  publishWorkflow,
   extractWorkflowId,
 } from "@/services/workflowService";
-import { getStoredOrganizationId, getStoredUserId } from "@/services/authService";
+import { getCurrentUser } from "@/services/authService";
 import { serializeWorkflow } from "@/utils/flowSerializer";
 import { WORKFLOW_STATUS } from "@/utils/workflowStatus";
-import { resolveOrganizationId, resolveUserId } from "@/utils/organization";
+import { normalizeOrganizationId, normalizeUserId } from "@/utils/organization";
 import { useAuth } from "@/context/AuthContext";
 import useFlowToast from "./useFlowToast";
 
@@ -222,11 +221,17 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
   const [busy, setBusy] = useState(null);
 
   const organizationId = useMemo(() => {
-    return resolveOrganizationId(user) ?? getStoredOrganizationId();
+    return (
+      normalizeOrganizationId(user?.organization_id) ??
+      getCurrentUser()?.organization_id ??
+      null
+    );
   }, [user]);
 
   const createdById = useMemo(() => {
-    return resolveUserId(user) ?? getStoredUserId();
+    return (
+      normalizeUserId(user?.id) ?? getCurrentUser()?.id ?? null
+    );
   }, [user]);
 
   const registerViewportApi = useCallback((api) => {
@@ -238,6 +243,43 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
       viewportApiRef.current?.getViewport() ?? { x: 0, y: 0, zoom: 1 }
     );
   }, []);
+
+  const buildWorkflowPayload = useCallback(
+    (status) => {
+      // Always read the latest authenticated user at save/publish time.
+      const currentUser = getCurrentUser() ?? user;
+      const orgId =
+        normalizeOrganizationId(currentUser?.organization_id) ??
+        normalizeOrganizationId(organizationId);
+      const creatorId =
+        normalizeUserId(currentUser?.id) ?? normalizeUserId(createdById);
+
+      if (orgId == null) {
+        const error = new Error("No organization assigned.");
+        error.code = "missing_organization";
+        throw error;
+      }
+
+      return serializeWorkflow({
+        nodes,
+        edges,
+        viewport: getViewport(),
+        name: workflowName,
+        status,
+        organizationId: Number(orgId),
+        createdBy: creatorId,
+      });
+    },
+    [
+      user,
+      organizationId,
+      createdById,
+      nodes,
+      edges,
+      workflowName,
+      getViewport,
+    ]
+  );
 
   useEffect(() => {
     if (!initialWorkflowId) return;
@@ -484,15 +526,7 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
 
     setBusy("save");
     try {
-      const payload = serializeWorkflow({
-        nodes,
-        edges,
-        viewport: getViewport(),
-        name: workflowName,
-        status: WORKFLOW_STATUS.INACTIVE,
-        organizationId,
-        createdBy: createdById,
-      });
+      const payload = buildWorkflowPayload(WORKFLOW_STATUS.INACTIVE);
 
       let response;
       if (workflowId) {
@@ -503,28 +537,18 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
         if (newId != null) setWorkflowId(newId);
       }
 
-      const savedStatus = WORKFLOW_STATUS.INACTIVE;
-      setWorkflowStatus(savedStatus);
+      setWorkflowStatus(WORKFLOW_STATUS.INACTIVE);
       showToast("success", "Workflow Saved");
       return response;
     } catch (error) {
       showToast("error", error?.message || "Failed to save workflow");
-      throw error;
+      if (error?.code !== "missing_organization") {
+        throw error;
+      }
     } finally {
       setBusy(null);
     }
-  }, [
-    busy,
-    nodes,
-    edges,
-    workflowName,
-    workflowStatus,
-    workflowId,
-    organizationId,
-    createdById,
-    getViewport,
-    showToast,
-  ]);
+  }, [busy, buildWorkflowPayload, workflowId, showToast]);
 
   const handlePublish = useCallback(async () => {
     if (busy) return;
@@ -535,15 +559,14 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
 
     setBusy("publish");
     try {
-      const response = await publishWorkflow({
-        id: workflowId,
-        nodes,
-        edges,
-        viewport: getViewport(),
-        name: workflowName,
-        organizationId,
-        createdBy: createdById,
-      });
+      const payload = buildWorkflowPayload(WORKFLOW_STATUS.ACTIVE);
+
+      let response;
+      if (workflowId) {
+        response = await updateWorkflow(workflowId, payload);
+      } else {
+        response = await saveWorkflow(payload);
+      }
 
       const newId = extractWorkflowId(response);
       if (newId != null) setWorkflowId(newId);
@@ -552,21 +575,13 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
       return result;
     } catch (error) {
       showToast("error", error?.message || "Failed to publish workflow");
-      throw error;
+      if (error?.code !== "missing_organization") {
+        throw error;
+      }
     } finally {
       setBusy(null);
     }
-  }, [
-    busy,
-    nodes,
-    edges,
-    workflowName,
-    workflowId,
-    organizationId,
-    createdById,
-    getViewport,
-    showToast,
-  ]);
+  }, [busy, nodes, edges, buildWorkflowPayload, workflowId, showToast]);
 
   const status = useMemo(() => {
     if (locked) return { label: "Locked", tone: "warning" };

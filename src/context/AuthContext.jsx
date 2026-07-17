@@ -13,6 +13,7 @@ import {
   clearAuthSession,
   getStoredToken,
   getStoredUser,
+  getCurrentUser,
   getUserDisplayName,
   loginRequest,
   logoutRequest,
@@ -42,7 +43,7 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async ({ email, password }) => {
     const data = await loginRequest({ email, password });
-    const user = data.user ?? normalizeAuthUser(data.user, data);
+    const user = normalizeAuthUser(data.user, data);
     saveAuthSession({ token: data.token, user });
     setToken(data.token);
     setUser(user);
@@ -72,6 +73,7 @@ export function AuthProvider({ children }) {
       isAuthenticated: Boolean(token),
       login,
       logout,
+      getCurrentUser: () => getCurrentUser(),
     }),
     [token, user, ready, login, logout]
   );
@@ -87,4 +89,4 @@ export function useAuth() {
   return ctx;
 }
 
-export { getUserDisplayName };
+export { getUserDisplayName, getCurrentUser };

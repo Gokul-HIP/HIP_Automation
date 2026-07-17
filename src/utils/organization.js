@@ -17,9 +17,9 @@ export function normalizeOrganizationId(value) {
     const trimmed = value.trim();
     if (!trimmed) return null;
     // Login API sends organization_id as a numeric string, e.g. "2"
-    if (/^\d+$/.test(trimmed)) {
-      const parsed = Number(trimmed);
-      return parsed > 0 ? parsed : null;
+    const parsed = Number(trimmed);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return Math.trunc(parsed);
     }
   }
 
@@ -44,8 +44,6 @@ export function normalizeUserId(value) {
 }
 
 /**
- * Prefer direct fields from the auth user — matches login response shape:
- * { user: { id, organization_id: "2", ... } }
  * @param {Record<string, unknown> | null | undefined} source
  * @returns {number | null}
  */
@@ -100,6 +98,43 @@ export function resolveUserId(source) {
 }
 
 /**
+ * Persist the complete login user object with normalized ids.
+ * @param {Record<string, unknown> | null | undefined} user
+ * @param {Record<string, unknown> | null | undefined} [extra]
+ */
+export function normalizeAuthUser(user, extra = null) {
+  if (!user && !extra) return null;
+
+  const source = {
+    ...(extra && typeof extra === "object" ? extra : {}),
+    ...(user && typeof user === "object" ? user : {}),
+  };
+
+  const organizationId =
+    resolveOrganizationId(source) ??
+    normalizeOrganizationId(source.organization_id) ??
+    normalizeOrganizationId(extra?.organization_id);
+
+  const userId =
+    resolveUserId(source) ??
+    normalizeUserId(source.id) ??
+    normalizeUserId(extra?.id);
+
+  return {
+    id: userId,
+    email: source.email ?? null,
+    first_name: source.first_name ?? source.firstName ?? null,
+    last_name: source.last_name ?? source.lastName ?? null,
+    organization_id: organizationId,
+    // Keep any additional fields from the API
+    ...source,
+    // Force normalized ids last so they cannot be overwritten by string forms
+    ...(userId ? { id: userId } : {}),
+    ...(organizationId != null ? { organization_id: organizationId } : {}),
+  };
+}
+
+/**
  * Flatten common login API response shapes.
  * @param {Record<string, unknown> | null | undefined} data
  */
@@ -113,7 +148,7 @@ export function normalizeLoginResponse(data) {
   );
 
   let token = null;
-  let user = null;
+  let rawUser = null;
 
   for (const layer of layers) {
     token =
@@ -121,58 +156,21 @@ export function normalizeLoginResponse(data) {
       (typeof layer.token === "string" ? layer.token : null) ??
       (typeof layer.access_token === "string" ? layer.access_token : null);
 
-    user =
-      user ??
+    rawUser =
+      rawUser ??
       layer.user ??
       layer.admin ??
       layer.automation_user ??
       null;
   }
 
-  const organizationId =
-    resolveOrganizationId(user) ?? resolveOrganizationId(data);
-  const userId = resolveUserId(user) ?? resolveUserId(data);
-
-  const normalizedUser =
-    user && typeof user === "object"
-      ? normalizeAuthUser(user, {
-          organization_id: organizationId,
-          id: userId,
-        })
-      : null;
+  const user = normalizeAuthUser(rawUser, data);
+  const organizationId = resolveOrganizationId(user) ?? resolveOrganizationId(data);
 
   return {
     ...data,
     token,
-    user: normalizedUser,
+    user,
     organization_id: organizationId,
   };
-}
-
-/**
- * Ensure organization_id + id are present on the stored auth user.
- * @param {Record<string, unknown> | null | undefined} user
- * @param {Record<string, unknown> | null | undefined} [loginPayload]
- */
-export function normalizeAuthUser(user, loginPayload = null) {
-  if (!user && !loginPayload) return null;
-
-  const normalized = user && typeof user === "object" ? { ...user } : {};
-
-  const organizationId =
-    resolveOrganizationId(normalized) ?? resolveOrganizationId(loginPayload);
-
-  const userId =
-    resolveUserId(normalized) ?? resolveUserId(loginPayload);
-
-  if (organizationId != null) {
-    // Store as number for consistent reads
-    normalized.organization_id = organizationId;
-  }
-
-  if (userId) {
-    normalized.id = userId;
-  }
-
-  return normalized;
 }

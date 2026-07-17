@@ -13,6 +13,8 @@ export const AUTH_ORG_KEY = "crm-auth-organization-id";
 export const AUTH_USER_ID_KEY = "crm-auth-user-id";
 export const AUTH_COOKIE = "crm-token";
 export const AUTH_USER_COOKIE = "crm-user";
+export const AUTH_ORG_COOKIE = "crm-organization-id";
+export const AUTH_USER_ID_COOKIE = "crm-user-id";
 
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
@@ -26,6 +28,19 @@ function writeCookie(name, value) {
 function clearCookie(name) {
   if (typeof document === "undefined") return;
   document.cookie = `${name}=; Path=/; Max-Age=0; SameSite=Lax`;
+}
+
+function readCookie(name) {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith(`${name}=`));
+  if (!match) return null;
+  try {
+    return decodeURIComponent(match.slice(name.length + 1)) || null;
+  } catch {
+    return match.slice(name.length + 1) || null;
+  }
 }
 
 export function encodeUserCookie(user) {
@@ -75,6 +90,8 @@ export function setAuthUserCookie(user) {
 export function clearAuthCookie() {
   clearCookie(AUTH_COOKIE);
   clearCookie(AUTH_USER_COOKIE);
+  clearCookie(AUTH_ORG_COOKIE);
+  clearCookie(AUTH_USER_ID_COOKIE);
 }
 
 export function saveAuthSession({ token, user }) {
@@ -87,16 +104,16 @@ export function saveAuthSession({ token, user }) {
   localStorage.setItem(AUTH_TOKEN_KEY, token);
   localStorage.setItem(AUTH_USER_KEY, JSON.stringify(normalizedUser));
 
+  // Never delete an already-stored org/user id here — only logout clears them.
+  // A session refresh with a stale user object must not wipe good values.
   if (organizationId != null) {
     localStorage.setItem(AUTH_ORG_KEY, String(organizationId));
-  } else {
-    localStorage.removeItem(AUTH_ORG_KEY);
+    writeCookie(AUTH_ORG_COOKIE, String(organizationId));
   }
 
   if (userId) {
     localStorage.setItem(AUTH_USER_ID_KEY, String(userId));
-  } else {
-    localStorage.removeItem(AUTH_USER_ID_KEY);
+    writeCookie(AUTH_USER_ID_COOKIE, String(userId));
   }
 
   setAuthCookie(token);
@@ -127,23 +144,54 @@ export function getStoredUser() {
   }
 }
 
-export function getStoredOrganizationId() {
+/**
+ * Returns the complete authenticated user from storage.
+ * Always prefer this when building API payloads.
+ * @returns {{
+ *   id: string | null,
+ *   email: string | null,
+ *   first_name: string | null,
+ *   last_name: string | null,
+ *   organization_id: number | null,
+ * } | null}
+ */
+export function getCurrentUser() {
   if (typeof window === "undefined") return null;
 
-  const fromUser = resolveOrganizationId(getStoredUser());
-  if (fromUser != null) return fromUser;
+  const stored = getStoredUser() ?? decodeUserCookie(readCookie(AUTH_USER_COOKIE));
+  const user = normalizeAuthUser(stored) ?? {};
 
-  const stored = localStorage.getItem(AUTH_ORG_KEY);
-  return resolveOrganizationId({ organization_id: stored });
+  // Fallback chain: user object → localStorage key → cookie
+  const organizationId =
+    resolveOrganizationId(user) ??
+    resolveOrganizationId({ organization_id: localStorage.getItem(AUTH_ORG_KEY) }) ??
+    resolveOrganizationId({ organization_id: readCookie(AUTH_ORG_COOKIE) });
+
+  const userId =
+    resolveUserId(user) ??
+    localStorage.getItem(AUTH_USER_ID_KEY) ??
+    readCookie(AUTH_USER_ID_COOKIE);
+
+  if (!stored && organizationId == null && !userId) return null;
+
+  return {
+    ...user,
+    id: userId ?? null,
+    email: user.email ?? null,
+    first_name: user.first_name ?? null,
+    last_name: user.last_name ?? null,
+    organization_id: organizationId,
+  };
+}
+
+export function getStoredOrganizationId() {
+  if (typeof window === "undefined") return null;
+  return getCurrentUser()?.organization_id ?? null;
 }
 
 export function getStoredUserId() {
   if (typeof window === "undefined") return null;
-
-  const fromUser = resolveUserId(getStoredUser());
-  if (fromUser) return fromUser;
-
-  return localStorage.getItem(AUTH_USER_ID_KEY);
+  return getCurrentUser()?.id ?? null;
 }
 
 export function getUserDisplayName(user) {
@@ -174,15 +222,25 @@ export async function loginRequest({ email, password }) {
     throw new Error(raw?.message || "Login failed: no token received");
   }
 
-  const user = normalizeAuthUser(data.user, data);
+  // Always keep the complete user object from the login API.
+  const user = normalizeAuthUser(data.user ?? raw.user, {
+    ...raw,
+    ...data,
+    organization_id:
+      raw?.user?.organization_id ??
+      data?.user?.organization_id ??
+      data?.organization_id,
+  });
+
+  if (!user) {
+    throw new Error("Login failed: no user received");
+  }
 
   return {
     ...data,
+    token: data.token,
     user,
-    organization_id:
-      resolveOrganizationId(user) ??
-      resolveOrganizationId(data) ??
-      null,
+    organization_id: user.organization_id,
   };
 }
 
