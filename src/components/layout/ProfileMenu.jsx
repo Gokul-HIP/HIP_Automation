@@ -7,10 +7,10 @@ import {
   HiOutlineUser,
   HiOutlineCurrencyDollar,
   HiOutlineChevronRight,
-  HiOutlineBadgeCheck,
 } from "react-icons/hi";
 import Avatar from "@/components/ui/Avatar";
 import { useAuth, getUserDisplayName } from "@/context/AuthContext";
+import styles from "./ProfileMenu.module.css";
 
 export default function ProfileMenu() {
   const { user, logout } = useAuth();
@@ -54,86 +54,88 @@ export default function ProfileMenu() {
   };
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className={styles.root}>
       <button
         type="button"
-        className="flex h-11 w-11 items-center justify-center rounded-full ring-2 ring-indigo-200 transition-shadow hover:ring-indigo-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2"
+        className={styles.trigger}
         aria-label="Profile menu"
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={() => setOpen((prev) => !prev)}
       >
-        <Avatar name={displayName} size="sm" status="online" />
+        <Avatar
+          name={displayName}
+          size="sm"
+          status="online"
+          className={styles.triggerAvatar}
+        />
       </button>
 
       {open && (
-        <div
-          role="menu"
-          className="absolute end-0 z-50 mt-3 w-[300px] overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl"
-        >
-          {/* Header */}
-          <div className="border-b border-gray-100 px-4 py-4">
-            <div className="flex items-center gap-3">
-              <span className="inline-flex rounded-full ring-2 ring-indigo-200">
-                <Avatar name={displayName} size="md" status="online" />
-              </span>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="truncate text-sm font-bold text-gray-900">
-                    {displayName}
-                  </p>
-                  {/* <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-600">
-                    <HiOutlineBadgeCheck className="text-[11px]" aria-hidden="true" />
-                    Pro
-                  </span> */}
-                </div>
-                <p className="truncate text-xs text-gray-400">{email}</p>
+        <div role="menu" className={styles.menu}>
+          <div className={styles.header}>
+            <div className={styles.headerInner}>
+              <Avatar
+                name={displayName}
+                size="md"
+                status="online"
+                className={styles.headerAvatar}
+              />
+              <div className={styles.headerMeta}>
+                <p className={styles.name}>{displayName}</p>
+                {email ? <p className={styles.email}>{email}</p> : null}
               </div>
             </div>
           </div>
 
-          {/* Links */}
-          <div className="p-2">
+          <div className={styles.section}>
             <Link
               href="/settings"
               role="menuitem"
-              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+              className={styles.item}
               onClick={() => setOpen(false)}
             >
-              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+              <span className={`${styles.iconWrap} ${styles.iconWrapProfile}`}>
                 <HiOutlineUser aria-hidden="true" />
               </span>
-              <span className="flex-1">Profile</span>
-              <HiOutlineChevronRight className="text-gray-300" aria-hidden="true" />
+              <span className={styles.itemLabel}>Profile</span>
+              <HiOutlineChevronRight
+                className={styles.itemChevron}
+                aria-hidden="true"
+              />
             </Link>
 
             <Link
               href="/settings"
               role="menuitem"
-              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+              className={styles.item}
               onClick={() => setOpen(false)}
             >
-              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+              <span className={`${styles.iconWrap} ${styles.iconWrapBilling}`}>
                 <HiOutlineCurrencyDollar aria-hidden="true" />
               </span>
-              <span className="flex-1">Subscription</span>
-              <HiOutlineChevronRight className="text-gray-300" aria-hidden="true" />
+              <span className={styles.itemLabel}>Subscription</span>
+              <HiOutlineChevronRight
+                className={styles.itemChevron}
+                aria-hidden="true"
+              />
             </Link>
           </div>
 
-          {/* Logout */}
-          <div className="border-t border-gray-100 p-2">
+          <div className={styles.footer}>
             <button
               type="button"
               role="menuitem"
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-red-500 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className={`${styles.item} ${styles.logout}`}
               onClick={handleLogout}
               disabled={loggingOut}
             >
-              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-500">
+              <span className={`${styles.iconWrap} ${styles.iconWrapLogout}`}>
                 <HiOutlineLogout aria-hidden="true" />
               </span>
-              <span>{loggingOut ? "Signing out…" : "Logout"}</span>
+              <span className={styles.itemLabel}>
+                {loggingOut ? "Signing out…" : "Logout"}
+              </span>
             </button>
           </div>
         </div>
