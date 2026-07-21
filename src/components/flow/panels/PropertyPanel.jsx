@@ -5,6 +5,10 @@ import { HiOutlineX, HiOutlineDuplicate, HiOutlineTrash } from "react-icons/hi";
 import { getWorkflowNode } from "../config/workflowNodes";
 import { getCategoryById } from "../config/workflowCategories";
 import TriggerProperties from "./triggers/TriggerProperties";
+import MessagingProperties from "./messaging/MessagingProperties";
+import ConditionProperties from "./conditions/ConditionProperties";
+import WaitProperties from "./wait/WaitProperties";
+import EndProperties from "./flow/EndProperties";
 import styles from "../styles/flow.module.css";
 
 function PropertyField({ field, value, onChange }) {
@@ -108,29 +112,17 @@ function GenericNodeProperties({ node, def, onChange }) {
           onChange={(key, val) => onChange?.(node.id, { [key]: val })}
         />
       ))}
-
-      <div>
-        <label
-          htmlFor={`prop-status-${node.id}`}
-          className={styles.fieldLabel}
-        >
-          Status
-        </label>
-        <select
-          id={`prop-status-${node.id}`}
-          className={styles.select}
-          value={node.data?.status || "draft"}
-          onChange={(e) => onChange?.(node.id, { status: e.target.value })}
-        >
-          <option value="draft">Draft</option>
-          <option value="ready">Ready</option>
-          <option value="disabled">Disabled</option>
-          <option value="error">Error</option>
-        </select>
-      </div>
     </div>
   );
 }
+
+const PANEL_MAP = {
+  trigger: TriggerProperties,
+  messaging: MessagingProperties,
+  condition: ConditionProperties,
+  wait: WaitProperties,
+  end: EndProperties,
+};
 
 export default function PropertyPanel({
   open,
@@ -143,7 +135,7 @@ export default function PropertyPanel({
   const def = node ? getWorkflowNode(node.data?.nodeType) : null;
   const category = def ? getCategoryById(def.category) : null;
   const isStart = node?.data?.nodeType === "start";
-  const isTriggerPanel = def?.customPanel === "trigger" || def?.isTrigger;
+  const PanelComponent = def?.customPanel ? PANEL_MAP[def.customPanel] : null;
 
   return (
     <AnimatePresence>
@@ -205,8 +197,8 @@ export default function PropertyPanel({
                 </button>
               </div>
 
-              {isTriggerPanel ? (
-                <TriggerProperties
+              {PanelComponent ? (
+                <PanelComponent
                   data={node.data}
                   onChange={(patch) => onChange?.(node.id, patch)}
                 />

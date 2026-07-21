@@ -1,29 +1,20 @@
 import {
-  NOTIFICATION_CHANNEL_OPTIONS,
   EXECUTION_STATUS_OPTIONS,
-  RETRY_INTERVAL_OPTIONS,
   AI_PROVIDER_OPTIONS,
-  DELAY_OPTIONS,
   createBaseTriggerDefaults,
 } from "./shared";
 
-/** Medicine dose window timing */
 export const MEDICINE_TIMING_OPTIONS = [
-  { value: "exact", label: "At Exact Medicine Time" },
-  { value: "before_15", label: "15 Minutes Before" },
-  { value: "before_30", label: "30 Minutes Before" },
-  { value: "before_60", label: "1 Hour Before" },
+  { value: "at_due", label: "At Due Time" },
+  { value: "before_due", label: "Before Due Time" },
 ];
 
 export const APPOINTMENT_TIMING_OPTIONS = [
+  { value: "on_booked", label: "When Booked" },
   { value: "before_24h", label: "24 Hours Before" },
   { value: "before_12h", label: "12 Hours Before" },
   { value: "before_6h", label: "6 Hours Before" },
-  { value: "before_3h", label: "3 Hours Before" },
-  { value: "before_2h", label: "2 Hours Before" },
   { value: "before_1h", label: "1 Hour Before" },
-  { value: "before_30m", label: "30 Minutes Before" },
-  { value: "before_15m", label: "15 Minutes Before" },
   { value: "at_time", label: "At Appointment Time" },
 ];
 
@@ -49,7 +40,6 @@ export const EMERGENCY_THRESHOLD_OPTIONS = [
   { value: "emergency", label: "Emergency" },
 ];
 
-/** Placeholder lists — replace with Laravel API responses later */
 export const FEEDBACK_FORM_OPTIONS = [
   { value: "post_visit", label: "Post-Visit Feedback" },
   { value: "nps", label: "NPS Survey" },
@@ -58,18 +48,14 @@ export const FEEDBACK_FORM_OPTIONS = [
 ];
 
 const COMMON_PATIENT_VARS = [
-  { label: "Patient", variables: ["{{patient_name}}", "{{patient_mobile}}"] },
+  { label: "Patient", variables: ["{{PatientName}}", "{{patient_mobile}}"] },
   { label: "Hospital", variables: ["{{hospital_name}}"] },
 ];
 
-function notificationFields({ timingKey, timingLabel, timingOptions, extras = [] }) {
+/** Event-only trigger fields — no channels, templates, or retry. */
+function eventFields({ timingKey, timingLabel, timingOptions, extras = [] }) {
   return [
-    {
-      key: "label",
-      type: "text",
-      label: "Display Name",
-      required: true,
-    },
+    { key: "label", type: "text", label: "Trigger Name", required: true },
     {
       key: timingKey,
       type: "select",
@@ -77,46 +63,14 @@ function notificationFields({ timingKey, timingLabel, timingOptions, extras = []
       options: timingOptions,
       required: true,
     },
-    {
-      key: "delay",
-      type: "select",
-      label: "Delay",
-      options: DELAY_OPTIONS,
-      hint: "Optional delay after the trigger condition is met.",
-    },
-    {
-      key: "channels",
-      type: "channels",
-      label: "Notification Channels",
-      options: NOTIFICATION_CHANNEL_OPTIONS,
-      required: true,
-    },
-    { key: "retry", type: "retry" },
     ...extras,
-    {
-      key: "messageTemplate",
-      type: "template",
-      label: "Message Template",
-      required: true,
-    },
-    {
-      key: "executionStatus",
-      type: "select",
-      label: "Execution Status",
-      options: EXECUTION_STATUS_OPTIONS,
-      required: true,
-    },
   ];
 }
 
-/**
- * Declarative schemas for all Trigger category nodes.
- * Dynamic option lists can be swapped with API data later without UI rewrites.
- */
 export const TRIGGER_SCHEMAS = {
   medicineReminder: {
     description:
-      "Automatically sends reminders for medicines contained in a patient's prescription.",
+      "Starts when a medicine reminder is due. Connect messaging nodes to notify the patient.",
     laravelContext: [
       "context.patient",
       "context.prescription",
@@ -126,7 +80,7 @@ export const TRIGGER_SCHEMAS = {
     ],
     contextCard: {
       title: "Prescription Data",
-      note: "Prescription details are loaded automatically by Laravel. Configure reminder behavior only.",
+      note: "Prescription details are loaded automatically by Laravel.",
       rows: [
         { label: "Medicine", key: "medicine_name" },
         { label: "Dosage", key: "dosage" },
@@ -142,50 +96,38 @@ export const TRIGGER_SCHEMAS = {
       frequency: "Morning • Afternoon • Night",
       doctor_name: "Dr. Rajesh",
       hospital_name: "HIP Hospital",
-      time: "08:00 AM",
-      date: "15 Jul 2026",
     },
-    variableGroups: [
-      ...COMMON_PATIENT_VARS,
-      {
-        label: "Medicine",
-        variables: ["{{medicine_name}}", "{{dosage}}", "{{frequency}}", "{{time}}", "{{date}}"],
-      },
-      { label: "Doctor", variables: ["{{doctor_name}}"] },
-    ],
-    fields: notificationFields({
+    fields: eventFields({
       timingKey: "triggerTiming",
-      timingLabel: "Trigger Timing",
+      timingLabel: "Reminder Timing",
       timingOptions: MEDICINE_TIMING_OPTIONS,
+      extras: [
+        {
+          key: "minutesBefore",
+          type: "number",
+          label: "Minutes Before",
+          min: 5,
+          max: 120,
+          hint: "Used when Reminder Timing is Before Due Time.",
+        },
+      ],
     }),
     defaults: createBaseTriggerDefaults({
-      label: "Medicine Reminder",
-      triggerTiming: "exact",
-      channels: ["whatsapp", "push"],
-      messageTemplate:
-        "Hi {{patient_name}}, reminder from {{hospital_name}} to take {{medicine_name}} ({{dosage}}) — {{frequency}}. Time: {{time}} on {{date}}.",
+      label: "Medicine Reminder Due",
+      triggerTiming: "at_due",
+      minutesBefore: 15,
     }),
   },
 
   appointmentReminder: {
-    description:
-      "Automatically sends reminders before scheduled patient appointments.",
-    laravelContext: [
-      "context.patient",
-      "context.appointment",
-      "context.doctor",
-      "context.department",
-      "context.branch",
-      "context.hospital",
-    ],
+    description: "Starts relative to a scheduled appointment.",
+    laravelContext: ["context.patient", "context.appointment", "context.doctor", "context.hospital"],
     contextCard: {
       title: "Appointment Context",
       note: "Appointment details come from Laravel when the workflow runs.",
       rows: [
         { label: "Patient", key: "patient_name" },
         { label: "Doctor", key: "doctor_name" },
-        { label: "Department", key: "department" },
-        { label: "Hospital", key: "hospital_name" },
         { label: "Date", key: "appointment_date" },
         { label: "Time", key: "appointment_time" },
       ],
@@ -193,178 +135,180 @@ export const TRIGGER_SCHEMAS = {
     sampleContext: {
       patient_name: "John Doe",
       doctor_name: "Dr Rajesh",
-      department: "Cardiology",
-      hospital_name: "HIP Hospital",
       appointment_date: "Tomorrow",
       appointment_time: "10:30 AM",
-      branch_name: "Main Campus",
     },
-    variableGroups: [
-      ...COMMON_PATIENT_VARS,
-      { label: "Doctor", variables: ["{{doctor_name}}"] },
-      { label: "Department", variables: ["{{department}}"] },
-      {
-        label: "Appointment",
-        variables: ["{{appointment_date}}", "{{appointment_time}}", "{{branch_name}}"],
-      },
-    ],
-    fields: notificationFields({
+    fields: eventFields({
       timingKey: "triggerTiming",
-      timingLabel: "Reminder Timing",
+      timingLabel: "Trigger Timing",
       timingOptions: APPOINTMENT_TIMING_OPTIONS,
     }),
     defaults: createBaseTriggerDefaults({
       label: "Appointment Reminder",
       triggerTiming: "before_24h",
-      channels: ["whatsapp", "push", "email"],
-      messageTemplate: `Hello {{patient_name}}
+    }),
+  },
 
-This is a reminder that you have an appointment.
+  appointmentBooked: {
+    description: "Starts when a patient books an appointment.",
+    fields: eventFields({
+      timingKey: "triggerTiming",
+      timingLabel: "Trigger Timing",
+      timingOptions: [{ value: "on_booked", label: "When Booked" }],
+    }),
+    defaults: createBaseTriggerDefaults({
+      label: "Appointment Booked",
+      triggerTiming: "on_booked",
+    }),
+  },
 
-Doctor: {{doctor_name}}
-Department: {{department}}
-Hospital: {{hospital_name}}
-Date: {{appointment_date}}
-Time: {{appointment_time}}
-Location: {{branch_name}}
+  appointmentCancelled: {
+    description: "Starts when an appointment is cancelled.",
+    fields: eventFields({
+      timingKey: "triggerTiming",
+      timingLabel: "Trigger Timing",
+      timingOptions: [{ value: "on_cancelled", label: "When Cancelled" }],
+    }),
+    defaults: createBaseTriggerDefaults({
+      label: "Appointment Cancelled",
+      triggerTiming: "on_cancelled",
+    }),
+  },
 
-Please arrive 15 minutes early.`,
+  appointmentMissed: {
+    description: "Starts when a patient misses an appointment.",
+    fields: eventFields({
+      timingKey: "triggerTiming",
+      timingLabel: "Trigger Timing",
+      timingOptions: [{ value: "on_missed", label: "When Missed" }],
+    }),
+    defaults: createBaseTriggerDefaults({
+      label: "Appointment Missed",
+      triggerTiming: "on_missed",
+    }),
+  },
+
+  patientRegistered: {
+    description: "Starts when a new patient is registered.",
+    fields: eventFields({
+      timingKey: "triggerTiming",
+      timingLabel: "Trigger Timing",
+      timingOptions: [{ value: "on_registered", label: "When Registered" }],
+    }),
+    defaults: createBaseTriggerDefaults({
+      label: "Patient Registered",
+      triggerTiming: "on_registered",
+    }),
+  },
+
+  onChatMessage: {
+    description: "Starts when a patient sends a chat message.",
+    fields: eventFields({
+      timingKey: "triggerTiming",
+      timingLabel: "Trigger Timing",
+      timingOptions: [{ value: "on_message", label: "When Message Received" }],
+    }),
+    defaults: createBaseTriggerDefaults({
+      label: "On Chat Message",
+      triggerTiming: "on_message",
+    }),
+  },
+
+  prescriptionAdded: {
+    description: "Starts when a prescription is added or updated.",
+    fields: eventFields({
+      timingKey: "triggerTiming",
+      timingLabel: "Trigger Timing",
+      timingOptions: [
+        { value: "on_added", label: "When Prescription Added" },
+        { value: "on_updated", label: "When Prescription Updated" },
+      ],
+      extras: [
+        {
+          key: "includePharmacyLink",
+          type: "boolean",
+          label: "Include Pharmacy Link in Context",
+          description: "Expose pharmacy link to downstream messaging nodes.",
+        },
+      ],
+    }),
+    defaults: createBaseTriggerDefaults({
+      label: "Prescription Added",
+      triggerTiming: "on_added",
+      includePharmacyLink: true,
     }),
   },
 
   labReportNotification: {
-    description:
-      "Notifies patients when lab reports are ready. Report details come from Laravel.",
-    laravelContext: [
-      "context.patient",
-      "context.lab_report",
-      "context.doctor",
-      "context.hospital",
-    ],
+    description: "Starts when a lab report becomes ready.",
     contextCard: {
       title: "Lab Report Context",
-      note: "Report details are injected by Laravel — configure notification behavior only.",
+      note: "Report details are injected by Laravel.",
       rows: [
         { label: "Patient", key: "patient_name" },
         { label: "Report", key: "report_name" },
         { label: "Status", key: "report_status" },
-        { label: "Doctor", key: "doctor_name" },
       ],
     },
-    sampleContext: {
-      patient_name: "John Doe",
-      report_name: "Complete Blood Count",
-      report_status: "Ready",
-      doctor_name: "Dr Rajesh",
-      hospital_name: "HIP Hospital",
-      report_date: "15 Jul 2026",
-    },
-    variableGroups: [
-      ...COMMON_PATIENT_VARS,
-      {
-        label: "Report",
-        variables: ["{{report_name}}", "{{report_status}}", "{{report_date}}"],
-      },
-      { label: "Doctor", variables: ["{{doctor_name}}"] },
-    ],
-    fields: notificationFields({
+    fields: eventFields({
       timingKey: "triggerTiming",
       timingLabel: "Trigger Timing",
       timingOptions: [
         { value: "on_ready", label: "When Report Is Ready" },
-        { value: "after_ready", label: "After Report Is Ready (use Delay)" },
+        { value: "on_ordered", label: "When Lab Test Ordered" },
       ],
     }),
     defaults: createBaseTriggerDefaults({
-      label: "Lab Report Notification",
+      label: "Lab Report Ready",
       triggerTiming: "on_ready",
-      messageTemplate:
-        "Hi {{patient_name}}, your lab report ({{report_name}}) is {{report_status}} at {{hospital_name}}. Date: {{report_date}}.",
+    }),
+  },
+
+  labTestOrdered: {
+    description: "Starts when a lab test is ordered.",
+    fields: eventFields({
+      timingKey: "triggerTiming",
+      timingLabel: "Trigger Timing",
+      timingOptions: [{ value: "on_ordered", label: "When Ordered" }],
+    }),
+    defaults: createBaseTriggerDefaults({
+      label: "Lab Test Ordered",
+      triggerTiming: "on_ordered",
     }),
   },
 
   scanReportNotification: {
-    description:
-      "Notifies patients when scan / imaging reports are published. Report details come from Laravel.",
-    laravelContext: [
-      "context.patient",
-      "context.scan_report",
-      "context.doctor",
-      "context.hospital",
-    ],
-    contextCard: {
-      title: "Scan Report Context",
-      note: "Scan report details are injected by Laravel — configure notification behavior only.",
-      rows: [
-        { label: "Patient", key: "patient_name" },
-        { label: "Scan", key: "scan_name" },
-        { label: "Status", key: "report_status" },
-        { label: "Doctor", key: "doctor_name" },
-      ],
-    },
-    sampleContext: {
-      patient_name: "John Doe",
-      scan_name: "Chest X-Ray",
-      report_status: "Ready",
-      doctor_name: "Dr Rajesh",
-      hospital_name: "HIP Hospital",
-      report_date: "15 Jul 2026",
-    },
-    variableGroups: [
-      ...COMMON_PATIENT_VARS,
-      {
-        label: "Scan",
-        variables: ["{{scan_name}}", "{{report_status}}", "{{report_date}}"],
-      },
-      { label: "Doctor", variables: ["{{doctor_name}}"] },
-    ],
-    fields: notificationFields({
+    description: "Starts when a scan / imaging report is published.",
+    fields: eventFields({
+      timingKey: "triggerTiming",
+      timingLabel: "Trigger Timing",
+      timingOptions: [{ value: "on_ready", label: "When Scan Report Is Ready" }],
+    }),
+    defaults: createBaseTriggerDefaults({
+      label: "Scan Report Ready",
+      triggerTiming: "on_ready",
+    }),
+  },
+
+  pharmacyRefillDue: {
+    description: "Starts when a pharmacy refill is due.",
+    fields: eventFields({
       timingKey: "triggerTiming",
       timingLabel: "Trigger Timing",
       timingOptions: [
-        { value: "on_ready", label: "When Scan Report Is Ready" },
-        { value: "after_ready", label: "After Report Is Ready (use Delay)" },
+        { value: "on_due", label: "When Refill Is Due" },
+        { value: "before_due", label: "Before Refill Due" },
       ],
     }),
     defaults: createBaseTriggerDefaults({
-      label: "Scan Report Notification",
-      triggerTiming: "on_ready",
-      messageTemplate:
-        "Hi {{patient_name}}, your scan report ({{scan_name}}) is {{report_status}} at {{hospital_name}}. Date: {{report_date}}.",
+      label: "Pharmacy Refill Due",
+      triggerTiming: "on_due",
     }),
   },
 
   doctorFollowUp: {
-    description:
-      "Schedules post-consultation follow-up reminders. Doctor and patient information come from Laravel.",
-    laravelContext: [
-      "context.patient",
-      "context.doctor",
-      "context.visit",
-      "context.hospital",
-    ],
-    contextCard: {
-      title: "Follow-up Context",
-      note: "Visit, doctor, and patient data are provided by Laravel.",
-      rows: [
-        { label: "Patient", key: "patient_name" },
-        { label: "Doctor", key: "doctor_name" },
-        { label: "Visit Date", key: "visit_date" },
-        { label: "Hospital", key: "hospital_name" },
-      ],
-    },
-    sampleContext: {
-      patient_name: "John Doe",
-      doctor_name: "Dr Rajesh",
-      visit_date: "10 Jul 2026",
-      hospital_name: "HIP Hospital",
-    },
-    variableGroups: [
-      ...COMMON_PATIENT_VARS,
-      { label: "Doctor", variables: ["{{doctor_name}}"] },
-      { label: "Visit", variables: ["{{visit_date}}"] },
-    ],
-    fields: notificationFields({
+    description: "Starts after a consultation for follow-up workflows.",
+    fields: eventFields({
       timingKey: "triggerTiming",
       timingLabel: "Follow-up Timing",
       timingOptions: FOLLOWUP_TIMING_OPTIONS,
@@ -372,251 +316,143 @@ Please arrive 15 minutes early.`,
     defaults: createBaseTriggerDefaults({
       label: "Doctor Follow-up",
       triggerTiming: "7d",
-      messageTemplate:
-        "Hi {{patient_name}}, this is a follow-up from {{doctor_name}} at {{hospital_name}} regarding your visit on {{visit_date}}.",
     }),
   },
 
   healthPackageReminder: {
-    description:
-      "Sends reminders before health package expiry. Package details come from Laravel.",
-    laravelContext: [
-      "context.patient",
-      "context.health_package",
-      "context.hospital",
-    ],
-    contextCard: {
-      title: "Health Package Context",
-      note: "Package details are loaded by Laravel — configure expiry reminder timing only.",
-      rows: [
-        { label: "Patient", key: "patient_name" },
-        { label: "Package", key: "package_name" },
-        { label: "Expiry", key: "expiry_date" },
-        { label: "Hospital", key: "hospital_name" },
-      ],
-    },
-    sampleContext: {
-      patient_name: "John Doe",
-      package_name: "Executive Health Check",
-      expiry_date: "30 Jul 2026",
-      hospital_name: "HIP Hospital",
-    },
-    variableGroups: [
-      ...COMMON_PATIENT_VARS,
-      {
-        label: "Package",
-        variables: ["{{package_name}}", "{{expiry_date}}"],
-      },
-    ],
-    fields: notificationFields({
+    description: "Starts before a health package expires.",
+    fields: eventFields({
       timingKey: "triggerTiming",
       timingLabel: "Expiry Reminder Timing",
       timingOptions: PACKAGE_EXPIRY_TIMING_OPTIONS,
     }),
     defaults: createBaseTriggerDefaults({
-      label: "Health Package Reminder",
+      label: "Membership Expiry",
       triggerTiming: "3d",
-      messageTemplate:
-        "Hi {{patient_name}}, your {{package_name}} package expires on {{expiry_date}}. Book at {{hospital_name}}.",
     }),
   },
 
   prescriptionNotification: {
-    description:
-      "Notifies patients when a prescription is issued or updated. Prescription data comes from Laravel.",
-    laravelContext: [
-      "context.patient",
-      "context.prescription",
-      "context.doctor",
-      "context.hospital",
-    ],
-    contextCard: {
-      title: "Prescription Context",
-      note: "Prescription contents come from Laravel. Configure send timing and optional pharmacy link.",
-      rows: [
-        { label: "Patient", key: "patient_name" },
-        { label: "Doctor", key: "doctor_name" },
-        { label: "Rx ID", key: "prescription_id" },
-        { label: "Hospital", key: "hospital_name" },
-      ],
-    },
-    sampleContext: {
-      patient_name: "John Doe",
-      doctor_name: "Dr Rajesh",
-      prescription_id: "RX-8821",
-      hospital_name: "HIP Hospital",
-      pharmacy_link: "https://pharmacy.example.com/rx/8821",
-    },
-    variableGroups: [
-      ...COMMON_PATIENT_VARS,
-      { label: "Doctor", variables: ["{{doctor_name}}"] },
-      {
-        label: "Prescription",
-        variables: ["{{prescription_id}}", "{{pharmacy_link}}"],
-      },
-    ],
-    fields: notificationFields({
+    description: "Legacy alias for prescription events.",
+    fields: eventFields({
       timingKey: "triggerTiming",
-      timingLabel: "Notification Timing",
+      timingLabel: "Trigger Timing",
       timingOptions: [
         { value: "on_issued", label: "When Prescription Is Issued" },
         { value: "on_updated", label: "When Prescription Is Updated" },
-        { value: "delayed", label: "After Issue (use Delay)" },
-      ],
-      extras: [
-        {
-          key: "includePharmacyLink",
-          type: "boolean",
-          label: "Include Pharmacy Link",
-          description: "Append optional pharmacy fulfillment link when available.",
-        },
       ],
     }),
     defaults: createBaseTriggerDefaults({
       label: "Prescription Notification",
       triggerTiming: "on_issued",
-      includePharmacyLink: true,
-      messageTemplate:
-        "Hi {{patient_name}}, your prescription {{prescription_id}} from {{doctor_name}} is ready at {{hospital_name}}. Pharmacy: {{pharmacy_link}}",
     }),
   },
 
-  chatbotTrigger: {
-    description:
-      "Starts a conversational patient journey. Conversation context is managed by the chatbot runtime.",
-    laravelContext: ["context.patient", "context.session", "context.hospital"],
-    contextCard: {
-      title: "Chat Session Context",
-      note: "Patient and session data are provided by Laravel / chatbot runtime.",
-      rows: [
-        { label: "Patient", key: "patient_name" },
-        { label: "Hospital", key: "hospital_name" },
-        { label: "Channel", key: "channel" },
+  birthday: {
+    description: "Starts on a patient's birthday.",
+    fields: eventFields({
+      timingKey: "triggerTiming",
+      timingLabel: "Trigger Timing",
+      timingOptions: [
+        { value: "on_day", label: "On Birthday" },
+        { value: "before_1d", label: "1 Day Before" },
       ],
-    },
-    sampleContext: {
-      patient_name: "John Doe",
-      hospital_name: "HIP Hospital",
-      channel: "WhatsApp",
-    },
+    }),
+    defaults: createBaseTriggerDefaults({ label: "Birthday", triggerTiming: "on_day" }),
+  },
+
+  anniversary: {
+    description: "Starts on a patient relationship anniversary.",
+    fields: eventFields({
+      timingKey: "triggerTiming",
+      timingLabel: "Trigger Timing",
+      timingOptions: [{ value: "on_day", label: "On Anniversary" }],
+    }),
+    defaults: createBaseTriggerDefaults({ label: "Anniversary", triggerTiming: "on_day" }),
+  },
+
+  membershipExpiry: {
+    description: "Starts before membership expires.",
+    fields: eventFields({
+      timingKey: "triggerTiming",
+      timingLabel: "Expiry Timing",
+      timingOptions: PACKAGE_EXPIRY_TIMING_OPTIONS,
+    }),
+    defaults: createBaseTriggerDefaults({ label: "Membership Expiry", triggerTiming: "7d" }),
+  },
+
+  rewardUpdated: {
+    description: "Starts when loyalty rewards are updated.",
+    fields: eventFields({
+      timingKey: "triggerTiming",
+      timingLabel: "Trigger Timing",
+      timingOptions: [{ value: "on_updated", label: "When Reward Updated" }],
+    }),
+    defaults: createBaseTriggerDefaults({ label: "Reward Updated", triggerTiming: "on_updated" }),
+  },
+
+  paymentReceived: {
+    description: "Starts when a payment is received.",
+    fields: eventFields({
+      timingKey: "triggerTiming",
+      timingLabel: "Trigger Timing",
+      timingOptions: [{ value: "on_received", label: "When Payment Received" }],
+    }),
+    defaults: createBaseTriggerDefaults({ label: "Payment Received", triggerTiming: "on_received" }),
+  },
+
+  webhookEvent: {
+    description: "Starts when an inbound webhook event is received.",
+    fields: [
+      { key: "label", type: "text", label: "Trigger Name", required: true },
+      { key: "eventName", type: "text", label: "Event Name", required: true, placeholder: "patient.created" },
+    ],
+    defaults: createBaseTriggerDefaults({ label: "Webhook Event", eventName: "" }),
+  },
+
+  apiEvent: {
+    description: "Starts when an API event is emitted from the hospital system.",
+    fields: [
+      { key: "label", type: "text", label: "Trigger Name", required: true },
+      { key: "eventName", type: "text", label: "API Event", required: true },
+    ],
+    defaults: createBaseTriggerDefaults({ label: "API Event", eventName: "" }),
+  },
+
+  scheduledEvent: {
+    description: "Starts on a cron or scheduled timetable.",
+    fields: [
+      { key: "label", type: "text", label: "Trigger Name", required: true },
+      { key: "cron", type: "text", label: "Cron Schedule", required: true, placeholder: "0 9 * * *" },
+    ],
+    defaults: createBaseTriggerDefaults({ label: "Scheduled Event", cron: "0 9 * * *" }),
+  },
+
+  chatbotTrigger: {
+    description: "Starts a conversational patient journey.",
     variableGroups: COMMON_PATIENT_VARS,
     fields: [
-      { key: "label", type: "text", label: "Display Name", required: true },
-      {
-        key: "aiProvider",
-        type: "select",
-        label: "AI Provider",
-        options: AI_PROVIDER_OPTIONS,
-        required: true,
-        dynamic: true,
-      },
-      {
-        key: "sessionTimeoutMins",
-        type: "number",
-        label: "Session Timeout (minutes)",
-        min: 5,
-        max: 240,
-        required: true,
-      },
-      {
-        key: "welcomeMessage",
-        type: "textarea",
-        label: "Welcome Message",
-        required: true,
-        placeholder: "Hi {{patient_name}}, how can we help you today?",
-      },
-      {
-        key: "humanHandoff",
-        type: "boolean",
-        label: "Human Handoff",
-        description: "Allow escalation to a live hospital agent.",
-      },
-      {
-        key: "executionStatus",
-        type: "select",
-        label: "Execution Status",
-        options: EXECUTION_STATUS_OPTIONS,
-        required: true,
-      },
+      { key: "label", type: "text", label: "Trigger Name", required: true },
+      { key: "aiProvider", type: "select", label: "AI Provider", options: AI_PROVIDER_OPTIONS, required: true },
+      { key: "sessionTimeoutMins", type: "number", label: "Session Timeout (minutes)", min: 5, max: 240, required: true },
+      { key: "humanHandoff", type: "boolean", label: "Human Handoff", description: "Allow escalation to a live agent." },
     ],
     defaults: createBaseTriggerDefaults({
       label: "Chatbot",
       aiProvider: "openai",
       sessionTimeoutMins: 30,
-      welcomeMessage:
-        "Hi {{patient_name}}, welcome to {{hospital_name}}. How can we help you today?",
       humanHandoff: true,
-      channels: null,
-      messageTemplate: null,
-      retryInterval: null,
-      maxRetryCount: null,
-      repeatReminder: null,
-      delay: null,
     }),
   },
 
   aiSymptomsChecker: {
-    description:
-      "Runs AI-assisted symptom assessment. Triage thresholds and escalation are configured here; clinical context comes from Laravel.",
-    laravelContext: [
-      "context.patient",
-      "context.symptoms",
-      "context.hospital",
-    ],
-    contextCard: {
-      title: "Symptoms Session Context",
-      note: "Symptom payload and patient data are injected by Laravel at runtime.",
-      rows: [
-        { label: "Patient", key: "patient_name" },
-        { label: "Chief Complaint", key: "chief_complaint" },
-        { label: "Hospital", key: "hospital_name" },
-      ],
-    },
-    sampleContext: {
-      patient_name: "John Doe",
-      chief_complaint: "Chest discomfort",
-      hospital_name: "HIP Hospital",
-    },
-    variableGroups: [
-      ...COMMON_PATIENT_VARS,
-      { label: "Symptoms", variables: ["{{chief_complaint}}"] },
-    ],
+    description: "Starts AI-assisted symptom assessment.",
     fields: [
-      { key: "label", type: "text", label: "Display Name", required: true },
-      {
-        key: "aiProvider",
-        type: "select",
-        label: "AI Provider",
-        options: AI_PROVIDER_OPTIONS,
-        required: true,
-        dynamic: true,
-      },
-      {
-        key: "emergencyThreshold",
-        type: "select",
-        label: "Emergency Threshold",
-        options: EMERGENCY_THRESHOLD_OPTIONS,
-        required: true,
-      },
-      {
-        key: "appointmentEscalation",
-        type: "boolean",
-        label: "Appointment Escalation",
-        description: "Offer appointment booking when acuity is above threshold.",
-      },
-      {
-        key: "generateSummary",
-        type: "boolean",
-        label: "Summary Generation",
-        description: "Generate a clinician-ready summary for the care team.",
-      },
-      {
-        key: "executionStatus",
-        type: "select",
-        label: "Execution Status",
-        options: EXECUTION_STATUS_OPTIONS,
-        required: true,
-      },
+      { key: "label", type: "text", label: "Trigger Name", required: true },
+      { key: "aiProvider", type: "select", label: "AI Provider", options: AI_PROVIDER_OPTIONS, required: true },
+      { key: "emergencyThreshold", type: "select", label: "Emergency Threshold", options: EMERGENCY_THRESHOLD_OPTIONS, required: true },
+      { key: "appointmentEscalation", type: "boolean", label: "Appointment Escalation" },
+      { key: "generateSummary", type: "boolean", label: "Summary Generation" },
     ],
     defaults: createBaseTriggerDefaults({
       label: "AI Symptoms Checker",
@@ -624,168 +460,27 @@ Please arrive 15 minutes early.`,
       emergencyThreshold: "high",
       appointmentEscalation: true,
       generateSummary: true,
-      channels: null,
-      messageTemplate: null,
-      retryInterval: null,
-      maxRetryCount: null,
-      repeatReminder: null,
-      delay: null,
     }),
   },
 
   reviewReminder: {
-    description:
-      "Asks patients to leave a review after care. Delay, URL, channels, and template are configured here.",
-    laravelContext: ["context.patient", "context.visit", "context.hospital"],
-    contextCard: {
-      title: "Review Context",
-      note: "Visit and patient details come from Laravel.",
-      rows: [
-        { label: "Patient", key: "patient_name" },
-        { label: "Visit", key: "visit_date" },
-        { label: "Hospital", key: "hospital_name" },
-      ],
-    },
-    sampleContext: {
-      patient_name: "John Doe",
-      visit_date: "10 Jul 2026",
-      hospital_name: "HIP Hospital",
-      review_url: "https://g.page/r/example",
-    },
-    variableGroups: [
-      ...COMMON_PATIENT_VARS,
-      { label: "Review", variables: ["{{review_url}}", "{{visit_date}}"] },
-    ],
+    description: "Starts after a visit to collect a review.",
     fields: [
-      { key: "label", type: "text", label: "Display Name", required: true },
-      {
-        key: "delay",
-        type: "select",
-        label: "Reminder Delay",
-        options: DELAY_OPTIONS,
-        required: true,
-      },
-      {
-        key: "reviewUrl",
-        type: "text",
-        label: "Review URL",
-        required: true,
-        placeholder: "https://…",
-        dynamic: true,
-        hint: "Can be overridden by Laravel context.review_url when available.",
-      },
-      {
-        key: "channels",
-        type: "channels",
-        label: "Notification Channels",
-        options: NOTIFICATION_CHANNEL_OPTIONS,
-        required: true,
-      },
-      { key: "retry", type: "retry" },
-      {
-        key: "messageTemplate",
-        type: "template",
-        label: "Message Template",
-        required: true,
-      },
-      {
-        key: "executionStatus",
-        type: "select",
-        label: "Execution Status",
-        options: EXECUTION_STATUS_OPTIONS,
-        required: true,
-      },
+      { key: "label", type: "text", label: "Trigger Name", required: true },
+      { key: "daysAfterVisit", type: "number", label: "Days After Visit", min: 0, required: true },
+      { key: "reviewUrl", type: "text", label: "Review URL", hint: "Can be overridden by Laravel context." },
     ],
-    defaults: createBaseTriggerDefaults({
-      label: "Review Reminder",
-      delay: "2d",
-      reviewUrl: "",
-      channels: ["whatsapp", "sms"],
-      messageTemplate:
-        "Hi {{patient_name}}, thanks for visiting {{hospital_name}} on {{visit_date}}. Please leave a review: {{review_url}}",
-    }),
+    defaults: createBaseTriggerDefaults({ label: "Review Reminder", daysAfterVisit: 2, reviewUrl: "" }),
   },
 
   patientFeedback: {
-    description:
-      "Collects structured patient feedback after a visit. Form catalog can be loaded from Laravel later.",
-    laravelContext: [
-      "context.patient",
-      "context.visit",
-      "context.feedback_form",
-      "context.hospital",
-    ],
-    contextCard: {
-      title: "Feedback Context",
-      note: "Patient and visit data come from Laravel. Form list can be populated via API.",
-      rows: [
-        { label: "Patient", key: "patient_name" },
-        { label: "Visit", key: "visit_date" },
-        { label: "Form", key: "form_name" },
-      ],
-    },
-    sampleContext: {
-      patient_name: "John Doe",
-      visit_date: "10 Jul 2026",
-      form_name: "Post-Visit Feedback",
-      hospital_name: "HIP Hospital",
-      feedback_link: "https://forms.example.com/feedback/1",
-    },
-    variableGroups: [
-      ...COMMON_PATIENT_VARS,
-      {
-        label: "Feedback",
-        variables: ["{{form_name}}", "{{feedback_link}}", "{{visit_date}}"],
-      },
-    ],
+    description: "Starts to collect structured patient feedback.",
     fields: [
-      { key: "label", type: "text", label: "Display Name", required: true },
-      {
-        key: "feedbackForm",
-        type: "select",
-        label: "Feedback Form",
-        options: FEEDBACK_FORM_OPTIONS,
-        required: true,
-        dynamic: true,
-        hint: "Options can be loaded from Laravel later.",
-      },
-      {
-        key: "delay",
-        type: "select",
-        label: "Delay",
-        options: DELAY_OPTIONS,
-        required: true,
-      },
-      {
-        key: "channels",
-        type: "channels",
-        label: "Delivery Channels",
-        options: NOTIFICATION_CHANNEL_OPTIONS,
-        required: true,
-      },
-      { key: "retry", type: "retry" },
-      {
-        key: "messageTemplate",
-        type: "template",
-        label: "Message Template",
-        required: true,
-      },
-      {
-        key: "executionStatus",
-        type: "select",
-        label: "Execution Status",
-        options: EXECUTION_STATUS_OPTIONS,
-        required: true,
-      },
+      { key: "label", type: "text", label: "Trigger Name", required: true },
+      { key: "feedbackForm", type: "select", label: "Feedback Form", options: FEEDBACK_FORM_OPTIONS, required: true },
+      { key: "daysAfterVisit", type: "number", label: "Days After Visit", min: 0, required: true },
     ],
-    defaults: createBaseTriggerDefaults({
-      label: "Patient Feedback",
-      feedbackForm: "post_visit",
-      delay: "1d",
-      channels: ["whatsapp", "email", "in_app"],
-      messageTemplate:
-        "Hi {{patient_name}}, please share feedback about your visit on {{visit_date}}: {{feedback_link}}",
-    }),
+    defaults: createBaseTriggerDefaults({ label: "Patient Feedback", feedbackForm: "post_visit", daysAfterVisit: 1 }),
   },
 };
 
@@ -798,5 +493,3 @@ export function buildTriggerDefaults(type) {
   if (!schema) return null;
   return structuredClone(schema.defaults);
 }
-
-export { RETRY_INTERVAL_OPTIONS };

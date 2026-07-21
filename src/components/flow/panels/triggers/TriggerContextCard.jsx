@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { HiOutlineChevronDown, HiOutlineInformationCircle } from "react-icons/hi";
-import styles from "../../styles/medicineReminder.module.css";
+import styles from "../../styles/propertyPanel.module.css";
 
 export default function TriggerContextCard({ schema }) {
   const [open, setOpen] = useState(false);

@@ -18,6 +18,7 @@ export default function FlowBuilder({ initialWorkflowId = null }) {
       <FlowToolbar
         workflowName={flow.workflowName}
         onWorkflowNameChange={flow.setWorkflowName}
+        workflowStatus={flow.workflowStatus}
         zoom={flow.zoom}
         status={flow.status}
         busy={flow.busy}

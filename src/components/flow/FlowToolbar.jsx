@@ -16,6 +16,7 @@ import styles from "./styles/flow.module.css";
 export default function FlowToolbar({
   workflowName,
   onWorkflowNameChange,
+  workflowStatus,
   zoom,
   status,
   busy,
@@ -70,6 +71,12 @@ export default function FlowToolbar({
           <HiOutlineStatusOnline aria-hidden="true" />
           {status.label}
         </span>
+
+        {workflowStatus ? (
+          <span className={styles.statusPill} data-tone="info">
+            {workflowStatus === "active" ? "Published" : "Draft"}
+          </span>
+        ) : null}
       </div>
 
       <div className={styles.toolbarEnd}>

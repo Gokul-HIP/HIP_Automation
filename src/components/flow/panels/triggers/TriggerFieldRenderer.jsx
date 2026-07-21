@@ -2,12 +2,9 @@
 
 import TextField from "../fields/TextField";
 import SelectField from "../fields/SelectField";
-import MultiSelectField from "../fields/MultiSelectField";
 import ToggleField from "../fields/ToggleField";
 import NumberField from "../fields/NumberField";
-import TriggerMessageTemplate from "./TriggerMessageTemplate";
-import TriggerRetryPolicy from "./TriggerRetryPolicy";
-import styles from "../../styles/medicineReminder.module.css";
+import styles from "../../styles/propertyPanel.module.css";
 
 /**
  * Renders a single schema field. Option lists remain declarative so
@@ -21,37 +18,6 @@ export default function TriggerFieldRenderer({
 }) {
   const value = data?.[field.key];
   const id = `trigger-${field.key}`;
-
-  if (field.type === "retry") {
-    return <TriggerRetryPolicy data={data} onChange={onChange} />;
-  }
-
-  if (field.type === "channels") {
-    return (
-      <MultiSelectField
-        id={id}
-        label={field.label}
-        values={Array.isArray(value) ? value : []}
-        options={field.options || []}
-        required={field.required}
-        onChange={(channels) => onChange?.({ channels })}
-      />
-    );
-  }
-
-  if (field.type === "template") {
-    return (
-      <TriggerMessageTemplate
-        id={id}
-        label={field.label}
-        value={value ?? ""}
-        required={field.required}
-        variableGroups={schema.variableGroups || []}
-        sampleContext={schema.sampleContext || {}}
-        onChange={(messageTemplate) => onChange?.({ messageTemplate })}
-      />
-    );
-  }
 
   if (field.type === "boolean") {
     return (

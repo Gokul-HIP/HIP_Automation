@@ -1,0 +1,131 @@
+import { MESSAGING_NODE_TYPES, DATABASE_NODE_TYPES, INTEGRATION_NODE_TYPES, AI_NODE_TYPES } from "../types";
+
+/**
+ * Routes action nodes to the correct handler category.
+ * WorkflowExecutor never contains business logic — only dispatches here.
+ */
+export class ActionDispatcher {
+  constructor({ channelManager, templateManager, variableResolver }) {
+    this.channelManager = channelManager;
+    this.templateManager = templateManager;
+    this.variableResolver = variableResolver;
+  }
+
+  /**
+   * @param {import('../types').ExecutionStep} step
+   * @param {import('../types').ExecutionContext} context
+   */
+  async dispatch(step, context) {
+    const { nodeType, data } = step;
+
+    if (MESSAGING_NODE_TYPES.has(nodeType)) {
+      return this.#dispatchMessaging(nodeType, data, step, context);
+    }
+
+    if (DATABASE_NODE_TYPES.has(nodeType)) {
+      return this.#dispatchDatabase(nodeType, data, context);
+    }
+
+    if (INTEGRATION_NODE_TYPES.has(nodeType)) {
+      return this.#dispatchIntegration(nodeType, data, context);
+    }
+
+    if (AI_NODE_TYPES.has(nodeType)) {
+      return this.#dispatchAI(nodeType, data, context);
+    }
+
+    return { success: true, output: { skipped: true, nodeType } };
+  }
+
+  async #dispatchMessaging(nodeType, data, step, context) {
+    const channelMap = {
+      sendWhatsApp: "whatsapp",
+      sendSms: "sms",
+      sendEmail: "email",
+      sendPush: "push",
+      // sendInApp: "in_app",
+      sendAiChat: "ai_chat",
+      sendAiVoice: "ai_voice",
+      sendIvr: "ivr",
+      sendTemplate: data.channel || "whatsapp",
+    };
+
+    const channel = channelMap[nodeType] || "whatsapp";
+    const templateId = String(data.templateId || data.messageBody || "");
+    const rendered = this.templateManager.render(templateId, context);
+
+    const recipient =
+      data.recipient === "custom"
+        ? String(data.customRecipient ?? "")
+        : this.#resolveRecipient(data.recipient, context);
+
+    const result = await this.channelManager.send({
+      channel: nodeType === "sendTemplate" ? data.channel || rendered.channel : channel,
+      executionId: context.executionId,
+      workflowId: context.workflowId,
+      nodeId: step.id,
+      patientId: context.patient?.id ? String(context.patient.id) : null,
+      recipient,
+      body: rendered.body,
+      subject: data.subject ? this.variableResolver.resolve(String(data.subject), context) : rendered.subject,
+      retry: Boolean(data.repeatReminder),
+      retryInterval: Number(data.retryInterval ?? 15),
+      maxRetryCount: Number(data.maxRetryCount ?? 2),
+      fallbackChannel: String(data.fallbackChannel || ""),
+    });
+
+    return {
+      success: result.success,
+      output: result,
+      error: result.error ?? null,
+    };
+  }
+
+  #resolveRecipient(type, context) {
+    const map = {
+      patient: context.patient?.mobile || context.patient?.email,
+      doctor: context.doctor?.mobile || context.doctor?.email,
+      caregiver: context.patient?.caregiver_contact,
+    };
+    return map[type] ?? context.patient?.mobile ?? "";
+  }
+
+  async #dispatchDatabase(nodeType, data, context) {
+    return {
+      success: true,
+      output: {
+        action: "database",
+        nodeType,
+        entity: data.entity,
+        stub: true,
+        contextSnapshot: { patientId: context.patient?.id },
+      },
+    };
+  }
+
+  async #dispatchIntegration(nodeType, data, context) {
+    return {
+      success: true,
+      output: {
+        action: "integration",
+        nodeType,
+        endpoint: data.endpoint || data.url,
+        stub: true,
+      },
+    };
+  }
+
+  async #dispatchAI(nodeType, data, context) {
+    return {
+      success: true,
+      output: {
+        action: "ai",
+        nodeType,
+        prompt: data.prompt,
+        stub: true,
+      },
+    };
+  }
+}
+
+export const createActionDispatcher = (deps) => new ActionDispatcher(deps);

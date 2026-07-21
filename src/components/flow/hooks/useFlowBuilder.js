@@ -125,11 +125,68 @@ export function validateWorkflowGraph(nodes, edges) {
     issues.push({ level: "warning", message: "Multiple start nodes detected." });
   }
 
+  const eventTriggers = nodes.filter((n) => {
+    const def = getWorkflowNode(n.data?.nodeType);
+    return def?.isTrigger && n.data?.nodeType !== "start";
+  });
+  if (eventTriggers.length === 0) {
+    issues.push({
+      level: "error",
+      message: "Add exactly one event trigger (e.g. Medicine Reminder Due).",
+    });
+  } else if (eventTriggers.length > 1) {
+    issues.push({
+      level: "error",
+      message: "Only one event trigger is allowed per workflow.",
+    });
+  }
+
+  const endNodes = nodes.filter((n) => n.data?.nodeType === "end");
+  if (endNodes.length === 0) {
+    issues.push({ level: "error", message: "Add at least one End node." });
+  }
+
   const connected = new Set();
   edges.forEach((e) => {
     connected.add(e.source);
     connected.add(e.target);
   });
+
+  const hasLoopNode = nodes.some((n) => n.data?.nodeType === "loop");
+  if (!hasLoopNode && nodes.length > 1 && edges.length > 0) {
+    const adj = new Map();
+    nodes.forEach((n) => adj.set(n.id, []));
+    edges.forEach((e) => {
+      if (adj.has(e.source)) adj.get(e.source).push(e.target);
+    });
+
+    const visiting = new Set();
+    const visited = new Set();
+    let hasCycle = false;
+
+    function dfs(id) {
+      if (visiting.has(id)) {
+        hasCycle = true;
+        return;
+      }
+      if (visited.has(id)) return;
+      visiting.add(id);
+      for (const next of adj.get(id) || []) dfs(next);
+      visiting.delete(id);
+      visited.add(id);
+    }
+
+    nodes.forEach((n) => {
+      if (!hasCycle) dfs(n.id);
+    });
+
+    if (hasCycle) {
+      issues.push({
+        level: "error",
+        message: "Circular flow detected. Use a Loop node for repeated paths.",
+      });
+    }
+  }
 
   nodes.forEach((node) => {
     const def = getWorkflowNode(node.data?.nodeType);
@@ -144,8 +201,8 @@ export function validateWorkflowGraph(nodes, edges) {
 
     if (node.id !== "start" && !connected.has(node.id) && nodes.length > 1) {
       issues.push({
-        level: "warning",
-        message: `"${node.data?.label || def.title}" is not connected.`,
+        level: "error",
+        message: `"${node.data?.label || def.title}" is disconnected.`,
         nodeId: node.id,
       });
     }
@@ -163,11 +220,11 @@ export function validateWorkflowGraph(nodes, edges) {
       }
     });
 
-    if (node.data?.repeatReminder) {
+    if (def.customPanel === "messaging" && node.data?.repeatReminder) {
       if (isEmpty(node.data?.retryInterval)) {
         issues.push({
           level: "error",
-          message: `"${node.data?.label || def.title}" → Retry Interval is required when Repeat Reminder is on.`,
+          message: `"${node.data?.label || def.title}" → Retry Interval is required when retry is enabled.`,
           nodeId: node.id,
           field: "retryInterval",
         });
@@ -184,6 +241,17 @@ export function validateWorkflowGraph(nodes, edges) {
         });
       }
     }
+
+    if (def.customPanel === "condition") {
+      const rules = node.data?.rules;
+      if (Array.isArray(rules) && rules.length === 0) {
+        issues.push({
+          level: "error",
+          message: `"${node.data?.label || def.title}" needs at least one condition rule.`,
+          nodeId: node.id,
+        });
+      }
+    }
   });
 
   const hasOutgoingFromStart = edges.some((e) =>
@@ -191,7 +259,7 @@ export function validateWorkflowGraph(nodes, edges) {
   );
   if (startNodes.length && nodes.length > 1 && !hasOutgoingFromStart) {
     issues.push({
-      level: "warning",
+      level: "error",
       message: "Start node has no outgoing connection.",
     });
   }
@@ -588,9 +656,12 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
     if (validation.issues.some((i) => i.level === "error")) {
       return { label: "Invalid", tone: "danger" };
     }
+    if (workflowStatus === WORKFLOW_STATUS.ACTIVE) {
+      return { label: "Published", tone: "success" };
+    }
     if (!edges.length) return { label: "Draft", tone: "info" };
     return { label: "Ready", tone: "success" };
-  }, [locked, edges.length, validation.issues]);
+  }, [locked, edges.length, validation.issues, workflowStatus]);
 
   return {
     nodes,

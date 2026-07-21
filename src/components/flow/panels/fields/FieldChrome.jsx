@@ -1,6 +1,6 @@
 "use client";
 
-import styles from "../../styles/medicineReminder.module.css";
+import styles from "../../styles/propertyPanel.module.css";
 
 export function FieldLabel({ htmlFor, children, required = false }) {
   return (

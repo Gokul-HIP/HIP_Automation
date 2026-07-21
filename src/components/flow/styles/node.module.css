@@ -77,6 +77,21 @@
   background: color-mix(in srgb, var(--danger) 16%, transparent);
 }
 
+.iconBadge[data-tone="purple"] {
+  color: #9333ea;
+  background: color-mix(in srgb, #9333ea 16%, transparent);
+}
+
+.iconBadge[data-tone="cyan"] {
+  color: #0891b2;
+  background: color-mix(in srgb, #0891b2 16%, transparent);
+}
+
+.iconBadge[data-tone="pink"] {
+  color: #db2777;
+  background: color-mix(in srgb, #db2777 16%, transparent);
+}
+
 .titleWrap {
   min-width: 0;
 }

@@ -3,7 +3,7 @@
 import { getTriggerSchema } from "../../config/triggers";
 import TriggerContextCard from "./TriggerContextCard";
 import TriggerFieldRenderer from "./TriggerFieldRenderer";
-import styles from "../../styles/medicineReminder.module.css";
+import styles from "../../styles/propertyPanel.module.css";
 
 /**
  * Generic, reusable Properties panel for all Trigger nodes.

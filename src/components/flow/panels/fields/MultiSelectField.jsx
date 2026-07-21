@@ -1,7 +1,7 @@
 "use client";
 
 import { FieldLabel, FieldHint } from "./FieldChrome";
-import styles from "../../styles/medicineReminder.module.css";
+import styles from "../../styles/propertyPanel.module.css";
 
 export default function MultiSelectField({
   id,

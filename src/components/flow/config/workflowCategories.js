@@ -6,42 +6,42 @@ export const WORKFLOW_CATEGORIES = [
   {
     id: "triggers",
     label: "Triggers",
-    description: "Start a hospital workflow from a clinical or ops event.",
+    description: "Start a workflow when a hospital event occurs.",
   },
   {
-    id: "logic",
-    label: "Logic",
-    description: "Branch, wait, and control flow.",
+    id: "conditions",
+    label: "Conditions",
+    description: "Branch the workflow using patient and clinical rules.",
+  },
+  {
+    id: "wait",
+    label: "Wait / Delay",
+    description: "Pause the workflow for a duration or schedule.",
   },
   {
     id: "messaging",
     label: "Messaging",
-    description: "Notify patients and care teams.",
-  },
-  {
-    id: "ai",
-    label: "AI",
-    description: "Assist with classification and triage.",
-  },
-  {
-    id: "variables",
-    label: "Variables",
-    description: "Read and write workflow data.",
+    description: "Send WhatsApp, SMS, email, push, and in-app messages.",
   },
   {
     id: "database",
     label: "Database",
-    description: "Query and update hospital records.",
+    description: "Create, update, and assign hospital records.",
   },
   {
-    id: "http",
-    label: "HTTP",
-    description: "Call external APIs and webhooks.",
+    id: "integrations",
+    label: "Integrations",
+    description: "Connect webhooks, APIs, FHIR, ABDM, and payments.",
   },
   {
-    id: "utilities",
-    label: "Utilities",
-    description: "Helpers for scheduling and transforms.",
+    id: "ai",
+    label: "AI",
+    description: "AI chat, voice, intent, RAG, and sentiment.",
+  },
+  {
+    id: "flow",
+    label: "Flow",
+    description: "Loop, merge, split, parallel paths, and end.",
   },
 ];
 
