@@ -7,52 +7,47 @@ import {
   createMessagingDefaults,
 } from "./shared";
 
-export { RETRY_INTERVAL_OPTIONS, NOTIFICATION_CHANNEL_OPTIONS };
+export {
+  RETRY_INTERVAL_OPTIONS,
+  NOTIFICATION_CHANNEL_OPTIONS,
+  TEMPLATE_CHANNEL_BY_NODE,
+  getTemplateChannelForNode,
+} from "./shared";
 
 const MESSAGING_VARS = WORKFLOW_VARIABLE_GROUPS;
-
-function messagingFields({ channelLabel, templateLabel, extras = [] }) {
-  return [
-    { key: "label", type: "text", label: "Display Name", required: true },
-    {
-      key: "templateId",
-      type: "templateSelect",
-      label: templateLabel,
-      required: true,
-      hint: "Select from Template Manager.",
-    },
-    { key: "variables", type: "variables", label: "Template Variables" },
-    ...extras,
-    {
-      key: "recipient",
-      type: "select",
-      label: "Recipient",
-      options: RECIPIENT_OPTIONS,
-      required: true,
-    },
-    { key: "retry", type: "retry" },
-    {
-      key: "fallbackChannel",
-      type: "select",
-      label: "Fallback Channel",
-      options: [{ value: "", label: "None" }, ...NOTIFICATION_CHANNEL_OPTIONS],
-    },
-  ];
-}
 
 export const MESSAGING_SCHEMAS = {
   sendWhatsApp: {
     description: "Send an approved WhatsApp template to the patient or care team.",
     channel: "whatsapp",
     variableGroups: MESSAGING_VARS,
-    fields: messagingFields({
-      templateLabel: "WhatsApp Template",
-      extras: [
-        { key: "mediaUrl", type: "text", label: "Media URL", placeholder: "https://…" },
-      ],
-    }),
+    fields: [
+      { key: "label", type: "text", label: "Display Name", required: true },
+      {
+        key: "templateId",
+        type: "templateSelect",
+        label: "Template",
+        required: true,
+      },
+      {
+        key: "message",
+        type: "textarea",
+        label: "Message",
+        placeholder: "Template message body",
+        required: true,
+      },
+      {
+        key: "buttons",
+        type: "textarea",
+        label: "Buttons",
+        placeholder: "Optional WhatsApp quick-reply / CTA buttons",
+        hint: "Leave blank if the template has no buttons.",
+      },
+    ],
     defaults: createMessagingDefaults({
       label: "Send WhatsApp",
+      message: "",
+      buttons: "",
       fallbackChannel: "sms",
     }),
   },
@@ -61,12 +56,28 @@ export const MESSAGING_SCHEMAS = {
     description: "Send an SMS using an approved template.",
     channel: "sms",
     variableGroups: MESSAGING_VARS,
-    fields: messagingFields({ templateLabel: "SMS Template" }),
-    defaults: createMessagingDefaults({ label: "Send SMS" }),
+    fields: [
+      { key: "label", type: "text", label: "Display Name", required: true },
+      {
+        key: "templateId",
+        type: "templateSelect",
+        label: "Template",
+        required: true,
+      },
+      {
+        key: "message",
+        type: "textarea",
+        label: "Message",
+        placeholder: "SMS message body",
+        required: true,
+      },
+    ],
+    defaults: createMessagingDefaults({ label: "Send SMS", message: "" }),
   },
 
   sendEmail: {
-    description: "Send a transactional email with template, subject, and attachments.",
+    description:
+      "Send a transactional email. Select a template, or enter subject and body manually.",
     channel: "email",
     variableGroups: MESSAGING_VARS,
     fields: [
@@ -74,41 +85,28 @@ export const MESSAGING_SCHEMAS = {
       {
         key: "templateId",
         type: "templateSelect",
-        label: "Email Template",
-        required: true,
+        label: "Template",
+        required: false,
       },
-      { key: "subject", type: "text", label: "Subject", required: true },
-      { key: "variables", type: "variables", label: "Template Variables" },
+      { key: "subject", type: "text", label: "Subject", required: false },
       {
-        key: "attachments",
-        type: "text",
-        label: "Attachments",
-        placeholder: "Comma-separated file IDs or URLs",
-      },
-      {
-        key: "recipient",
-        type: "select",
-        label: "Recipient",
-        options: RECIPIENT_OPTIONS,
-        required: true,
-      },
-      { key: "retry", type: "retry" },
-      {
-        key: "fallbackChannel",
-        type: "select",
-        label: "Fallback Channel",
-        options: [{ value: "", label: "None" }, ...NOTIFICATION_CHANNEL_OPTIONS],
+        key: "body",
+        type: "textarea",
+        label: "Body",
+        placeholder: "Email body",
+        required: false,
       },
     ],
     defaults: createMessagingDefaults({
       label: "Send Email",
       subject: "",
-      attachments: "",
+      body: "",
     }),
   },
 
   sendPush: {
-    description: "Deliver a push notification with priority, sound, and badge.",
+    description:
+      "Deliver a push notification. Select a template, or enter title and body manually.",
     channel: "push",
     variableGroups: MESSAGING_VARS,
     fields: [
@@ -116,42 +114,25 @@ export const MESSAGING_SCHEMAS = {
       {
         key: "templateId",
         type: "templateSelect",
-        label: "Push Template",
-        required: true,
+        label: "Template",
+        required: false,
       },
-      { key: "variables", type: "variables", label: "Template Variables" },
+      { key: "title", type: "text", label: "Title", required: false },
+      { key: "body", type: "textarea", label: "Body", required: false },
       {
         key: "priority",
         type: "select",
         label: "Priority",
         options: PUSH_PRIORITY_OPTIONS,
       },
-      { key: "sound", type: "text", label: "Sound", placeholder: "default" },
-      { key: "badge", type: "number", label: "Badge Count", min: 0 },
-      {
-        key: "recipient",
-        type: "select",
-        label: "Recipient",
-        options: RECIPIENT_OPTIONS,
-        required: true,
-      },
-      { key: "retry", type: "retry" },
     ],
     defaults: createMessagingDefaults({
       label: "Send Push Notification",
+      title: "",
+      body: "",
       priority: "normal",
-      sound: "default",
-      badge: 1,
     }),
   },
-
-  // sendInApp: {
-  //   description: "Show an in-app notification inside the patient portal.",
-  //   channel: "in_app",
-  //   variableGroups: MESSAGING_VARS,
-  //   fields: messagingFields({ templateLabel: "In-App Template" }),
-  //   defaults: createMessagingDefaults({ label: "Send In-App Notification" }),
-  // },
 
   sendTemplate: {
     description: "Send a multi-channel approved template.",
@@ -172,7 +153,6 @@ export const MESSAGING_SCHEMAS = {
         options: NOTIFICATION_CHANNEL_OPTIONS,
         required: true,
       },
-      { key: "variables", type: "variables", label: "Template Variables" },
       {
         key: "recipient",
         type: "select",
@@ -180,7 +160,6 @@ export const MESSAGING_SCHEMAS = {
         options: RECIPIENT_OPTIONS,
         required: true,
       },
-      { key: "retry", type: "retry" },
     ],
     defaults: createMessagingDefaults({
       label: "Send Template",
@@ -190,42 +169,62 @@ export const MESSAGING_SCHEMAS = {
 
   sendAiChat: {
     description: "Start an AI chat conversation with the patient.",
-    channel: "ai_chat",
+    channel: "ai",
     variableGroups: MESSAGING_VARS,
     fields: [
       { key: "label", type: "text", label: "Display Name", required: true },
-      { key: "prompt", type: "textarea", label: "System Prompt", required: true },
-      { key: "variables", type: "variables", label: "Context Variables" },
       {
-        key: "recipient",
-        type: "select",
-        label: "Recipient",
-        options: RECIPIENT_OPTIONS,
+        key: "templateId",
+        type: "templateSelect",
+        label: "Template",
         required: true,
+      },
+      { key: "prompt", type: "textarea", label: "Prompt", required: true },
+      {
+        key: "temperature",
+        type: "number",
+        label: "Temperature",
+        min: 0,
+        max: 2,
       },
     ],
     defaults: createMessagingDefaults({
       label: "Send AI Chat",
       prompt: "You are a helpful hospital care assistant.",
+      temperature: 0.7,
     }),
   },
 
   sendAiVoice: {
     description: "Place an AI voice call to the patient.",
-    channel: "ai_voice",
+    channel: "voice",
     variableGroups: MESSAGING_VARS,
-    fields: messagingFields({
-      templateLabel: "Voice Script Template",
-      extras: [{ key: "voiceId", type: "text", label: "Voice ID" }],
-    }),
-    defaults: createMessagingDefaults({ label: "Send AI Voice Call" }),
+    fields: [
+      { key: "label", type: "text", label: "Display Name", required: true },
+      {
+        key: "templateId",
+        type: "templateSelect",
+        label: "Template",
+        required: true,
+      },
+      { key: "prompt", type: "textarea", label: "Prompt" },
+    ],
+    defaults: createMessagingDefaults({ label: "Send AI Voice Call", prompt: "" }),
   },
 
   sendIvr: {
     description: "Send an IVR call with a voice template.",
     channel: "ivr",
     variableGroups: MESSAGING_VARS,
-    fields: messagingFields({ templateLabel: "IVR Template" }),
+    fields: [
+      { key: "label", type: "text", label: "Display Name", required: true },
+      {
+        key: "templateId",
+        type: "templateSelect",
+        label: "Template",
+        required: true,
+      },
+    ],
     defaults: createMessagingDefaults({ label: "Send IVR" }),
   },
 };

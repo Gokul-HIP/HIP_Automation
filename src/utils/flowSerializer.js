@@ -5,9 +5,10 @@
 
 import { normalizeWorkflowStatus } from "./workflowStatus";
 import { normalizeOrganizationId, normalizeUserId } from "./organization";
+import { normalizeConditionNodeData } from "./conditionNodeSerialization";
 
-const BUILDER_VERSION = "1.0";
-const REACT_FLOW_VERSION = "12";
+const BUILDER_VERSION = "1";
+const REACT_FLOW_VERSION = "12.x";
 
 /**
  * @param {unknown} value
@@ -34,7 +35,7 @@ export function serializeNode(node) {
       x: Number(node.position?.x ?? 0),
       y: Number(node.position?.y ?? 0),
     },
-    data: toPlainData(node.data),
+    data: normalizeConditionNodeData(toPlainData(node.data)),
   };
 }
 
@@ -77,6 +78,19 @@ export function serializeWorkflow({
   const orgId = normalizeOrganizationId(organizationId);
   const createdById = normalizeUserId(createdBy);
 
+  const startIds = new Set(
+    (nodes || [])
+      .filter((node) => node?.data?.nodeType === "start")
+      .map((node) => String(node.id))
+  );
+  const payloadNodes = (nodes || []).filter(
+    (node) => !startIds.has(String(node.id))
+  );
+  const payloadEdges = (edges || []).filter(
+    (edge) =>
+      !startIds.has(String(edge.source)) && !startIds.has(String(edge.target))
+  );
+
   /** @type {import('../types/workflow').MedicineWorkflowPayload} */
   const payload = {
     organization_id: orgId != null ? Number(orgId) : null,
@@ -91,8 +105,8 @@ export function serializeWorkflow({
         y: Number(vp.y ?? 0),
         zoom: Number(vp.zoom ?? 1),
       },
-      nodes: (nodes || []).map(serializeNode),
-      edges: (edges || []).map(serializeEdge),
+      nodes: payloadNodes.map(serializeNode),
+      edges: payloadEdges.map(serializeEdge),
     },
   };
 

@@ -6,30 +6,55 @@ import {
   HiOutlineSearch,
   HiOutlineX,
   HiOutlineChevronDown,
+  HiOutlineLightningBolt,
 } from "react-icons/hi";
-import { WORKFLOW_CATEGORIES } from "./config/workflowCategories";
-import { WORKFLOW_NODES } from "./config/workflowNodes";
+import { getSidebarCatalogGroups } from "./config/workflowNodes";
+import { useTriggers } from "@/hooks/useWorkflowApi";
 import NodeCard from "./NodeCard";
+import cardStyles from "./styles/nodeCard.module.css";
 import styles from "./styles/flow.module.css";
 
-export default function NodeSidebar({ open, onClose, onAddNode }) {
+function TriggerApiCard({ trigger, onAdd }) {
+  return (
+    <motion.button
+      type="button"
+      className={cardStyles.card}
+      data-tone="success"
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={() => onAdd?.(trigger)}
+    >
+      <span className={cardStyles.iconWrap} aria-hidden="true">
+        <HiOutlineLightningBolt />
+      </span>
+      <span className={cardStyles.meta}>
+        <span className={cardStyles.title}>{trigger.name}</span>
+        <span className={cardStyles.description}>{trigger.description}</span>
+        <span className={cardStyles.category}>{trigger.group}</span>
+      </span>
+    </motion.button>
+  );
+}
+
+export default function NodeSidebar({ open, onClose, onAddNode, onAddTrigger }) {
   const [query, setQuery] = useState("");
   const [collapsed, setCollapsed] = useState({});
+  const { data: triggerCatalog, isLoading: triggersLoading, isError: triggersError } =
+    useTriggers();
 
-  const grouped = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return WORKFLOW_CATEGORIES.map((category) => {
-      const nodes = WORKFLOW_NODES.filter((node) => {
-        if (node.category !== category.id) return false;
-        if (!q) return true;
-        return (
-          node.title.toLowerCase().includes(q) ||
-          node.description.toLowerCase().includes(q)
-        );
-      });
-      return { category, nodes };
-    }).filter((group) => group.nodes.length > 0);
-  }, [query]);
+  const grouped = useMemo(
+    () =>
+      getSidebarCatalogGroups({
+        search: query,
+        apiTriggerCatalog: triggerCatalog ?? null,
+      }),
+    [query, triggerCatalog]
+  );
+
+  const catalogCount = useMemo(
+    () => grouped.reduce((sum, group) => sum + group.nodes.length, 0),
+    [grouped]
+  );
 
   return (
     <AnimatePresence>
@@ -72,11 +97,22 @@ export default function NodeSidebar({ open, onClose, onAddNode }) {
           </div>
 
           <div className={styles.panelBody}>
+            {triggersLoading && catalogCount === 0 ? (
+              <p className={styles.emptyHint}>Loading node catalog…</p>
+            ) : null}
+
+            {triggersError && catalogCount === 0 ? (
+              <p className={styles.emptyHint}>
+                Unable to load API triggers. Showing local catalog only.
+              </p>
+            ) : null}
+
             {grouped.length === 0 ? (
               <p className={styles.emptyHint}>No nodes match your search.</p>
             ) : (
-              grouped.map(({ category, nodes }) => {
+              grouped.map(({ category, nodes, triggers }) => {
                 const isCollapsed = Boolean(collapsed[category.id]);
+                const count = nodes.length + triggers.length;
                 return (
                   <div key={category.id} className={styles.categoryBlock}>
                     <button
@@ -94,7 +130,7 @@ export default function NodeSidebar({ open, onClose, onAddNode }) {
                           {category.label}
                         </span>
                         <span className={styles.categoryMeta}>
-                          {nodes.length} node{nodes.length === 1 ? "" : "s"}
+                          {count} node{count === 1 ? "" : "s"}
                         </span>
                       </span>
                       <HiOutlineChevronDown
@@ -105,6 +141,13 @@ export default function NodeSidebar({ open, onClose, onAddNode }) {
 
                     {!isCollapsed ? (
                       <div className={styles.cardList}>
+                        {triggers.map((trigger) => (
+                          <TriggerApiCard
+                            key={trigger.key}
+                            trigger={trigger}
+                            onAdd={onAddTrigger}
+                          />
+                        ))}
                         {nodes.map((item) => (
                           <NodeCard
                             key={item.type}

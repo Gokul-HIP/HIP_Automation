@@ -43,6 +43,7 @@ export class VariableResolver {
       for (const [key, value] of Object.entries(section)) {
         flat[key] = value;
         flat[`${prefix}.${key}`] = value;
+        flat[`${prefix}_${key}`] = value;
         // PascalCase aliases e.g. PatientName
         const pascal = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
         const pascalKey = pascal.charAt(0).toUpperCase() + pascal.slice(1);

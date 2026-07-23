@@ -4,6 +4,7 @@ import {
   HiOutlineEye,
   HiOutlinePencil,
   HiOutlineTrash,
+  HiOutlineUpload,
 } from "react-icons/hi";
 import {
   formatWorkflowDate,
@@ -23,6 +24,7 @@ export default function WorkflowRow({
   onView,
   onEdit,
   onDelete,
+  onPublish,
   busyAction = null,
   disabled = false,
 }) {
@@ -38,24 +40,30 @@ export default function WorkflowRow({
         </div>
       </td>
 
+      <td>{workflow.module || "—"}</td>
+      <td>{workflow.trigger || "—"}</td>
+
       <td>
         <span className={`${styles.badge} ${BADGE_CLASS[badge.tone] || styles.badgeDraft}`}>
           {badge.label}
         </span>
       </td>
 
-      <td>{workflow.createdBy}</td>
-
-      <td className={styles.dateCell}>
-        {formatWorkflowDate(workflow.createdAt)}
-      </td>
-
-      <td className={styles.dateCell}>
-        {formatWorkflowDate(workflow.updatedAt)}
-      </td>
+      <td className={styles.dateCell}>{formatWorkflowDate(workflow.updatedAt)}</td>
 
       <td className={styles.actionsCell}>
         <div className={styles.actions}>
+          <button
+            type="button"
+            onClick={() => onPublish?.(workflow)}
+            disabled={disabled || isBusy}
+            aria-label={`Publish ${workflow.name}`}
+            title="Publish"
+            className={`${styles.iconBtn} ${styles.iconBtnEdit}`}
+          >
+            <HiOutlineUpload aria-hidden="true" />
+          </button>
+
           <button
             type="button"
             onClick={() => onView?.(workflow)}

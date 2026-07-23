@@ -51,13 +51,25 @@ export class ActionDispatcher {
     };
 
     const channel = channelMap[nodeType] || "whatsapp";
-    const templateId = String(data.templateId || data.messageBody || "");
-    const rendered = this.templateManager.render(templateId, context);
+    const templateId = String(
+      data.templateId || data.template_id || data.messageBody || ""
+    ).trim();
+    const hasTemplate = Boolean(templateId);
+    const rendered = hasTemplate
+      ? this.templateManager.render(templateId, context)
+      : { channel, subject: "", body: "" };
 
     const recipient =
       data.recipient === "custom"
         ? String(data.customRecipient ?? "")
         : this.#resolveRecipient(data.recipient, context);
+
+    const subjectRaw = String(
+      data.title || data.subject || rendered.subject || ""
+    );
+    const bodyRaw = String(
+      data.body || data.message || rendered.body || ""
+    );
 
     const result = await this.channelManager.send({
       channel: nodeType === "sendTemplate" ? data.channel || rendered.channel : channel,
@@ -66,8 +78,8 @@ export class ActionDispatcher {
       nodeId: step.id,
       patientId: context.patient?.id ? String(context.patient.id) : null,
       recipient,
-      body: rendered.body,
-      subject: data.subject ? this.variableResolver.resolve(String(data.subject), context) : rendered.subject,
+      body: this.variableResolver.resolve(bodyRaw, context),
+      subject: this.variableResolver.resolve(subjectRaw, context),
       retry: Boolean(data.repeatReminder),
       retryInterval: Number(data.retryInterval ?? 15),
       maxRetryCount: Number(data.maxRetryCount ?? 2),

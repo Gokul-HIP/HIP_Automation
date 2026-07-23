@@ -10,6 +10,7 @@ export default function WorkflowTable({
   onView,
   onEdit,
   onDelete,
+  onPublish,
   busyAction = null,
   disabled = false,
 }) {
@@ -20,10 +21,10 @@ export default function WorkflowTable({
           <thead>
             <tr>
               <th>Workflow Name</th>
+              <th>Module</th>
+              <th>Trigger</th>
               <th>Status</th>
-              <th>Created By</th>
-              <th>Created Date</th>
-              <th>Updated Date</th>
+              <th>Last Updated</th>
               <th className={styles.actionsCol}>Actions</th>
             </tr>
           </thead>
@@ -39,6 +40,7 @@ export default function WorkflowTable({
                   onView={onView}
                   onEdit={onEdit}
                   onDelete={onDelete}
+                  onPublish={onPublish}
                   busyAction={busyAction}
                   disabled={disabled}
                 />

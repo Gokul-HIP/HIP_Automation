@@ -1,10 +1,5 @@
-import WorkflowsView from "@/components/workflow/WorkflowsView";
+import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "Hospital Workflows · HIP Automation",
-  description: "Manage hospital automation workflows.",
-};
-
-export default function WorkflowsPage() {
-  return <WorkflowsView />;
+export default function LegacyWorkflowsRedirect() {
+  redirect("/workflows");
 }

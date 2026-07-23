@@ -48,8 +48,19 @@ export const FEEDBACK_FORM_OPTIONS = [
 ];
 
 const COMMON_PATIENT_VARS = [
-  { label: "Patient", variables: ["{{PatientName}}", "{{patient_mobile}}"] },
-  { label: "Hospital", variables: ["{{hospital_name}}"] },
+  {
+    label: "Patient",
+    variables: [
+      { key: "patient_name", label: "Patient", token: "{{patient_name}}" },
+      { key: "patient_mobile", label: "Patient Mobile", token: "{{patient_mobile}}" },
+    ],
+  },
+  {
+    label: "Hospital",
+    variables: [
+      { key: "hospital_name", label: "Hospital", token: "{{hospital_name}}" },
+    ],
+  },
 ];
 
 /** Event-only trigger fields — no channels, templates, or retry. */

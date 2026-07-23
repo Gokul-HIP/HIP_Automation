@@ -9,6 +9,17 @@
   padding: 16px;
 }
 
+.scrollCompact {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 12px;
+}
+
 .helpBox {
   border-radius: 10px;
   border: 1px dashed var(--border-color);
@@ -65,8 +76,8 @@
 }
 
 .textarea {
-  min-height: 110px;
-  padding: 10px;
+  min-height: 84px;
+  padding: 8px 10px;
   resize: vertical;
   line-height: 1.45;
 }
@@ -355,6 +366,16 @@
   background: var(--background);
 }
 
+.sectionCompact {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--background);
+}
+
 .sectionTitle {
   margin: 0;
   font-size: 11px;
@@ -374,8 +395,148 @@
 .templateLayout {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
+}
+
+.fieldError {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--danger);
+}
+
+.controlError {
+  border-color: color-mix(in srgb, var(--danger) 70%, var(--border-color)) !important;
+}
+
+.emptyTemplateBox {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px dashed var(--border-color);
+  background: var(--surface);
+}
+
+.fieldActive :is(.control, .textarea) {
+  border-color: color-mix(in srgb, var(--primary-color) 55%, var(--border-color));
+}
+
+.variableTree {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 240px;
+  overflow: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 4px;
+}
+
+.variableTreeGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.variableTreeHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 7px 8px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.variableTreeHeader:hover {
+  background: var(--surface-light);
+}
+
+.variableTreeChevron {
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.variableTreeChevron[data-open="true"] {
+  transform: rotate(90deg);
+}
+
+.variableTreeCount {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.variableTreeChildren {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 4px 6px 22px;
+}
+
+.variableTreeItem {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--primary-color);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  text-align: left;
+  cursor: pointer;
+}
+
+.variableTreeItem:hover {
+  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+}
+
+.insertFeedback {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--success);
+}
+
+.validationBox {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border-color));
+  background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+}
+
+.validationList {
+  margin: 4px 0 0;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--danger);
+}
+
+.previewTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .variablePanel {
@@ -462,4 +623,122 @@
 
 .addRuleBtn:hover {
   background: var(--surface-light);
+}
+
+.retryBtn {
+  align-self: flex-start;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.retryBtn:hover {
+  background: var(--surface-light);
+}
+
+.skeletonStack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.skeletonLine {
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--border-color) 70%, transparent),
+    color-mix(in srgb, var(--surface-light) 80%, transparent),
+    color-mix(in srgb, var(--border-color) 70%, transparent)
+  );
+  background-size: 200% 100%;
+  animation: panelShimmer 1.2s ease-in-out infinite;
+}
+
+.skeletonChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.skeletonChip {
+  width: 78px;
+  height: 24px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--border-color) 70%, transparent),
+    color-mix(in srgb, var(--surface-light) 80%, transparent),
+    color-mix(in srgb, var(--border-color) 70%, transparent)
+  );
+  background-size: 200% 100%;
+  animation: panelShimmer 1.2s ease-in-out infinite;
+}
+
+.previewCard {
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.previewCardHeader {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.previewCardHeaderBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+}
+
+.previewToggle {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.previewCardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px 12px;
+}
+
+.previewRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.previewRowLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+@keyframes panelShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }

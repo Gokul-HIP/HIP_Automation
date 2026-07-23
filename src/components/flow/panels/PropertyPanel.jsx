@@ -5,6 +5,7 @@ import { HiOutlineX, HiOutlineDuplicate, HiOutlineTrash } from "react-icons/hi";
 import { getWorkflowNode } from "../config/workflowNodes";
 import { getCategoryById } from "../config/workflowCategories";
 import TriggerProperties from "./triggers/TriggerProperties";
+import ApiTriggerProperties from "@/components/property-panel/ApiTriggerProperties";
 import MessagingProperties from "./messaging/MessagingProperties";
 import ConditionProperties from "./conditions/ConditionProperties";
 import WaitProperties from "./wait/WaitProperties";
@@ -127,15 +128,27 @@ const PANEL_MAP = {
 export default function PropertyPanel({
   open,
   node,
+  workflowTriggerKey = null,
   onClose,
   onChange,
   onDuplicate,
   onDelete,
 }) {
   const def = node ? getWorkflowNode(node.data?.nodeType) : null;
-  const category = def ? getCategoryById(def.category) : null;
+  const isApiTrigger = Boolean(node?.data?.triggerKey);
+  const category = def
+    ? getCategoryById(def.category)
+    : isApiTrigger
+      ? getCategoryById("triggers")
+      : null;
   const isStart = node?.data?.nodeType === "start";
-  const PanelComponent = def?.customPanel ? PANEL_MAP[def.customPanel] : null;
+  const isTriggerNode =
+    isApiTrigger || def?.customPanel === "trigger" || def?.isTrigger;
+
+  let PanelComponent = def?.customPanel ? PANEL_MAP[def.customPanel] : null;
+  if (isTriggerNode && !isStart) {
+    PanelComponent = isApiTrigger ? ApiTriggerProperties : TriggerProperties;
+  }
 
   return (
     <AnimatePresence>
@@ -170,7 +183,7 @@ export default function PropertyPanel({
             </button>
           </div>
 
-          {!node || !def ? (
+          {!node || (!def && !isApiTrigger) ? (
             <p className={styles.emptyHint}>
               Select a node on the canvas to edit its configuration.
             </p>
@@ -199,16 +212,19 @@ export default function PropertyPanel({
 
               {PanelComponent ? (
                 <PanelComponent
-                  data={node.data}
+                  data={{
+                    ...node.data,
+                    workflowTriggerKey: workflowTriggerKey ?? node.data?.workflowTriggerKey,
+                  }}
                   onChange={(patch) => onChange?.(node.id, patch)}
                 />
-              ) : (
+              ) : def ? (
                 <GenericNodeProperties
                   node={node}
                   def={def}
                   onChange={onChange}
                 />
-              )}
+              ) : null}
             </>
           )}
         </motion.aside>

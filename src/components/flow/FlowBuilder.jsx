@@ -24,6 +24,7 @@ export default function FlowBuilder({ initialWorkflowId = null }) {
         busy={flow.busy}
         canUndo={flow.canUndo}
         canRedo={flow.canRedo}
+        canPublish={flow.canPublish}
         onUndo={flow.undo}
         onRedo={flow.redo}
         onAutoLayout={flow.autoLayout}
@@ -70,6 +71,7 @@ export default function FlowBuilder({ initialWorkflowId = null }) {
         <PropertyPanel
           open={flow.propertiesOpen}
           node={flow.selectedNode}
+          workflowTriggerKey={flow.workflowTriggerKey}
           onClose={() => flow.setPropertiesOpen(false)}
           onChange={flow.updateNodeData}
           onDuplicate={(id) => flow.duplicateNodes([id])}
@@ -80,6 +82,7 @@ export default function FlowBuilder({ initialWorkflowId = null }) {
           open={flow.sidebarOpen}
           onClose={() => flow.setSidebarOpen(false)}
           onAddNode={flow.addNodeFromCatalog}
+          onAddTrigger={flow.addNodeFromTrigger}
         />
 
         {!flow.sidebarOpen ? (

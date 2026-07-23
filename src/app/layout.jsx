@@ -3,6 +3,7 @@ import { ThemeProvider } from "@wrksz/themes/next";
 import { ThemeMotionProvider } from "@/components/theme/ThemeProvider";
 import { UIProvider } from "@/context/UIContext";
 import { AuthProvider } from "@/context/AuthContext";
+import QueryProvider from "@/components/providers/QueryProvider";
 import { getLogo } from "@/services/uiService";
 import "./globals.css";
 
@@ -40,7 +41,9 @@ export default async function RootLayout({ children }) {
         >
           <ThemeMotionProvider>
             <UIProvider logo={logo}>
-              <AuthProvider>{children}</AuthProvider>
+              <QueryProvider>
+                <AuthProvider>{children}</AuthProvider>
+              </QueryProvider>
             </UIProvider>
           </ThemeMotionProvider>
         </ThemeProvider>

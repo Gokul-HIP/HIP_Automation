@@ -96,3 +96,15 @@
 .card[data-tone="danger"] {
   --tone: var(--danger);
 }
+
+.card[data-tone="purple"] {
+  --tone: #8b5cf6;
+}
+
+.card[data-tone="cyan"] {
+  --tone: #06b6d4;
+}
+
+.card[data-tone="pink"] {
+  --tone: #ec4899;
+}

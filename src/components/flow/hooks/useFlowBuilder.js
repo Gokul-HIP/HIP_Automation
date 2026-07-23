@@ -8,17 +8,25 @@ import {
 } from "reactflow";
 import { createNodeDefaults, getWorkflowNode } from "../config/workflowNodes";
 import {
-  saveWorkflow,
+  getMessagingFieldErrors,
+} from "../panels/messaging/messagingUx";
+import { validateTriggerNodeFields } from "../panels/triggers/triggerValidation";
+import {
+  createWorkflow,
   updateWorkflow,
-  loadWorkflow,
+  loadWorkflowForBuilder,
   extractWorkflowId,
-} from "@/services/workflowService";
+  buildWorkflowPayload as buildApiWorkflowPayload,
+  publishWorkflow as publishWorkflowApi,
+} from "@/services/api/workflows";
 import { getCurrentUser } from "@/services/authService";
-import { serializeWorkflow } from "@/utils/flowSerializer";
 import { WORKFLOW_STATUS } from "@/utils/workflowStatus";
 import { normalizeOrganizationId, normalizeUserId } from "@/utils/organization";
 import { useAuth } from "@/context/AuthContext";
 import useFlowToast from "./useFlowToast";
+import { useWorkflowBuilderStore } from "@/stores/workflowBuilderStore";
+import { useTriggers } from "@/hooks/useWorkflowApi";
+import { ensureUiStartNode } from "@/utils/flowEditorLifecycle";
 
 const HISTORY_LIMIT = 40;
 const COL_GAP = 280;
@@ -35,7 +43,7 @@ function buildInitialNodes() {
       id: "start",
       type: "workflow",
       position: { x: 80, y: 180 },
-      data: defaults,
+      data: { ...defaults, uiOnly: true },
       dragHandle: ".nodeDragHandle",
     },
   ];
@@ -110,7 +118,8 @@ export function computeAutoLayout(nodes, edges) {
   }));
 }
 
-export function validateWorkflowGraph(nodes, edges) {
+export function validateWorkflowGraph(nodes, edges, options = {}) {
+  const { triggerCatalog = null } = options;
   const issues = [];
 
   if (!nodes.length) {
@@ -119,15 +128,14 @@ export function validateWorkflowGraph(nodes, edges) {
   }
 
   const startNodes = nodes.filter((n) => n.data?.nodeType === "start");
-  if (startNodes.length === 0) {
-    issues.push({ level: "error", message: "Add a Workflow Start node." });
-  } else if (startNodes.length > 1) {
+  // Workflow Start is UI-only decoration (auto-injected on load, stripped on save).
+  if (startNodes.length > 1) {
     issues.push({ level: "warning", message: "Multiple start nodes detected." });
   }
 
   const eventTriggers = nodes.filter((n) => {
     const def = getWorkflowNode(n.data?.nodeType);
-    return def?.isTrigger && n.data?.nodeType !== "start";
+    return (def?.isTrigger || n.data?.triggerKey) && n.data?.nodeType !== "start";
   });
   if (eventTriggers.length === 0) {
     issues.push({
@@ -190,7 +198,8 @@ export function validateWorkflowGraph(nodes, edges) {
 
   nodes.forEach((node) => {
     const def = getWorkflowNode(node.data?.nodeType);
-    if (!def) {
+    const isApiTrigger = Boolean(node.data?.triggerKey);
+    if (!def && !isApiTrigger && node.data?.nodeType !== "start") {
       issues.push({
         level: "error",
         message: `Unknown node type on "${node.data?.label || node.id}".`,
@@ -199,28 +208,60 @@ export function validateWorkflowGraph(nodes, edges) {
       return;
     }
 
+    const effectiveDef = def ?? (isApiTrigger ? { title: node.data?.label, fields: [] } : null);
+    if (!effectiveDef) return;
+
+    const isTriggerNode =
+      isApiTrigger || def?.customPanel === "trigger" || def?.isTrigger;
+
     if (node.id !== "start" && !connected.has(node.id) && nodes.length > 1) {
       issues.push({
         level: "error",
-        message: `"${node.data?.label || def.title}" is disconnected.`,
+        message: `"${node.data?.label || effectiveDef.title}" is disconnected.`,
         nodeId: node.id,
       });
     }
 
-    (def.fields || []).forEach((field) => {
-      if (!field.required) return;
-      const value = node.data?.[field.key];
-      if (isEmpty(value)) {
-        issues.push({
-          level: "error",
-          message: `"${node.data?.label || def.title}" → ${field.label} is required.`,
-          nodeId: node.id,
-          field: field.key,
-        });
-      }
-    });
+    if (isTriggerNode && node.data?.nodeType !== "start") {
+      validateTriggerNodeFields(node, triggerCatalog).forEach((issue) =>
+        issues.push(issue)
+      );
+    } else {
+      (effectiveDef.fields || []).forEach((field) => {
+        if (!field.required) return;
+        const value = node.data?.[field.key];
+        if (isEmpty(value)) {
+          issues.push({
+            level: "error",
+            message: `"${node.data?.label || effectiveDef.title}" → ${field.label} is required.`,
+            nodeId: node.id,
+            field: field.key,
+          });
+        }
+      });
+    }
 
-    if (def.customPanel === "messaging" && node.data?.repeatReminder) {
+    if (def?.customPanel === "messaging") {
+      const fieldErrors = getMessagingFieldErrors(
+        node.data || {},
+        node.data?.nodeType
+      );
+      Object.entries(fieldErrors).forEach(([key, message]) => {
+        const already = issues.some(
+          (issue) => issue.nodeId === node.id && issue.field === key
+        );
+        if (!already) {
+          issues.push({
+            level: "error",
+            message: `"${node.data?.label || def.title}" → ${message}`,
+            nodeId: node.id,
+            field: key,
+          });
+        }
+      });
+    }
+
+    if (def?.customPanel === "messaging" && node.data?.repeatReminder) {
       if (isEmpty(node.data?.retryInterval)) {
         issues.push({
           level: "error",
@@ -242,7 +283,7 @@ export function validateWorkflowGraph(nodes, edges) {
       }
     }
 
-    if (def.customPanel === "condition") {
+    if (def?.customPanel === "condition") {
       const rules = node.data?.rules;
       if (Array.isArray(rules) && rules.length === 0) {
         issues.push({
@@ -271,6 +312,7 @@ export function validateWorkflowGraph(nodes, edges) {
 export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
   const { user } = useAuth();
   const { toast, showToast, clearToast } = useFlowToast();
+  const { data: triggerCatalog } = useTriggers();
   const viewportApiRef = useRef(null);
 
   const [nodes, setNodes] = useState(buildInitialNodes);
@@ -314,7 +356,6 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
 
   const buildWorkflowPayload = useCallback(
     (status) => {
-      // Always read the latest authenticated user at save/publish time.
       const currentUser = getCurrentUser() ?? user;
       const orgId =
         normalizeOrganizationId(currentUser?.organization_id) ??
@@ -328,14 +369,22 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
         throw error;
       }
 
-      return serializeWorkflow({
+      const triggerNode = nodes.find((n) => {
+        const def = getWorkflowNode(n.data?.nodeType);
+        return (def?.isTrigger || n.data?.triggerKey) && n.data?.nodeType !== "start";
+      });
+
+      return buildApiWorkflowPayload({
+        name: workflowName,
         nodes,
         edges,
         viewport: getViewport(),
-        name: workflowName,
         status,
         organizationId: Number(orgId),
         createdBy: creatorId,
+        module: triggerNode?.data?.module ?? null,
+        triggerKey:
+          triggerNode?.data?.triggerKey ?? triggerNode?.data?.nodeType ?? null,
       });
     },
     [
@@ -357,14 +406,18 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
     (async () => {
       setBusy("load");
       try {
-        const state = await loadWorkflow(initialWorkflowId);
+        const state = await loadWorkflowForBuilder(initialWorkflowId);
         if (cancelled) return;
 
         setWorkflowId(state.id ?? initialWorkflowId);
         setWorkflowName(state.name);
         setWorkflowStatus(state.status ?? WORKFLOW_STATUS.INACTIVE);
-        setNodes(state.nodes?.length ? state.nodes : buildInitialNodes());
-        setEdges(state.edges ?? []);
+        const hydrated = ensureUiStartNode(
+          state.nodes?.length ? state.nodes : [],
+          state.edges ?? []
+        );
+        setNodes(hydrated.nodes.length ? hydrated.nodes : buildInitialNodes());
+        setEdges(hydrated.edges);
         setPast([]);
         setFuture([]);
 
@@ -398,6 +451,40 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
     () => nodes.find((n) => n.id === selectedNodeId) ?? null,
     [nodes, selectedNodeId]
   );
+
+  const workflowTriggerKey = useMemo(() => {
+    const triggerNode = nodes.find((n) => {
+      const def = getWorkflowNode(n.data?.nodeType);
+      return (def?.isTrigger || n.data?.triggerKey) && n.data?.nodeType !== "start";
+    });
+    return triggerNode?.data?.triggerKey ?? triggerNode?.data?.nodeType ?? null;
+  }, [nodes]);
+
+  useEffect(() => {
+    useWorkflowBuilderStore.getState().setWorkflowMeta({
+      workflowId,
+      workflowName,
+      workflowStatus,
+      triggerKey: workflowTriggerKey,
+    });
+  }, [workflowId, workflowName, workflowStatus, workflowTriggerKey]);
+
+  useEffect(() => {
+    useWorkflowBuilderStore.getState().setGraph({
+      nodes,
+      edges,
+      viewport: getViewport(),
+      pushHistory: false,
+    });
+  }, [nodes, edges, getViewport]);
+
+  useEffect(() => {
+    useWorkflowBuilderStore.getState().setSelectedNodeId(selectedNodeId);
+  }, [selectedNodeId]);
+
+  useEffect(() => {
+    return () => useWorkflowBuilderStore.getState().reset();
+  }, []);
 
   const pushHistory = useCallback(
     (nextNodes, nextEdges) => {
@@ -461,6 +548,40 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
     setSelectedNodeIds(ids);
     if (ids.length) setPropertiesOpen(true);
   }, []);
+
+  const addNodeFromTrigger = useCallback(
+    (trigger) => {
+      if (locked || !trigger) return;
+
+      const id = createId(trigger.key);
+      const offset = nodes.length * 28;
+      const nextNode = {
+        id,
+        type: "workflow",
+        position: {
+          x: 360 + (offset % 220),
+          y: 120 + (offset % 260),
+        },
+        data: {
+          nodeType: trigger.key,
+          triggerKey: trigger.key,
+          category: "triggers",
+          tone: "success",
+          label: trigger.name,
+          status: "draft",
+          isTrigger: true,
+          module: trigger.module ?? trigger.group ?? null,
+          ...(trigger.defaults ?? {}),
+        },
+        dragHandle: ".nodeDragHandle",
+      };
+
+      pushHistory([...nodes, nextNode], edges);
+      setSelectedNodeIds([id]);
+      setPropertiesOpen(true);
+    },
+    [locked, nodes, edges, pushHistory]
+  );
 
   const addNodeFromCatalog = useCallback(
     (type) => {
@@ -584,13 +705,20 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
   }, [locked, nodes, edges, pushHistory]);
 
   const validate = useCallback(() => {
-    const result = validateWorkflowGraph(nodes, edges);
+    const result = validateWorkflowGraph(nodes, edges, { triggerCatalog });
     setValidation(result);
     return result;
-  }, [nodes, edges]);
+  }, [nodes, edges, triggerCatalog]);
 
   const handleSave = useCallback(async () => {
     if (busy) return;
+
+    const result = validateWorkflowGraph(nodes, edges, { triggerCatalog });
+    setValidation(result);
+    if (!result.valid) {
+      showToast("error", "Fix validation errors before saving.");
+      return result;
+    }
 
     setBusy("save");
     try {
@@ -600,7 +728,7 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
       if (workflowId) {
         response = await updateWorkflow(workflowId, payload);
       } else {
-        response = await saveWorkflow(payload);
+        response = await createWorkflow(payload);
         const newId = extractWorkflowId(response);
         if (newId != null) setWorkflowId(newId);
       }
@@ -616,31 +744,64 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
     } finally {
       setBusy(null);
     }
-  }, [busy, buildWorkflowPayload, workflowId, showToast]);
+  }, [busy, buildWorkflowPayload, workflowId, showToast, nodes, edges, triggerCatalog]);
 
   const handlePublish = useCallback(async () => {
     if (busy) return;
 
-    const result = validateWorkflowGraph(nodes, edges);
+    const result = validateWorkflowGraph(nodes, edges, { triggerCatalog });
     setValidation(result);
     if (!result.valid) return result;
 
     setBusy("publish");
     try {
-      const payload = buildWorkflowPayload(WORKFLOW_STATUS.ACTIVE);
+      const payload = buildWorkflowPayload(WORKFLOW_STATUS.INACTIVE);
 
-      let response;
-      if (workflowId) {
-        response = await updateWorkflow(workflowId, payload);
+      let id = workflowId;
+      if (id) {
+        await updateWorkflow(id, payload);
       } else {
-        response = await saveWorkflow(payload);
+        const saved = await createWorkflow(payload);
+        id = extractWorkflowId(saved);
+        if (id != null) setWorkflowId(id);
       }
 
-      const newId = extractWorkflowId(response);
-      if (newId != null) setWorkflowId(newId);
+      if (!id) {
+        throw new Error("Save workflow before publishing.");
+      }
+
+      const publishResponse = await publishWorkflowApi(id);
+      const publishedVersion =
+        publishResponse?.version ??
+        publishResponse?.data?.version ??
+        publishResponse?.published_version ??
+        null;
+      const warnings =
+        publishResponse?.warnings ??
+        publishResponse?.data?.warnings ??
+        [];
+      const apiErrors =
+        publishResponse?.errors ?? publishResponse?.data?.errors ?? [];
+
+      if (apiErrors.length) {
+        apiErrors.forEach((msg) =>
+          showToast("error", typeof msg === "string" ? msg : msg.message)
+        );
+        return result;
+      }
+
+      warnings.forEach((msg) =>
+        showToast("error", typeof msg === "string" ? `Warning: ${msg}` : `Warning: ${msg.message}`)
+      );
+
       setWorkflowStatus(WORKFLOW_STATUS.ACTIVE);
-      showToast("success", "Workflow published");
-      return result;
+      showToast(
+        "success",
+        publishedVersion
+          ? `Workflow published (v${publishedVersion})`
+          : publishResponse?.message || "Workflow published"
+      );
+      return { ...result, publishResponse };
     } catch (error) {
       showToast("error", error?.message || "Failed to publish workflow");
       if (error?.code !== "missing_organization") {
@@ -649,11 +810,16 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
     } finally {
       setBusy(null);
     }
-  }, [busy, nodes, edges, buildWorkflowPayload, workflowId, showToast]);
+  }, [busy, nodes, edges, buildWorkflowPayload, workflowId, showToast, triggerCatalog]);
+
+  const liveValidation = useMemo(
+    () => validateWorkflowGraph(nodes, edges, { triggerCatalog }),
+    [nodes, edges, triggerCatalog]
+  );
 
   const status = useMemo(() => {
     if (locked) return { label: "Locked", tone: "warning" };
-    if (validation.issues.some((i) => i.level === "error")) {
+    if (liveValidation.issues.some((i) => i.level === "error")) {
       return { label: "Invalid", tone: "danger" };
     }
     if (workflowStatus === WORKFLOW_STATUS.ACTIVE) {
@@ -661,7 +827,7 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
     }
     if (!edges.length) return { label: "Draft", tone: "info" };
     return { label: "Ready", tone: "success" };
-  }, [locked, edges.length, validation.issues, workflowStatus]);
+  }, [locked, edges.length, liveValidation.issues, workflowStatus]);
 
   return {
     nodes,
@@ -682,18 +848,21 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
     zoom,
     setZoom,
     status,
-    validation,
+    validation: liveValidation,
+    canPublish: liveValidation.valid,
     busy,
     toast,
     showToast,
     clearToast,
     canUndo: past.length > 0,
     canRedo: future.length > 0,
+    workflowTriggerKey,
     onNodesChange,
     onEdgesChange,
     onConnect,
     onSelectionChange,
     addNodeFromCatalog,
+    addNodeFromTrigger,
     updateNodeData,
     deleteNodes,
     duplicateNodes,

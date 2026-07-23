@@ -1,17 +1,5 @@
-import DashboardLayout from "@/components/layout/DashboardLayout";
-import FlowBuilder from "@/components/flow/FlowBuilder";
+import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "Workflows · HIP Automation",
-};
-
-export default async function AutomationPage({ searchParams }) {
-  const params = await searchParams;
-  const initialWorkflowId = params?.id ?? params?.workflowId ?? null;
-
-  return (
-    <DashboardLayout>
-      <FlowBuilder initialWorkflowId={initialWorkflowId} />
-    </DashboardLayout>
-  );
+export default function LegacyAutomationRedirect() {
+  redirect("/workflows/new");
 }

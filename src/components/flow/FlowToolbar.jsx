@@ -22,6 +22,7 @@ export default function FlowToolbar({
   busy,
   canUndo,
   canRedo,
+  canPublish = true,
   onUndo,
   onRedo,
   onAutoLayout,
@@ -139,10 +140,15 @@ export default function FlowToolbar({
         <motion.button
           type="button"
           className={`${styles.toolBtn} ${styles.toolBtnPrimary}`}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.97 }}
+          whileHover={{ scale: canPublish && !busy ? 1.02 : 1 }}
+          whileTap={{ scale: canPublish && !busy ? 0.97 : 1 }}
           onClick={onPublish}
-          disabled={!!busy}
+          disabled={!!busy || !canPublish}
+          title={
+            canPublish
+              ? "Publish workflow"
+              : "Fix validation errors before publishing"
+          }
           aria-busy={busy === "publish"}
         >
           <HiOutlineUpload />

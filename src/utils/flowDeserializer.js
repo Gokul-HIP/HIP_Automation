@@ -3,13 +3,15 @@
  */
 
 import { normalizeWorkflowStatus } from "./workflowStatus";
+import { ensureUiStartNode } from "./flowEditorLifecycle";
+import { hydrateConditionNodeForEditor } from "./conditionNodeSerialization";
 
 /**
  * @param {import('../types/workflow').SerializedWorkflowNode} node
  * @returns {import('reactflow').Node}
  */
 export function deserializeNode(node) {
-  return {
+  const restored = {
     id: String(node.id),
     type: String(node.type || "workflow"),
     position: {
@@ -20,6 +22,7 @@ export function deserializeNode(node) {
     dragHandle: ".nodeDragHandle",
     selected: false,
   };
+  return hydrateConditionNodeForEditor(restored);
 }
 
 /**
@@ -69,6 +72,7 @@ export function extractWorkflowState(response) {
   const configuration = data?.configuration;
 
   const { nodes, edges, viewport } = deserializeWorkflow(configuration);
+  const hydrated = ensureUiStartNode(nodes, edges);
 
   return {
     id: data?.id ?? null,
@@ -76,8 +80,8 @@ export function extractWorkflowState(response) {
     status: normalizeWorkflowStatus(data?.status),
     organizationId: data?.organization_id ?? null,
     createdBy: data?.created_by ?? null,
-    nodes,
-    edges,
+    nodes: hydrated.nodes,
+    edges: hydrated.edges,
     viewport,
   };
 }

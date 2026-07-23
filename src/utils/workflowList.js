@@ -55,6 +55,13 @@ export function normalizeWorkflowRow(item) {
   return {
     id: item.id,
     name: String(item.name || "Untitled Workflow"),
+    module: item.module ?? item.module_name ?? "—",
+    trigger:
+      item.trigger ??
+      item.trigger_name ??
+      item.trigger_key ??
+      item.triggerKey ??
+      "—",
     status: String(item.status || "inactive"),
     createdBy,
     createdAt: item.created_at ?? null,
@@ -130,8 +137,8 @@ export function filterWorkflowItems(items, { search = "", status = "all", sort =
   }
 
   result.sort((a, b) => {
-    const aTime = new Date(a.createdAt || 0).getTime();
-    const bTime = new Date(b.createdAt || 0).getTime();
+    const aTime = new Date(a.updatedAt || a.createdAt || 0).getTime();
+    const bTime = new Date(b.updatedAt || b.createdAt || 0).getTime();
     return sort === "oldest" ? aTime - bTime : bTime - aTime;
   });
 

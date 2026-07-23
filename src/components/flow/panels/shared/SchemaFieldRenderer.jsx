@@ -24,6 +24,9 @@ export default function SchemaFieldRenderer({
   data,
   schema,
   onChange,
+  error = null,
+  onFocusField,
+  onSelectField,
 }) {
   const value = data?.[field.key];
   const id = `schema-${field.key || field.type}`;
@@ -40,7 +43,12 @@ export default function SchemaFieldRenderer({
         groups={schema?.variableGroups || []}
         onInsert={(token) => {
           const current = data?.variables?.[field.key] ?? "";
-          onChange?.({ variables: { ...(data?.variables || {}), note: `${current}${token}` } });
+          onChange?.({
+            variables: {
+              ...(data?.variables || {}),
+              note: `${current}${token}`,
+            },
+          });
         }}
       />
     );
@@ -74,15 +82,18 @@ export default function SchemaFieldRenderer({
 
   if (field.type === "number") {
     return (
-      <NumberField
-        id={id}
-        label={field.label}
-        value={value ?? ""}
-        min={field.min}
-        max={field.max}
-        required={field.required}
-        onChange={(next) => onChange?.({ [field.key]: next })}
-      />
+      <div className={styles.field}>
+        <NumberField
+          id={id}
+          label={field.label}
+          value={value ?? ""}
+          min={field.min}
+          max={field.max}
+          required={field.required}
+          onChange={(next) => onChange?.({ [field.key]: next })}
+        />
+        {error ? <p className={styles.fieldError}>{error}</p> : null}
+      </div>
     );
   }
 
@@ -97,7 +108,8 @@ export default function SchemaFieldRenderer({
           required={field.required}
           onChange={(next) => onChange?.({ [field.key]: next })}
         />
-        {field.hint ? <p className={styles.hint}>{field.hint}</p> : null}
+        {field.hint && !error ? <p className={styles.hint}>{field.hint}</p> : null}
+        {error ? <p className={styles.fieldError}>{error}</p> : null}
       </div>
     );
   }
@@ -111,27 +123,41 @@ export default function SchemaFieldRenderer({
         </label>
         <textarea
           id={id}
-          className={styles.textarea}
+          className={`${styles.textarea} ${error ? styles.controlError : ""}`}
           value={value ?? ""}
           placeholder={field.placeholder || ""}
           onChange={(e) => onChange?.({ [field.key]: e.target.value })}
+          onFocus={onFocusField}
+          onSelect={onSelectField}
+          onClick={onSelectField}
+          onKeyUp={onSelectField}
         />
-        {field.hint ? <p className={styles.hint}>{field.hint}</p> : null}
+        {field.hint && !error ? <p className={styles.hint}>{field.hint}</p> : null}
+        {error ? <p className={styles.fieldError}>{error}</p> : null}
       </div>
     );
   }
 
   return (
     <div className={styles.field}>
-      <TextField
+      <label htmlFor={id} className={styles.label}>
+        {field.label}
+        {field.required ? " *" : ""}
+      </label>
+      <input
         id={id}
-        label={field.label}
+        type="text"
+        className={`${styles.control} ${error ? styles.controlError : ""}`}
         value={value ?? ""}
-        required={field.required}
         placeholder={field.placeholder || ""}
-        onChange={(next) => onChange?.({ [field.key]: next })}
+        onChange={(e) => onChange?.({ [field.key]: e.target.value })}
+        onFocus={onFocusField}
+        onSelect={onSelectField}
+        onClick={onSelectField}
+        onKeyUp={onSelectField}
       />
-      {field.hint ? <p className={styles.hint}>{field.hint}</p> : null}
+      {field.hint && !error ? <p className={styles.hint}>{field.hint}</p> : null}
+      {error ? <p className={styles.fieldError}>{error}</p> : null}
     </div>
   );
 }

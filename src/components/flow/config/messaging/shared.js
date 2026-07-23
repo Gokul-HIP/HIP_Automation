@@ -1,5 +1,29 @@
 /** @typedef {{ value: string | number, label: string }} SelectOption */
 
+/**
+ * Node type → template API channel.
+ * Used by the property panel — never ask the user to pick a channel.
+ * @type {Record<string, string>}
+ */
+export const TEMPLATE_CHANNEL_BY_NODE = {
+  sendWhatsApp: "whatsapp",
+  sendSms: "sms",
+  sendEmail: "email",
+  sendPush: "push",
+  sendAiChat: "ai",
+  sendAiVoice: "voice",
+  sendIvr: "ivr",
+};
+
+/**
+ * @param {string | null | undefined} nodeType
+ * @returns {string | null}
+ */
+export function getTemplateChannelForNode(nodeType) {
+  if (!nodeType) return null;
+  return TEMPLATE_CHANNEL_BY_NODE[nodeType] ?? null;
+}
+
 /** @type {SelectOption[]} */
 export const NOTIFICATION_CHANNEL_OPTIONS = [
   { value: "whatsapp", label: "WhatsApp" },

@@ -2,6 +2,7 @@
 
 import { renderTemplate } from "../../config/triggers";
 import { FieldLabel } from "../fields/FieldChrome";
+import { ensureValidPlaceholder } from "@/utils/workflowVariableTokens";
 import styles from "../../styles/propertyPanel.module.css";
 
 export default function MessageTemplateEditor({
@@ -37,17 +38,30 @@ export default function MessageTemplateEditor({
               <div key={group.label} className={styles.variableGroup}>
                 <span className={styles.variableGroupLabel}>{group.label}</span>
                 <div className={styles.variableChips}>
-                  {group.variables.map((token) => (
-                    <button
-                      key={token}
-                      type="button"
-                      className={styles.token}
-                      title={`Insert ${token}`}
-                      onClick={() => onChange?.(`${value || ""}${token}`)}
-                    >
-                      {token}
-                    </button>
-                  ))}
+                  {group.variables.map((variable) => {
+                    const rawToken =
+                      typeof variable === "string"
+                        ? variable
+                        : String(variable?.token || variable?.key || "");
+                    const token = ensureValidPlaceholder(rawToken);
+                    const chipLabel =
+                      typeof variable === "string"
+                        ? variable
+                        : String(variable?.label || token);
+                    return (
+                      <button
+                        key={token || chipLabel}
+                        type="button"
+                        className={styles.token}
+                        title={`Insert ${token}`}
+                        onClick={() =>
+                          token && onChange?.(`${value || ""}${token}`)
+                        }
+                      >
+                        {chipLabel}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             ))}

@@ -152,8 +152,6 @@ export const WAIT_NODE_TYPES = new Set([
 export const CONDITION_NODE_TYPES = new Set([
   "condition",
   "switch",
-  "logicAnd",
-  "logicOr",
   "logicNot",
   "compare",
   "patientSegment",

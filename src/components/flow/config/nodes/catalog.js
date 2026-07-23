@@ -178,8 +178,6 @@ export const WORKFLOW_NODES = [
   /* ── Conditions ── */
   conditionNode({ type: "condition", title: "IF / ELSE", icon: HiOutlineSwitchHorizontal }),
   conditionNode({ type: "switch", title: "Switch", icon: HiOutlineCollection }),
-  conditionNode({ type: "logicAnd", title: "AND", icon: HiOutlineFilter }),
-  conditionNode({ type: "logicOr", title: "OR", icon: HiOutlineFilter }),
   conditionNode({ type: "logicNot", title: "NOT", icon: HiOutlineFilter }),
   conditionNode({ type: "compare", title: "Compare", icon: HiOutlineCode }),
   conditionNode({ type: "patientSegment", title: "Patient Segment", icon: HiOutlineUserGroup }),

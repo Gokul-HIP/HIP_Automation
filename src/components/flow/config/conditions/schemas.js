@@ -6,7 +6,7 @@ import {
 
 export const CONDITION_SCHEMAS = {
   condition: {
-    description: "Branch the workflow when all rules match (IF / ELSE).",
+    description: "Branch the workflow when rules match (IF / ELSE). Use Match to require all rules (AND) or any rule (OR).",
     fields: [{ key: "conditionBuilder", type: "conditionBuilder", label: "Rules" }],
     defaults: {
       label: "IF / ELSE",
@@ -24,18 +24,6 @@ export const CONDITION_SCHEMAS = {
       { key: "cases", type: "textarea", label: "Cases (comma separated)", required: true, placeholder: "urgent, routine, follow_up" },
     ],
     defaults: { label: "Switch", status: "draft", switchField: "patient_segment", cases: "urgent, routine" },
-  },
-
-  logicAnd: {
-    description: "Continue only when all nested conditions are true.",
-    fields: [{ key: "conditionBuilder", type: "conditionBuilder", label: "AND Rules" }],
-    defaults: { label: "AND", status: "draft", logic: "and", rules: [] },
-  },
-
-  logicOr: {
-    description: "Continue when any nested condition is true.",
-    fields: [{ key: "conditionBuilder", type: "conditionBuilder", label: "OR Rules" }],
-    defaults: { label: "OR", status: "draft", logic: "or", rules: [] },
   },
 
   logicNot: {
