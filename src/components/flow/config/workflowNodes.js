@@ -59,7 +59,8 @@ export function getSidebarCatalogGroups({ search = "", apiTriggerCatalog = null 
       if (node.isStart) return false;
       if (node.category !== category.id) return false;
       if (category.id === "triggers" && hasApiTriggers && node.isTrigger) {
-        return false;
+        // Keep local trigger types that the API catalog does not yet expose.
+        if (apiTriggerKeys.has(node.type)) return false;
       }
       return matchesText(node.title, node.description, node.type);
     });

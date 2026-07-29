@@ -38,16 +38,23 @@ export default function FlowBuilder({ initialWorkflowId = null }) {
       />
 
       {flow.validation.issues.length > 0 ? (
-        <div className={styles.validationBar}>
-          {flow.validation.issues.slice(0, 6).map((issue, idx) => (
-            <span
-              key={`${issue.message}-${idx}`}
+        <div className={styles.validationBar} role="status">
+          {flow.validation.issues.map((issue, idx) => (
+            <button
+              key={`${issue.message}-${issue.nodeId || "x"}-${idx}`}
+              type="button"
               className={`${styles.issueChip} ${
                 issue.level === "error" ? styles.issueError : styles.issueWarning
-              }`}
+              } ${issue.nodeId ? styles.issueClickable : ""}`}
+              onClick={() => flow.focusValidationIssue?.(issue)}
+              title={
+                issue.nodeId
+                  ? "Click to highlight node"
+                  : issue.message
+              }
             >
               {issue.message}
-            </span>
+            </button>
           ))}
         </div>
       ) : null}

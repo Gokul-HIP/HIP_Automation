@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { HiOutlineX, HiOutlineDuplicate, HiOutlineTrash } from "react-icons/hi";
 import { getWorkflowNode } from "../config/workflowNodes";
 import { getCategoryById } from "../config/workflowCategories";
+import { getTriggerSchema } from "../config/triggers";
 import TriggerProperties from "./triggers/TriggerProperties";
 import ApiTriggerProperties from "@/components/property-panel/ApiTriggerProperties";
 import MessagingProperties from "./messaging/MessagingProperties";
@@ -147,7 +148,12 @@ export default function PropertyPanel({
 
   let PanelComponent = def?.customPanel ? PANEL_MAP[def.customPanel] : null;
   if (isTriggerNode && !isStart) {
-    PanelComponent = isApiTrigger ? ApiTriggerProperties : TriggerProperties;
+    // Prefer rich local trigger schemas (e.g. Medicine Reminder) over API text forms.
+    const hasLocalSchema = Boolean(getTriggerSchema(node?.data?.nodeType));
+    PanelComponent =
+      isApiTrigger && !hasLocalSchema
+        ? ApiTriggerProperties
+        : TriggerProperties;
   }
 
   return (

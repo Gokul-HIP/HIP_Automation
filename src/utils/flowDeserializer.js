@@ -5,6 +5,7 @@
 import { normalizeWorkflowStatus } from "./workflowStatus";
 import { ensureUiStartNode } from "./flowEditorLifecycle";
 import { hydrateConditionNodeForEditor } from "./conditionNodeSerialization";
+import { normalizeMedicineReminderData } from "@/components/flow/config/triggers";
 
 /**
  * @param {import('../types/workflow').SerializedWorkflowNode} node
@@ -22,7 +23,14 @@ export function deserializeNode(node) {
     dragHandle: ".nodeDragHandle",
     selected: false,
   };
-  return hydrateConditionNodeForEditor(restored);
+  const withCondition = hydrateConditionNodeForEditor(restored);
+  if (withCondition.data?.nodeType === "medicineReminder") {
+    return {
+      ...withCondition,
+      data: normalizeMedicineReminderData(withCondition.data),
+    };
+  }
+  return withCondition;
 }
 
 /**

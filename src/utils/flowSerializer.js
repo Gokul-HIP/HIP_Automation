@@ -6,6 +6,7 @@
 import { normalizeWorkflowStatus } from "./workflowStatus";
 import { normalizeOrganizationId, normalizeUserId } from "./organization";
 import { normalizeConditionNodeData } from "./conditionNodeSerialization";
+import { normalizeMedicineReminderData } from "@/components/flow/config/triggers";
 
 const BUILDER_VERSION = "1";
 const REACT_FLOW_VERSION = "12.x";
@@ -28,6 +29,10 @@ function toPlainData(value) {
  * @returns {import('../types/workflow').SerializedWorkflowNode}
  */
 export function serializeNode(node) {
+  let data = normalizeConditionNodeData(toPlainData(node.data));
+  if (data?.nodeType === "medicineReminder") {
+    data = normalizeMedicineReminderData(data);
+  }
   return {
     id: String(node.id),
     type: String(node.type ?? "workflow"),
@@ -35,7 +40,7 @@ export function serializeNode(node) {
       x: Number(node.position?.x ?? 0),
       y: Number(node.position?.y ?? 0),
     },
-    data: normalizeConditionNodeData(toPlainData(node.data)),
+    data,
   };
 }
 

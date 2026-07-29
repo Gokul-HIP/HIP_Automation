@@ -61,6 +61,28 @@ export function validateTriggerNodeFields(node, triggerCatalog = null) {
   const issues = [];
 
   for (const field of fields) {
+    if (field?.type === "retry") {
+      if (data.repeatReminder) {
+        if (isEmpty(data.retryInterval)) {
+          issues.push({
+            level: "error",
+            message: `"${title}" → Retry Interval is required when Repeat Reminder is on.`,
+            nodeId: node.id,
+            field: "retryInterval",
+          });
+        }
+        if (isEmpty(data.maxRetryCount) || Number(data.maxRetryCount) < 1) {
+          issues.push({
+            level: "error",
+            message: `"${title}" → Maximum Retry Count must be at least 1.`,
+            nodeId: node.id,
+            field: "maxRetryCount",
+          });
+        }
+      }
+      continue;
+    }
+
     if (!field?.required || !field.key) continue;
     if (!isSchemaFieldVisible(field, data)) continue;
     if (isEmpty(data[field.key])) {

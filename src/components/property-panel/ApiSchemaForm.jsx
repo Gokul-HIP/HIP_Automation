@@ -4,12 +4,28 @@ import TextField from "@/components/flow/panels/fields/TextField";
 import SelectField from "@/components/flow/panels/fields/SelectField";
 import ToggleField from "@/components/flow/panels/fields/ToggleField";
 import NumberField from "@/components/flow/panels/fields/NumberField";
+import MultiSelectField from "@/components/flow/panels/fields/MultiSelectField";
+import {
+  TRIGGER_CHANNEL_OPTIONS,
+  normalizeChannelList,
+} from "@/components/flow/config/triggers/shared";
 import styles from "@/components/flow/styles/propertyPanel.module.css";
 
 function fieldVisible(field, data) {
   if (!field.showWhen) return true;
   return Object.entries(field.showWhen).every(
     ([key, val]) => data?.[key] === val
+  );
+}
+
+function isMultiSelectField(field) {
+  const type = String(field?.type || "").toLowerCase();
+  return (
+    field?.key === "channels" ||
+    type === "channels" ||
+    type === "multiselect" ||
+    type === "multi_select" ||
+    type === "multi-select"
   );
 }
 
@@ -46,6 +62,27 @@ export default function ApiSchemaForm({ fields = [], data, onChange }) {
               min={field.min}
               max={field.max}
               required={field.required}
+              onChange={(next) => patch({ [field.key]: next })}
+            />
+          );
+        }
+
+        if (isMultiSelectField(field)) {
+          const options =
+            Array.isArray(field.options) && field.options.length
+              ? field.options
+              : field.key === "channels"
+                ? TRIGGER_CHANNEL_OPTIONS
+                : [];
+          return (
+            <MultiSelectField
+              key={field.key}
+              id={id}
+              label={field.label || "Delivery Channels"}
+              values={normalizeChannelList(value)}
+              options={options}
+              required={field.required}
+              hint={field.hint || "Select one or more delivery channels."}
               onChange={(next) => patch({ [field.key]: next })}
             />
           );

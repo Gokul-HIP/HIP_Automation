@@ -6,6 +6,9 @@ import { useVariables } from "@/hooks/useWorkflowApi";
 import { ensureValidPlaceholder } from "@/utils/workflowVariableTokens";
 import styles from "@/components/flow/styles/propertyPanel.module.css";
 
+const RECENT_KEY = "hip.workflow.recentVariables";
+const MAX_RECENT = 8;
+
 function VariableSkeleton() {
   return (
     <div className={styles.sectionCompact} aria-busy="true" aria-label="Loading variables">
@@ -31,6 +34,26 @@ function getVariableParts(variable) {
   return { label, token };
 }
 
+function readRecent() {
+  try {
+    const raw = window.localStorage.getItem(RECENT_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((t) => typeof t === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeRecent(token) {
+  try {
+    const next = [token, ...readRecent().filter((t) => t !== token)].slice(0, MAX_RECENT);
+    window.localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+    return next;
+  } catch {
+    return [token];
+  }
+}
+
 export default function ApiVariablePicker({ triggerKey, onInsert }) {
   const {
     data: groups = [],
@@ -42,6 +65,10 @@ export default function ApiVariablePicker({ triggerKey, onInsert }) {
 
   const [openGroups, setOpenGroups] = useState({});
   const [feedback, setFeedback] = useState("");
+  const [search, setSearch] = useState("");
+  const [recent, setRecent] = useState(() =>
+    typeof window !== "undefined" ? readRecent() : []
+  );
 
   const orderedGroups = useMemo(() => {
     const preferred = [
@@ -55,15 +82,33 @@ export default function ApiVariablePicker({ triggerKey, onInsert }) {
       "Medicine",
       "System",
     ];
-    return [...groups].sort((a, b) => {
-      const ai = preferred.indexOf(a.label);
-      const bi = preferred.indexOf(b.label);
-      if (ai === -1 && bi === -1) return a.label.localeCompare(b.label);
-      if (ai === -1) return 1;
-      if (bi === -1) return -1;
-      return ai - bi;
-    });
-  }, [groups]);
+    const q = search.trim().toLowerCase();
+
+    return [...groups]
+      .map((group) => {
+        const variables = (group.variables || []).filter((variable) => {
+          if (!q) return true;
+          const { label, token } = getVariableParts(variable);
+          return (
+            label.toLowerCase().includes(q) ||
+            token.toLowerCase().includes(q)
+          );
+        });
+        return { ...group, variables };
+      })
+      .filter((group) => group.variables.length > 0)
+      .sort((a, b) => {
+        const ai = preferred.indexOf(a.label);
+        const bi = preferred.indexOf(b.label);
+        if (ai === -1 && bi === -1) return a.label.localeCompare(b.label);
+        if (ai === -1) return 1;
+        if (bi === -1) return -1;
+        return ai - bi;
+      });
+  }, [groups, search]);
+
+  const allOpen = orderedGroups.length > 0 &&
+    orderedGroups.every((group) => openGroups[group.label]);
 
   const toggleGroup = (label) => {
     setOpenGroups((prev) => ({
@@ -72,12 +117,42 @@ export default function ApiVariablePicker({ triggerKey, onInsert }) {
     }));
   };
 
+  const expandAll = () => {
+    const next = {};
+    orderedGroups.forEach((group) => {
+      next[group.label] = true;
+    });
+    setOpenGroups(next);
+  };
+
+  const collapseAll = () => {
+    const next = {};
+    orderedGroups.forEach((group) => {
+      next[group.label] = false;
+    });
+    setOpenGroups(next);
+  };
+
   const handleInsert = (token, label) => {
     const safeToken = ensureValidPlaceholder(token);
     if (!safeToken) return;
     onInsert?.(safeToken);
+    setRecent(writeRecent(safeToken));
     setFeedback(`Inserted ${label || safeToken}`);
     window.setTimeout(() => setFeedback(""), 1600);
+  };
+
+  const handleCopy = async (token, label) => {
+    const safeToken = ensureValidPlaceholder(token);
+    if (!safeToken) return;
+    try {
+      await navigator.clipboard.writeText(safeToken);
+      setFeedback(`Copied ${label || safeToken}`);
+      window.setTimeout(() => setFeedback(""), 1600);
+    } catch {
+      setFeedback("Unable to copy");
+      window.setTimeout(() => setFeedback(""), 1600);
+    }
   };
 
   if (!triggerKey) {
@@ -107,7 +182,7 @@ export default function ApiVariablePicker({ triggerKey, onInsert }) {
     );
   }
 
-  if (!orderedGroups.length) {
+  if (!groups.length) {
     return (
       <div className={styles.sectionCompact}>
         <h3 className={styles.sectionTitle}>Variable Picker</h3>
@@ -123,9 +198,40 @@ export default function ApiVariablePicker({ triggerKey, onInsert }) {
         Expand a group and click a variable to insert at the cursor.
       </p>
 
+      <input
+        type="search"
+        className={`${styles.input} ${styles.variableSearch}`}
+        placeholder="Search variables…"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        aria-label="Search variables"
+      />
+
+      <div className={styles.variableToolbar}>
+        <button type="button" className={styles.retryBtn} onClick={allOpen ? collapseAll : expandAll}>
+          {allOpen ? "Collapse All" : "Expand All"}
+        </button>
+      </div>
+
+      {recent.length ? (
+        <div className={styles.variableRecent} aria-label="Recent variables">
+          {recent.map((token) => (
+            <button
+              key={token}
+              type="button"
+              className={styles.token}
+              title={`Insert ${token}`}
+              onClick={() => handleInsert(token, token)}
+            >
+              {token}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       <div className={styles.variableTree} role="tree">
         {orderedGroups.map((group) => {
-          const isOpen = Boolean(openGroups[group.label]);
+          const isOpen = Boolean(openGroups[group.label]) || Boolean(search.trim());
           return (
             <div key={group.label} className={styles.variableTreeGroup} role="treeitem">
               <button
@@ -148,15 +254,24 @@ export default function ApiVariablePicker({ triggerKey, onInsert }) {
                   {group.variables.map((variable) => {
                     const { label, token } = getVariableParts(variable);
                     return (
-                      <button
-                        key={token || label}
-                        type="button"
-                        className={styles.variableTreeItem}
-                        title={`Insert ${token}`}
-                        onClick={() => handleInsert(token, label)}
-                      >
-                        {label}
-                      </button>
+                      <div key={token || label} className={styles.variableTreeItemRow}>
+                        <button
+                          type="button"
+                          className={styles.variableTreeItem}
+                          title={`Insert ${token}`}
+                          onClick={() => handleInsert(token, label)}
+                        >
+                          {label}
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.retryBtn}
+                          title={`Copy ${token}`}
+                          onClick={() => handleCopy(token, label)}
+                        >
+                          Copy
+                        </button>
+                      </div>
                     );
                   })}
                 </div>

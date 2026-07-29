@@ -202,14 +202,75 @@ export const MESSAGING_SCHEMAS = {
     fields: [
       { key: "label", type: "text", label: "Display Name", required: true },
       {
+        key: "voiceProvider",
+        type: "select",
+        label: "Voice Provider",
+        options: [
+          { value: "default", label: "Default Hospital Voice" },
+          { value: "openai", label: "OpenAI" },
+          { value: "azure", label: "Azure" },
+          { value: "custom", label: "Custom" },
+        ],
+        required: true,
+      },
+      {
         key: "templateId",
         type: "templateSelect",
         label: "Template",
+        required: false,
+      },
+      {
+        key: "prompt",
+        type: "textarea",
+        label: "Prompt",
+        placeholder: "Spoken script or AI prompt…",
         required: true,
       },
-      { key: "prompt", type: "textarea", label: "Prompt" },
+      {
+        key: "language",
+        type: "select",
+        label: "Language",
+        options: [
+          { value: "en", label: "English" },
+          { value: "hi", label: "Hindi" },
+          { value: "ta", label: "Tamil" },
+          { value: "te", label: "Telugu" },
+          { value: "ar", label: "Arabic" },
+        ],
+      },
+      {
+        key: "voice",
+        type: "text",
+        label: "Voice",
+        placeholder: "e.g. alloy, nova",
+      },
+      {
+        key: "gender",
+        type: "select",
+        label: "Gender",
+        options: [
+          { value: "neutral", label: "Neutral" },
+          { value: "female", label: "Female" },
+          { value: "male", label: "Male" },
+        ],
+      },
+      {
+        key: "retryCount",
+        type: "number",
+        label: "Retry Count",
+        min: 0,
+        max: 5,
+      },
     ],
-    defaults: createMessagingDefaults({ label: "Send AI Voice Call", prompt: "" }),
+    defaults: createMessagingDefaults({
+      label: "Send AI Voice Call",
+      voiceProvider: "default",
+      prompt: "",
+      language: "en",
+      voice: "",
+      gender: "neutral",
+      retryCount: 1,
+    }),
   },
 
   sendIvr: {

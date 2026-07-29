@@ -48,6 +48,15 @@
   background: color-mix(in srgb, var(--warning) 12%, transparent);
 }
 
+.issueClickable {
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.issueClickable:hover {
+  border-color: currentColor;
+}
+
 .sidebarOpenTab {
   position: absolute;
   top: 50%;

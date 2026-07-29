@@ -86,6 +86,7 @@ export function getMessagingRequiredFields(nodeType) {
   switch (nodeType) {
     case "sendEmail":
     case "sendPush":
+    case "sendAiVoice":
       return [];
     case "sendWhatsApp":
       return [
@@ -142,6 +143,15 @@ export function getMessagingFieldErrors(data, nodeType) {
     if (!isFilled(data?.body)) {
       errors.body = "Body required when no template is selected";
     }
+    return errors;
+  }
+
+  if (nodeType === "sendAiVoice") {
+    const hasTemplate = isFilled(data?.templateId ?? data?.template_id);
+    const hasPrompt = isFilled(data?.prompt);
+    if (hasTemplate || hasPrompt) return errors;
+    errors.templateId = "Select a voice template or enter a prompt";
+    errors.prompt = "Prompt required when no template is selected";
     return errors;
   }
 

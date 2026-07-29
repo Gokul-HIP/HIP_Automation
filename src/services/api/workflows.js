@@ -1,6 +1,7 @@
 import { apiClient, unwrapData } from "./client";
 import { extractWorkflowState } from "@/utils/flowDeserializer";
 import { normalizeConditionNodeData } from "@/utils/conditionNodeSerialization";
+import { normalizeMedicineReminderData } from "@/components/flow/config/triggers";
 import {
   normalizeWorkflowList,
   normalizeWorkflowRow,
@@ -66,15 +67,21 @@ export function buildWorkflowPayload({
       builderVersion: BUILDER_VERSION,
       reactFlowVersion: REACT_FLOW_VERSION,
       viewport: viewport ?? { x: 0, y: 0, zoom: 1 },
-      nodes: serializedNodes.map((node) => ({
-        id: String(node.id),
-        type: String(node.type ?? "workflow"),
-        position: {
-          x: Number(node.position?.x ?? 0),
-          y: Number(node.position?.y ?? 0),
-        },
-        data: normalizeConditionNodeData(node.data ?? {}),
-      })),
+      nodes: serializedNodes.map((node) => {
+        let data = normalizeConditionNodeData(node.data ?? {});
+        if (data?.nodeType === "medicineReminder") {
+          data = normalizeMedicineReminderData(data);
+        }
+        return {
+          id: String(node.id),
+          type: String(node.type ?? "workflow"),
+          position: {
+            x: Number(node.position?.x ?? 0),
+            y: Number(node.position?.y ?? 0),
+          },
+          data,
+        };
+      }),
       edges: serializedEdges.map((edge) => ({
         id: String(edge.id),
         source: String(edge.source),

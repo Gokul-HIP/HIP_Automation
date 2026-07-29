@@ -259,6 +259,20 @@ export function validateWorkflowGraph(nodes, edges, options = {}) {
           });
         }
       });
+
+      if (isEmpty(node.data?.recipient)) {
+        const already = issues.some(
+          (issue) => issue.nodeId === node.id && issue.field === "recipient"
+        );
+        if (!already) {
+          issues.push({
+            level: "error",
+            message: `"${node.data?.label || def.title}" → Recipient is required.`,
+            nodeId: node.id,
+            field: "recipient",
+          });
+        }
+      }
     }
 
     if (def?.customPanel === "messaging" && node.data?.repeatReminder) {
@@ -285,10 +299,25 @@ export function validateWorkflowGraph(nodes, edges, options = {}) {
 
     if (def?.customPanel === "condition") {
       const rules = node.data?.rules;
-      if (Array.isArray(rules) && rules.length === 0) {
+      if (!Array.isArray(rules) || rules.length === 0) {
         issues.push({
           level: "error",
           message: `"${node.data?.label || def.title}" needs at least one condition rule.`,
+          nodeId: node.id,
+        });
+      }
+    }
+
+    if (
+      def?.customPanel === "wait" ||
+      node.data?.nodeType === "delay" ||
+      node.data?.nodeType === "wait"
+    ) {
+      const hasOutgoing = edges.some((e) => e.source === node.id);
+      if (!hasOutgoing) {
+        issues.push({
+          level: "error",
+          message: `"${node.data?.label || def?.title || "Delay"}" has no outgoing connection.`,
           nodeId: node.id,
         });
       }
@@ -553,6 +582,7 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
     (trigger) => {
       if (locked || !trigger) return;
 
+      const localDefaults = createNodeDefaults(trigger.key) || {};
       const id = createId(trigger.key);
       const offset = nodes.length * 28;
       const nextNode = {
@@ -563,11 +593,12 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
           y: 120 + (offset % 260),
         },
         data: {
+          ...localDefaults,
           nodeType: trigger.key,
           triggerKey: trigger.key,
           category: "triggers",
-          tone: "success",
-          label: trigger.name,
+          tone: localDefaults.tone || "success",
+          label: trigger.name || localDefaults.label,
           status: "draft",
           isTrigger: true,
           module: trigger.module ?? trigger.group ?? null,
@@ -829,6 +860,29 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
     return { label: "Ready", tone: "success" };
   }, [locked, edges.length, liveValidation.issues, workflowStatus]);
 
+  const focusValidationIssue = useCallback(
+    (issue) => {
+      if (!issue?.nodeId) return;
+      setNodes((nds) =>
+        nds.map((n) => ({
+          ...n,
+          selected: n.id === issue.nodeId,
+        }))
+      );
+      setSelectedNodeIds([issue.nodeId]);
+      setPropertiesOpen(true);
+      const target = nodes.find((n) => n.id === issue.nodeId);
+      if (target && viewportApiRef.current?.setCenter) {
+        viewportApiRef.current.setCenter(
+          target.position.x + 120,
+          target.position.y + 40,
+          { zoom: Math.max(zoom, 0.9), duration: 280 }
+        );
+      }
+    },
+    [nodes, zoom]
+  );
+
   return {
     nodes,
     edges,
@@ -873,5 +927,6 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
     handleSave,
     handlePublish,
     registerViewportApi,
+    focusValidationIssue,
   };
 }

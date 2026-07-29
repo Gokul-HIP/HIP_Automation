@@ -244,14 +244,26 @@ export default function TemplatePicker({
   const channelLabel = channelDisplayName(channel);
 
   if (!templatesLoading && !isError && templates.length === 0) {
+    const isVoice = String(channel || "").toLowerCase() === "voice";
     return (
       <div className={styles.field}>
         <label className={styles.label}>{label}</label>
         <div className={styles.emptyTemplateBox}>
           <p className={styles.sectionHint}>
-            No templates available for {channelLabel}.
+            {isVoice
+              ? "Voice templates are not implemented yet."
+              : `No templates available for ${channelLabel}.`}
           </p>
-          <button type="button" className={styles.retryBtn} disabled title="Coming soon">
+          <button
+            type="button"
+            className={styles.retryBtn}
+            disabled
+            title={
+              isVoice
+                ? "Voice templates are not implemented yet."
+                : "Template creation is not available in the builder yet."
+            }
+          >
             Create Template
           </button>
         </div>

@@ -311,15 +311,46 @@
 .token {
   display: inline-flex;
   align-items: center;
-  height: 24px;
-  padding-inline: 8px;
-  border-radius: var(--radius-pill);
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 999px;
   border: 1px solid var(--border-color);
-  background: var(--surface);
-  color: var(--primary-color);
-  font-size: 10px;
-  font-weight: 600;
+  background: var(--background);
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   cursor: pointer;
+  color: var(--text-primary);
+}
+
+.tokenReadonly {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px dashed var(--border-color);
+  background: var(--background);
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--text-muted);
+}
+
+.variableToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.variableSearch {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.variableRecent {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
 }
 
 .token:hover {
@@ -504,6 +535,13 @@
 
 .variableTreeItem:hover {
   background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+}
+
+.variableTreeItemRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  align-items: center;
 }
 
 .insertFeedback {

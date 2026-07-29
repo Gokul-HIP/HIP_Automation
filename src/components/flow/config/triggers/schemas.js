@@ -2,12 +2,28 @@ import {
   EXECUTION_STATUS_OPTIONS,
   AI_PROVIDER_OPTIONS,
   createBaseTriggerDefaults,
+  RECIPIENT_OPTIONS,
+  EXECUTION_DELAY_OPTIONS,
+  TRIGGER_CHANNEL_OPTIONS,
 } from "./shared";
 
 export const MEDICINE_TIMING_OPTIONS = [
-  { value: "at_due", label: "At Due Time" },
-  { value: "before_due", label: "Before Due Time" },
+  { value: "immediate", label: "Immediately" },
+  { value: "before_30", label: "30 Minutes Before" },
+  { value: "before_60", label: "1 Hour Before" },
+  { value: "at_time", label: "At Scheduled Time" },
+  { value: "after_missed_30", label: "30 Minutes After Missed" },
 ];
+
+/** @deprecated Prefer MEDICINE_TIMING_OPTIONS — kept for older saved values. */
+export const LEGACY_MEDICINE_TIMING_MAP = {
+  at_due: "at_time",
+  before_due: "before_30",
+  exact: "at_time",
+  before_15: "before_30",
+  before_30: "before_30",
+  before_60: "before_60",
+};
 
 export const APPOINTMENT_TIMING_OPTIONS = [
   { value: "on_booked", label: "When Booked" },
@@ -81,7 +97,7 @@ function eventFields({ timingKey, timingLabel, timingOptions, extras = [] }) {
 export const TRIGGER_SCHEMAS = {
   medicineReminder: {
     description:
-      "Starts when a medicine reminder is due. Connect messaging nodes to notify the patient.",
+      "Starts when a medicine reminder is due. Prescription details (medicine, dosage, frequency) come from Laravel — never enter them here.",
     laravelContext: [
       "context.patient",
       "context.prescription",
@@ -91,7 +107,7 @@ export const TRIGGER_SCHEMAS = {
     ],
     contextCard: {
       title: "Prescription Data",
-      note: "Prescription details are loaded automatically by Laravel.",
+      note: "Loaded automatically by Laravel at runtime. Do not hardcode clinical values.",
       rows: [
         { label: "Medicine", key: "medicine_name" },
         { label: "Dosage", key: "dosage" },
@@ -105,28 +121,89 @@ export const TRIGGER_SCHEMAS = {
       medicine_name: "Paracetamol",
       dosage: "500 mg",
       frequency: "Morning • Afternoon • Night",
+      time: "08:00 AM",
+      date: "Today",
       doctor_name: "Dr. Rajesh",
       hospital_name: "HIP Hospital",
     },
-    fields: eventFields({
-      timingKey: "triggerTiming",
-      timingLabel: "Reminder Timing",
-      timingOptions: MEDICINE_TIMING_OPTIONS,
-      extras: [
-        {
-          key: "minutesBefore",
-          type: "number",
-          label: "Minutes Before",
-          min: 5,
-          max: 120,
-          hint: "Used when Reminder Timing is Before Due Time.",
-        },
-      ],
-    }),
+    variableGroups: [
+      {
+        label: "Patient",
+        variables: [
+          { key: "patient_name", label: "Patient", token: "{{patient_name}}" },
+        ],
+      },
+      {
+        label: "Hospital",
+        variables: [
+          { key: "hospital_name", label: "Hospital", token: "{{hospital_name}}" },
+        ],
+      },
+      {
+        label: "Medicine",
+        variables: [
+          { key: "medicine_name", label: "Medicine", token: "{{medicine_name}}" },
+          { key: "dosage", label: "Dosage", token: "{{dosage}}" },
+          { key: "frequency", label: "Frequency", token: "{{frequency}}" },
+          { key: "time", label: "Time", token: "{{time}}" },
+          { key: "date", label: "Date", token: "{{date}}" },
+        ],
+      },
+    ],
+    fields: [
+      {
+        key: "label",
+        type: "text",
+        label: "Display Name",
+        required: true,
+        hint: "Shown on the canvas node card.",
+      },
+      {
+        key: "triggerName",
+        type: "text",
+        label: "Trigger Name",
+        required: true,
+        hint: "Internal name used in logs and execution history.",
+      },
+      {
+        key: "triggerTiming",
+        type: "select",
+        label: "Trigger Timing",
+        options: MEDICINE_TIMING_OPTIONS,
+        required: true,
+        hint: "When relative to the prescription schedule this workflow should start.",
+      },
+      {
+        key: "channels",
+        type: "channels",
+        label: "Delivery Channels",
+        options: TRIGGER_CHANNEL_OPTIONS,
+        required: true,
+        hint: "Select one or more channels for the reminder message.",
+      },
+      {
+        key: "retry",
+        type: "retry",
+        label: "Repeat Reminder",
+      },
+      {
+        key: "messageTemplate",
+        type: "template",
+        label: "Message Template",
+        required: true,
+        hint: "Use {{variables}} — values resolve from Laravel prescription context.",
+      },
+    ],
     defaults: createBaseTriggerDefaults({
-      label: "Medicine Reminder Due",
-      triggerTiming: "at_due",
-      minutesBefore: 15,
+      label: "Medicine Reminder",
+      triggerName: "Medicine Reminder",
+      triggerTiming: "at_time",
+      channels: ["push", "whatsapp"],
+      repeatReminder: false,
+      retryInterval: 15,
+      maxRetryCount: 2,
+      messageTemplate:
+        "Hi {{patient_name}}, reminder from {{hospital_name}}: take {{medicine_name}} ({{dosage}}) at {{time}}.",
     }),
   },
 
@@ -188,14 +265,208 @@ export const TRIGGER_SCHEMAS = {
 
   appointmentMissed: {
     description: "Starts when a patient misses an appointment.",
-    fields: eventFields({
-      timingKey: "triggerTiming",
-      timingLabel: "Trigger Timing",
-      timingOptions: [{ value: "on_missed", label: "When Missed" }],
-    }),
+    laravelContext: [
+      "context.patient",
+      "context.appointment",
+      "context.doctor",
+      "context.hospital",
+    ],
+    contextCard: {
+      title: "Appointment Context",
+      note: "Missed appointment details come from Laravel at runtime.",
+      rows: [
+        { label: "Patient", key: "patient_name" },
+        { label: "Doctor", key: "doctor_name" },
+        { label: "Date", key: "appointment_date" },
+        { label: "Time", key: "appointment_time" },
+      ],
+    },
+    sampleContext: {
+      patient_name: "John Doe",
+      doctor_name: "Dr Rajesh",
+      appointment_date: "Today",
+      appointment_time: "10:30 AM",
+    },
+    fields: [
+      {
+        key: "label",
+        type: "text",
+        label: "Display Name",
+        required: true,
+        hint: "Shown on the canvas node card.",
+      },
+      {
+        key: "triggerName",
+        type: "text",
+        label: "Trigger Name",
+        required: true,
+        hint: "Internal name for logs and executions.",
+      },
+      {
+        key: "triggerEvent",
+        type: "select",
+        label: "Trigger Event",
+        options: [{ value: "appointment_missed", label: "Appointment Missed" }],
+        required: true,
+        hint: "Fixed event type for this trigger.",
+      },
+      {
+        key: "executionDelay",
+        type: "select",
+        label: "Execution Delay",
+        options: EXECUTION_DELAY_OPTIONS,
+        required: true,
+        hint: "How long to wait after the missed appointment before starting.",
+      },
+      {
+        key: "runOnlyOnce",
+        type: "boolean",
+        label: "Run Only Once",
+        description: "Prevent duplicate runs for the same missed appointment.",
+      },
+      {
+        key: "department",
+        type: "text",
+        label: "Department",
+        hint: "Optional filter — leave blank for all departments.",
+        placeholder: "e.g. Cardiology",
+      },
+      {
+        key: "doctor",
+        type: "text",
+        label: "Doctor",
+        hint: "Optional filter — leave blank for all doctors.",
+        placeholder: "e.g. Dr. Rajesh",
+      },
+      {
+        key: "hospitalBranch",
+        type: "text",
+        label: "Hospital Branch",
+        hint: "Optional filter — leave blank for all branches.",
+        placeholder: "e.g. Main Campus",
+      },
+      {
+        key: "description",
+        type: "textarea",
+        label: "Description",
+        hint: "Optional notes for your team about this trigger.",
+        placeholder: "Follow up with no-show patients…",
+      },
+    ],
     defaults: createBaseTriggerDefaults({
       label: "Appointment Missed",
+      triggerName: "Appointment Missed",
+      triggerEvent: "appointment_missed",
       triggerTiming: "on_missed",
+      executionDelay: "immediate",
+      runOnlyOnce: true,
+      department: "",
+      doctor: "",
+      hospitalBranch: "",
+      description: "",
+    }),
+  },
+
+  appointmentRescheduled: {
+    description: "Starts when an appointment is rescheduled.",
+    laravelContext: [
+      "context.patient",
+      "context.appointment",
+      "context.doctor",
+      "context.hospital",
+    ],
+    contextCard: {
+      title: "Reschedule Context",
+      note: "Old and new appointment values come from Laravel at runtime.",
+      rows: [
+        { label: "Old Date", key: "old_date" },
+        { label: "New Date", key: "new_date" },
+        { label: "Old Time", key: "old_time" },
+        { label: "New Time", key: "new_time" },
+        { label: "Doctor", key: "doctor_name" },
+      ],
+    },
+    sampleContext: {
+      old_date: "12 Mar 2026",
+      new_date: "15 Mar 2026",
+      old_time: "10:00 AM",
+      new_time: "11:30 AM",
+      doctor_name: "Dr Rajesh",
+      patient_name: "John Doe",
+    },
+    fields: [
+      {
+        key: "label",
+        type: "text",
+        label: "Display Name",
+        required: true,
+        hint: "Shown on the canvas node card.",
+      },
+      {
+        key: "triggerName",
+        type: "text",
+        label: "Trigger Name",
+        required: true,
+        hint: "Internal name for logs and executions.",
+      },
+      {
+        key: "triggerEvent",
+        type: "select",
+        label: "Trigger Event",
+        options: [
+          { value: "appointment_rescheduled", label: "Appointment Rescheduled" },
+        ],
+        required: true,
+        hint: "Fixed event type for this trigger.",
+      },
+      {
+        key: "notifyPatient",
+        type: "boolean",
+        label: "Notify Patient",
+        description: "Mark that patient notification is expected downstream.",
+      },
+      {
+        key: "notifyDoctor",
+        type: "boolean",
+        label: "Notify Doctor",
+        description: "Mark that doctor notification is expected downstream.",
+      },
+      {
+        key: "notifyHospital",
+        type: "boolean",
+        label: "Notify Hospital",
+        description: "Mark that hospital/ops notification is expected downstream.",
+      },
+      {
+        key: "variablesPreview",
+        type: "variablesPreview",
+        label: "Variables Preview",
+        tokens: [
+          "{{old_date}}",
+          "{{new_date}}",
+          "{{old_time}}",
+          "{{new_time}}",
+          "{{doctor_name}}",
+        ],
+        hint: "Use these placeholders in connected messaging nodes.",
+      },
+      {
+        key: "description",
+        type: "textarea",
+        label: "Description",
+        hint: "Optional notes for your team about this trigger.",
+        placeholder: "Notify patient when appointment is moved…",
+      },
+    ],
+    defaults: createBaseTriggerDefaults({
+      label: "Appointment Rescheduled",
+      triggerName: "Appointment Rescheduled",
+      triggerEvent: "appointment_rescheduled",
+      triggerTiming: "on_rescheduled",
+      notifyPatient: true,
+      notifyDoctor: false,
+      notifyHospital: false,
+      description: "",
     }),
   },
 

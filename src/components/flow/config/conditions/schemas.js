@@ -1,7 +1,6 @@
 import {
   CONDITION_FIELD_OPTIONS,
   CONDITION_OPERATOR_OPTIONS,
-  LOGIC_OPERATOR_OPTIONS,
 } from "../variables";
 
 export const CONDITION_SCHEMAS = {
@@ -149,4 +148,9 @@ export function buildConditionDefaults(type) {
   return structuredClone(schema.defaults);
 }
 
-export { CONDITION_FIELD_OPTIONS, CONDITION_OPERATOR_OPTIONS, LOGIC_OPERATOR_OPTIONS };
+export {
+  CONDITION_FIELD_OPTIONS,
+  CONDITION_FIELD_GROUPS,
+  CONDITION_OPERATOR_OPTIONS,
+  LOGIC_OPERATOR_OPTIONS,
+} from "../variables";
