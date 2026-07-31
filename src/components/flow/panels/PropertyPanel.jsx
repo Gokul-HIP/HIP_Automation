@@ -134,6 +134,7 @@ export default function PropertyPanel({
   onChange,
   onDuplicate,
   onDelete,
+  readOnly = false,
 }) {
   const def = node ? getWorkflowNode(node.data?.nodeType) : null;
   const isApiTrigger = Boolean(node?.data?.triggerKey);
@@ -195,42 +196,55 @@ export default function PropertyPanel({
             </p>
           ) : (
             <>
-              <div className={styles.actionRow}>
-                <button
-                  type="button"
-                  className={styles.actionBtn}
-                  disabled={isStart}
-                  onClick={() => onDuplicate?.(node.id)}
-                >
-                  <HiOutlineDuplicate />
-                  Duplicate
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
-                  disabled={isStart}
-                  onClick={() => onDelete?.(node.id)}
-                >
-                  <HiOutlineTrash />
-                  Delete
-                </button>
-              </div>
+              {!readOnly ? (
+                <div className={styles.actionRow}>
+                  <button
+                    type="button"
+                    className={styles.actionBtn}
+                    disabled={isStart}
+                    onClick={() => onDuplicate?.(node.id)}
+                  >
+                    <HiOutlineDuplicate />
+                    Duplicate
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
+                    disabled={isStart}
+                    onClick={() => onDelete?.(node.id)}
+                  >
+                    <HiOutlineTrash />
+                    Delete
+                  </button>
+                </div>
+              ) : (
+                <p className={styles.emptyHint}>Read-only preview</p>
+              )}
 
-              {PanelComponent ? (
-                <PanelComponent
-                  data={{
-                    ...node.data,
-                    workflowTriggerKey: workflowTriggerKey ?? node.data?.workflowTriggerKey,
-                  }}
-                  onChange={(patch) => onChange?.(node.id, patch)}
-                />
-              ) : def ? (
-                <GenericNodeProperties
-                  node={node}
-                  def={def}
-                  onChange={onChange}
-                />
-              ) : null}
+              <div
+                style={
+                  readOnly
+                    ? { pointerEvents: "none", opacity: 0.92 }
+                    : undefined
+                }
+              >
+                {PanelComponent ? (
+                  <PanelComponent
+                    data={{
+                      ...node.data,
+                      workflowTriggerKey:
+                        workflowTriggerKey ?? node.data?.workflowTriggerKey,
+                    }}
+                    onChange={(patch) => onChange?.(node.id, patch)}
+                  />
+                ) : def ? (
+                  <GenericNodeProperties
+                    node={node}
+                    def={def}
+                    onChange={onChange}
+                  />
+                ) : null}
+              </div>
             </>
           )}
         </motion.aside>

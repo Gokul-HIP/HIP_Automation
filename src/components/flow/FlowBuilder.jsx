@@ -9,15 +9,71 @@ import FlowToast from "./FlowToast";
 import useFlowBuilder from "./hooks/useFlowBuilder";
 import styles from "./styles/flow.module.css";
 
-export default function FlowBuilder({ initialWorkflowId = null }) {
-  const flow = useFlowBuilder({ initialWorkflowId });
+/**
+ * Shared React Flow workflow builder.
+ * mode="template" saves to /workflow-templates (no publish).
+ * readOnly disables editing (view / preview).
+ */
+export default function FlowBuilder({
+  initialWorkflowId = null,
+  initialId = null,
+  fromTemplateId = null,
+  embedInitMessage = null,
+  mode = "workflow",
+  readOnly = false,
+  usePreviewEndpoint = false,
+  showMetaBanner = false,
+}) {
+  const flow = useFlowBuilder({
+    initialWorkflowId,
+    initialId,
+    fromTemplateId,
+    embedInitMessage,
+    mode,
+    readOnly,
+    usePreviewEndpoint,
+  });
+
+  const noop = () => {};
 
   return (
-    <div className={styles.shell}>
+    <div
+      className={styles.shell}
+      data-flow-shell="true"
+    >
       <FlowToast toast={flow.toast} onDismiss={flow.clearToast} />
+
+      {showMetaBanner && flow.templateMeta ? (
+        <div className={styles.metaBanner} role="status">
+          <span>
+            <strong>Module:</strong> {flow.templateMeta.module || "—"}
+          </span>
+          <span>
+            <strong>Trigger:</strong>{" "}
+            {flow.templateMeta.triggerLabel ||
+              flow.templateMeta.triggerType ||
+              "—"}
+          </span>
+          <span>
+            <strong>Nodes:</strong>{" "}
+            {flow.templateMeta.nodeCount ||
+              flow.nodes.filter((n) => n.data?.nodeType !== "start").length}
+          </span>
+          <span>
+            <strong>Edges:</strong>{" "}
+            {flow.templateMeta.edgeCount || flow.edges.length}
+          </span>
+          <span>
+            <strong>Status:</strong> {flow.workflowStatus || "—"}
+          </span>
+        </div>
+      ) : null}
+
       <FlowToolbar
+        entityLabel={flow.isTemplateMode ? "Template" : "Workflow"}
         workflowName={flow.workflowName}
-        onWorkflowNameChange={flow.setWorkflowName}
+        onWorkflowNameChange={readOnly ? undefined : flow.setWorkflowName}
+        nameReadOnly={readOnly}
         workflowStatus={flow.workflowStatus}
         zoom={flow.zoom}
         status={flow.status}
@@ -25,6 +81,9 @@ export default function FlowBuilder({ initialWorkflowId = null }) {
         canUndo={flow.canUndo}
         canRedo={flow.canRedo}
         canPublish={flow.canPublish}
+        showPublish={flow.showPublish}
+        showSave={flow.showSave}
+        saveLabel={flow.isTemplateMode ? "Save Template" : "Save"}
         onUndo={flow.undo}
         onRedo={flow.redo}
         onAutoLayout={flow.autoLayout}
@@ -69,9 +128,19 @@ export default function FlowBuilder({ initialWorkflowId = null }) {
           onConnect={flow.onConnect}
           onSelectionChange={flow.onSelectionChange}
           onMoveEnd={flow.setZoom}
-          onToggleLock={() => flow.setLocked((v) => !v)}
-          onDeleteSelected={() => flow.deleteNodes(flow.selectedNodeIds)}
-          onDuplicateSelected={() => flow.duplicateNodes(flow.selectedNodeIds)}
+          onToggleLock={
+            readOnly ? noop : () => flow.setLocked((v) => !v)
+          }
+          onDeleteSelected={
+            readOnly
+              ? undefined
+              : () => flow.deleteNodes(flow.selectedNodeIds)
+          }
+          onDuplicateSelected={
+            readOnly
+              ? undefined
+              : () => flow.duplicateNodes(flow.selectedNodeIds)
+          }
           onViewportReady={flow.registerViewportApi}
         />
 
@@ -80,19 +149,24 @@ export default function FlowBuilder({ initialWorkflowId = null }) {
           node={flow.selectedNode}
           workflowTriggerKey={flow.workflowTriggerKey}
           onClose={() => flow.setPropertiesOpen(false)}
-          onChange={flow.updateNodeData}
-          onDuplicate={(id) => flow.duplicateNodes([id])}
-          onDelete={(id) => flow.deleteNodes([id])}
+          onChange={readOnly ? noop : flow.updateNodeData}
+          onDuplicate={
+            readOnly ? noop : (id) => flow.duplicateNodes([id])
+          }
+          onDelete={readOnly ? noop : (id) => flow.deleteNodes([id])}
+          readOnly={readOnly}
         />
 
-        <NodeSidebar
-          open={flow.sidebarOpen}
-          onClose={() => flow.setSidebarOpen(false)}
-          onAddNode={flow.addNodeFromCatalog}
-          onAddTrigger={flow.addNodeFromTrigger}
-        />
+        {!readOnly ? (
+          <NodeSidebar
+            open={flow.sidebarOpen}
+            onClose={() => flow.setSidebarOpen(false)}
+            onAddNode={flow.addNodeFromCatalog}
+            onAddTrigger={flow.addNodeFromTrigger}
+          />
+        ) : null}
 
-        {!flow.sidebarOpen ? (
+        {!readOnly && !flow.sidebarOpen ? (
           <motion.button
             type="button"
             className={styles.sidebarOpenTab}

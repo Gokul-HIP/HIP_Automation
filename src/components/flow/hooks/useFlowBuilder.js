@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   addEdge,
   applyEdgeChanges,
@@ -19,6 +20,15 @@ import {
   buildWorkflowPayload as buildApiWorkflowPayload,
   publishWorkflow as publishWorkflowApi,
 } from "@/services/api/workflows";
+import {
+  createWorkflowTemplate,
+  updateWorkflowTemplate,
+  loadTemplateForBuilder,
+  loadTemplatePreviewForBuilder,
+  cloneTemplateIntoWorkflowSeed,
+  buildTemplatePayload as buildApiTemplatePayload,
+  extractTemplateId,
+} from "@/services/api/workflowTemplates";
 import { getCurrentUser } from "@/services/authService";
 import { WORKFLOW_STATUS } from "@/utils/workflowStatus";
 import { normalizeOrganizationId, normalizeUserId } from "@/utils/organization";
@@ -27,6 +37,20 @@ import useFlowToast from "./useFlowToast";
 import { useWorkflowBuilderStore } from "@/stores/workflowBuilderStore";
 import { useTriggers } from "@/hooks/useWorkflowApi";
 import { ensureUiStartNode } from "@/utils/flowEditorLifecycle";
+import { deserializeWorkflow } from "@/utils/flowDeserializer";
+import {
+  extractWorkflowGraph,
+  graphNodeEdgeCounts,
+} from "@/utils/extractWorkflowGraph";
+import {
+  getEmbedParentOrigin,
+  isEmbedMode,
+  postToParent,
+} from "@/utils/embedMode";
+
+function buildBlankCanvas() {
+  return { nodes: [], edges: [] };
+}
 
 const HISTORY_LIMIT = 40;
 const COL_GAP = 280;
@@ -47,6 +71,17 @@ function buildInitialNodes() {
       dragHandle: ".nodeDragHandle",
     },
   ];
+}
+
+/** Positive numeric / non-empty string ids only — null, "", 0 are create-mode. */
+function hasPresentId(value) {
+  if (value == null || value === "") return false;
+  if (typeof value === "number") return Number.isFinite(value) && value > 0;
+  const trimmed = String(value).trim();
+  if (!trimmed) return false;
+  const n = Number(trimmed);
+  if (Number.isFinite(n)) return n > 0;
+  return true;
 }
 
 function isEmpty(value) {
@@ -338,26 +373,92 @@ export function validateWorkflowGraph(nodes, edges, options = {}) {
   return { valid, issues };
 }
 
-export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
+/**
+ * @param {object} options
+ * @param {string|number|null} [options.initialWorkflowId]
+ * @param {string|number|null} [options.initialId]
+ * @param {string|number|null} [options.fromTemplateId] — copy template into a new workflow (not linked)
+ * @param {Record<string, unknown>|null} [options.embedInitMessage]
+ * @param {"workflow"|"template"} [options.mode]
+ * @param {boolean} [options.readOnly]
+ * @param {boolean} [options.usePreviewEndpoint]
+ */
+export default function useFlowBuilder({
+  initialWorkflowId = null,
+  initialId = null,
+  fromTemplateId = null,
+  embedInitMessage = null,
+  mode = "workflow",
+  readOnly = false,
+  usePreviewEndpoint = false,
+} = {}) {
+  const isTemplateMode = mode === "template";
+  const entityId = hasPresentId(initialId)
+    ? initialId
+    : hasPresentId(initialWorkflowId)
+      ? initialWorkflowId
+      : null;
+  // Edit / seed-from-template: do NOT mount the default Start-only canvas.
+  // Create (no id): Start node only until the user adds a trigger.
+  const isExistingLoad = Boolean(entityId || hasPresentId(fromTemplateId));
+
+  const router = useRouter();
   const { user } = useAuth();
   const { toast, showToast, clearToast } = useFlowToast();
-  const { data: triggerCatalog } = useTriggers();
+  const inEmbed = typeof window !== "undefined" ? isEmbedMode() : false;
+  const { data: triggerCatalog } = useTriggers({
+    // Avoid unauthenticated 401 noise inside Laravel Admin iframe.
+    enabled: !inEmbed,
+    retry: inEmbed ? false : undefined,
+  });
   const viewportApiRef = useRef(null);
+  const lastEmbedInitKeyRef = useRef(null);
 
-  const [nodes, setNodes] = useState(buildInitialNodes);
+  const [nodes, setNodes] = useState(() =>
+    isExistingLoad ? buildBlankCanvas().nodes : buildInitialNodes()
+  );
   const [edges, setEdges] = useState([]);
   const [selectedNodeIds, setSelectedNodeIds] = useState([]);
-  const [workflowName, setWorkflowName] = useState("Hospital workflow");
-  const [workflowId, setWorkflowId] = useState(initialWorkflowId);
-  const [workflowStatus, setWorkflowStatus] = useState(WORKFLOW_STATUS.INACTIVE);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [workflowName, setWorkflowName] = useState(
+    isTemplateMode ? "Untitled Template" : "Hospital workflow"
+  );
+  const [description, setDescription] = useState("");
+  // Never seed workflowId from a template id (copy-not-link).
+  const [workflowId, setWorkflowId] = useState(
+    fromTemplateId && !isTemplateMode ? null : entityId
+  );
+  const [workflowStatus, setWorkflowStatus] = useState(
+    isTemplateMode ? WORKFLOW_STATUS.ACTIVE : WORKFLOW_STATUS.INACTIVE
+  );
+  const [templateMeta, setTemplateMeta] = useState({
+    module: null,
+    triggerType: null,
+    triggerLabel: null,
+    nodeCount: 0,
+    edgeCount: 0,
+  });
+  const [sidebarOpen, setSidebarOpen] = useState(!readOnly);
   const [propertiesOpen, setPropertiesOpen] = useState(false);
-  const [locked, setLocked] = useState(false);
+  const [locked, setLocked] = useState(Boolean(readOnly));
   const [zoom, setZoom] = useState(100);
   const [past, setPast] = useState([]);
   const [future, setFuture] = useState([]);
   const [validation, setValidation] = useState({ valid: true, issues: [] });
-  const [busy, setBusy] = useState(null);
+  const [busy, setBusy] = useState(isExistingLoad ? "load" : null);
+
+  // Keep sidebar/lock in sync when embed flips readOnly after URL/parent init.
+  useEffect(() => {
+    if (!readOnly) {
+      setSidebarOpen(true);
+      setLocked(false);
+    } else {
+      setSidebarOpen(false);
+      setLocked(true);
+    }
+  }, [readOnly]);
+
+  // Read-only view/preview always locks the canvas (no sync setState-in-effect).
+  const isLocked = readOnly || locked;
 
   const organizationId = useMemo(() => {
     return (
@@ -392,7 +493,8 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
       const creatorId =
         normalizeUserId(currentUser?.id) ?? normalizeUserId(createdById);
 
-      if (orgId == null) {
+      // Embed saves go to Laravel Admin (already authenticated); org may be filled server-side.
+      if (orgId == null && !isTemplateMode && !isEmbedMode()) {
         const error = new Error("No organization assigned.");
         error.code = "missing_organization";
         throw error;
@@ -403,13 +505,25 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
         return (def?.isTrigger || n.data?.triggerKey) && n.data?.nodeType !== "start";
       });
 
+      if (isTemplateMode) {
+        return buildApiTemplatePayload({
+          name: workflowName,
+          description,
+          status: status ?? workflowStatus ?? WORKFLOW_STATUS.ACTIVE,
+          nodes,
+          edges,
+          viewport: getViewport(),
+          organizationId: orgId != null ? Number(orgId) : undefined,
+        });
+      }
+
       return buildApiWorkflowPayload({
         name: workflowName,
         nodes,
         edges,
         viewport: getViewport(),
         status,
-        organizationId: Number(orgId),
+        organizationId: orgId != null ? Number(orgId) : undefined,
         createdBy: creatorId,
         module: triggerNode?.data?.module ?? null,
         triggerKey:
@@ -423,29 +537,268 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
       nodes,
       edges,
       workflowName,
+      description,
+      workflowStatus,
       getViewport,
+      isTemplateMode,
     ]
   );
 
+  // Laravel Admin posts definition via postMessage — skip authenticated API load.
   useEffect(() => {
-    if (!initialWorkflowId) return;
+    if (!isEmbedMode()) return undefined;
+
+    const applyParentPayload = (message) => {
+      const payload = message?.payload || {};
+      const { graph, field } = extractWorkflowGraph(payload);
+      const { nodeCount, edgeCount } = graphNodeEdgeCounts(graph);
+      const isEditWithId =
+        hasPresentId(entityId) ||
+        hasPresentId(payload.templateId) ||
+        hasPresentId(payload.workflowId);
+
+      if (payload.name) setWorkflowName(String(payload.name));
+      if (payload.description != null) setDescription(String(payload.description));
+      if (payload.status) setWorkflowStatus(payload.status);
+
+      const idFromParent =
+        payload.templateId ??
+        payload.workflowId ??
+        payload.id ??
+        entityId;
+      if (
+        hasPresentId(idFromParent) &&
+        !(fromTemplateId && !isTemplateMode)
+      ) {
+        setWorkflowId(idFromParent);
+      }
+
+      setTemplateMeta((prev) => ({
+        ...prev,
+        module: payload.module ?? prev.module,
+        triggerType: payload.trigger_type ?? payload.triggerType ?? prev.triggerType,
+        triggerLabel:
+          payload.trigger_label ?? payload.triggerLabel ?? prev.triggerLabel,
+        nodeCount: nodeCount || prev.nodeCount,
+        edgeCount: edgeCount || prev.edgeCount,
+      }));
+
+      // Edit expects a saved graph. Empty/null definition must not fall back to Start-only.
+      if (!graph || (nodeCount === 0 && edgeCount === 0)) {
+        if (isEditWithId) {
+          console.warn(
+            "[embed] Empty or null workflow definition while editing.",
+            { field, entityId, payload }
+          );
+          showToast(
+            "error",
+            "Template definition is empty — saved nodes could not be loaded."
+          );
+          setBusy(null);
+          return;
+        }
+        // Brand-new template/workflow in embed: Start node only.
+        setNodes(buildInitialNodes());
+        setEdges([]);
+        setBusy(null);
+        return;
+      }
+
+      const { nodes: savedNodes, edges: savedEdges, viewport } =
+        deserializeWorkflow(graph);
+      const hydrated = ensureUiStartNode(savedNodes, savedEdges);
+      setNodes(hydrated.nodes);
+      setEdges(hydrated.edges);
+      setPast([]);
+      setFuture([]);
+      setBusy(null);
+
+      requestAnimationFrame(() => {
+        viewportApiRef.current?.setViewport?.(viewport, { duration: 0 });
+        setZoom(Math.round((viewport?.zoom ?? 1) * 100));
+      });
+    };
+
+    const onMessage = (event) => {
+      const data = event?.data || {};
+      if (data.type !== "hip:builder-init") return;
+
+      // Enforce parent origin only when production embed tokens are required.
+      const requireToken =
+        String(process.env.NEXT_PUBLIC_EMBED_REQUIRE_TOKEN || "").toLowerCase() ===
+        "true";
+      const expected = getEmbedParentOrigin();
+      if (
+        requireToken &&
+        expected &&
+        event.origin &&
+        event.origin !== expected
+      ) {
+        console.warn("[hip-builder] Rejected init message due to origin mismatch", {
+          expected,
+          actual: event.origin,
+        });
+        return;
+      }
+
+      // Deduplicate identical init payloads (parent retries + ready handshake).
+      const key = JSON.stringify({
+        mode: data.mode,
+        readOnly: data.readOnly,
+        payload: data.payload,
+      });
+      if (lastEmbedInitKeyRef.current === key) return;
+      lastEmbedInitKeyRef.current = key;
+
+      applyParentPayload(data);
+    };
+
+    window.addEventListener("message", onMessage);
+    // Ready is sent by EmbedHandshakeHost — avoid duplicate ready/init loops.
+
+    return () => {
+      window.removeEventListener("message", onMessage);
+    };
+  }, [entityId, fromTemplateId, isTemplateMode, showToast]);
+
+  useEffect(() => {
+    if (!isEmbedMode() || !embedInitMessage) return;
+
+    const payload = embedInitMessage?.payload || {};
+    const { graph, field } = extractWorkflowGraph(payload);
+    const { nodeCount, edgeCount } = graphNodeEdgeCounts(graph);
+    const isEditWithId =
+      hasPresentId(entityId) ||
+      hasPresentId(payload.templateId) ||
+      hasPresentId(payload.workflowId);
+
+    const key = JSON.stringify({
+      mode: embedInitMessage.mode,
+      readOnly: embedInitMessage.readOnly,
+      payload,
+    });
+    if (lastEmbedInitKeyRef.current === key) return;
+    lastEmbedInitKeyRef.current = key;
+
+    if (payload.name) setWorkflowName(String(payload.name));
+    if (payload.description != null) setDescription(String(payload.description));
+    if (payload.status) setWorkflowStatus(payload.status);
+
+    const idFromParent =
+      payload.templateId ??
+      payload.workflowId ??
+      payload.id ??
+      entityId;
+    if (
+      hasPresentId(idFromParent) &&
+      !(fromTemplateId && !isTemplateMode)
+    ) {
+      setWorkflowId(idFromParent);
+    }
+
+    setTemplateMeta((prev) => ({
+      ...prev,
+      module: payload.module ?? prev.module,
+      triggerType: payload.trigger_type ?? payload.triggerType ?? prev.triggerType,
+      triggerLabel:
+        payload.trigger_label ?? payload.triggerLabel ?? prev.triggerLabel,
+      nodeCount: nodeCount || prev.nodeCount,
+      edgeCount: edgeCount || prev.edgeCount,
+    }));
+
+    if (!graph || (nodeCount === 0 && edgeCount === 0)) {
+      if (isEditWithId) {
+        // Wait for parent hip:builder-init with the real definition.
+        setBusy("load");
+        return;
+      }
+      setNodes(buildInitialNodes());
+      setEdges([]);
+      setBusy(null);
+      return;
+    }
+
+    const { nodes: savedNodes, edges: savedEdges, viewport } =
+      deserializeWorkflow(graph);
+    const hydrated = ensureUiStartNode(savedNodes, savedEdges);
+    setNodes(hydrated.nodes);
+    setEdges(hydrated.edges);
+    setPast([]);
+    setFuture([]);
+    setBusy(null);
+
+    requestAnimationFrame(() => {
+      viewportApiRef.current?.setViewport?.(viewport, { duration: 0 });
+      setZoom(Math.round((viewport?.zoom ?? 1) * 100));
+    });
+  }, [
+    embedInitMessage,
+    entityId,
+    fromTemplateId,
+    isTemplateMode,
+    showToast,
+  ]);
+
+  useEffect(() => {
+    // Embed mode hydrates from Laravel parent, not frontend APIs.
+    if (isEmbedMode()) return;
+    if (!entityId && !fromTemplateId) return;
 
     let cancelled = false;
 
     (async () => {
       setBusy("load");
       try {
-        const state = await loadWorkflowForBuilder(initialWorkflowId);
+        let state;
+
+        if (fromTemplateId && !isTemplateMode) {
+          // Independent copy — workflowId stays null until first save.
+          state = await cloneTemplateIntoWorkflowSeed(fromTemplateId);
+        } else if (isTemplateMode && entityId) {
+          state = usePreviewEndpoint
+            ? await loadTemplatePreviewForBuilder(entityId)
+            : await loadTemplateForBuilder(entityId, { admin: true });
+        } else if (entityId) {
+          state = await loadWorkflowForBuilder(entityId);
+        } else {
+          return;
+        }
+
         if (cancelled) return;
 
-        setWorkflowId(state.id ?? initialWorkflowId);
+        if (fromTemplateId && !isTemplateMode) {
+          setWorkflowId(null);
+        } else {
+          setWorkflowId(state.id ?? entityId);
+        }
+
         setWorkflowName(state.name);
+        setDescription(state.description ?? "");
         setWorkflowStatus(state.status ?? WORKFLOW_STATUS.INACTIVE);
+        setTemplateMeta({
+          module: state.module ?? null,
+          triggerType: state.triggerType ?? null,
+          triggerLabel: state.triggerLabel ?? null,
+          nodeCount: state.nodeCount ?? state.nodes?.length ?? 0,
+          edgeCount: state.edgeCount ?? state.edges?.length ?? 0,
+        });
         const hydrated = ensureUiStartNode(
           state.nodes?.length ? state.nodes : [],
           state.edges ?? []
         );
-        setNodes(hydrated.nodes.length ? hydrated.nodes : buildInitialNodes());
+
+        if (
+          entityId &&
+          !(fromTemplateId && !isTemplateMode) &&
+          !(state.nodes?.length)
+        ) {
+          console.warn(
+            "[builder] Loaded entity has no nodes/edges in the saved definition.",
+            { entityId, isTemplateMode, state }
+          );
+        }
+
+        setNodes(hydrated.nodes);
         setEdges(hydrated.edges);
         setPast([]);
         setFuture([]);
@@ -457,12 +810,22 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
           setZoom(Math.round((state.viewport?.zoom ?? 1) * 100));
         });
 
-        showToast("success", "Workflow loaded");
+        showToast(
+          "success",
+          fromTemplateId && !isTemplateMode
+            ? "Template copied into new workflow"
+            : isTemplateMode
+              ? "Template loaded"
+              : "Workflow loaded"
+        );
       } catch (error) {
         if (!cancelled) {
           showToast(
             "error",
-            error?.message || "Failed to load workflow"
+            error?.message ||
+              (isTemplateMode
+                ? "Failed to load template"
+                : "Failed to load workflow")
           );
         }
       } finally {
@@ -473,7 +836,7 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
     return () => {
       cancelled = true;
     };
-  }, [initialWorkflowId, showToast]);
+  }, [entityId, fromTemplateId, isTemplateMode, usePreviewEndpoint, showToast]);
 
   const selectedNodeId = selectedNodeIds[0] ?? null;
   const selectedNode = useMemo(
@@ -536,23 +899,23 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
 
   const onNodesChange = useCallback(
     (changes) => {
-      if (locked) return;
+      if (isLocked) return;
       setNodes((nds) => applyNodeChanges(changes, nds));
     },
-    [locked]
+    [isLocked]
   );
 
   const onEdgesChange = useCallback(
     (changes) => {
-      if (locked) return;
+      if (isLocked) return;
       setEdges((eds) => applyEdgeChanges(changes, eds));
     },
-    [locked]
+    [isLocked]
   );
 
   const onConnect = useCallback(
     (connection) => {
-      if (locked) return;
+      if (isLocked) return;
       setPast((prev) => [
         ...prev,
         { nodes: structuredClone(nodes), edges: structuredClone(edges) },
@@ -569,7 +932,7 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
         )
       );
     },
-    [locked, nodes, edges]
+    [isLocked, nodes, edges]
   );
 
   const onSelectionChange = useCallback(({ nodes: selected }) => {
@@ -580,7 +943,7 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
 
   const addNodeFromTrigger = useCallback(
     (trigger) => {
-      if (locked || !trigger) return;
+      if (isLocked || !trigger) return;
 
       const localDefaults = createNodeDefaults(trigger.key) || {};
       const id = createId(trigger.key);
@@ -611,12 +974,12 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
       setSelectedNodeIds([id]);
       setPropertiesOpen(true);
     },
-    [locked, nodes, edges, pushHistory]
+    [isLocked, nodes, edges, pushHistory]
   );
 
   const addNodeFromCatalog = useCallback(
     (type) => {
-      if (locked) return;
+      if (isLocked) return;
       const defaults = createNodeDefaults(type);
       if (!defaults) return;
 
@@ -639,7 +1002,7 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
       setSelectedNodeIds([id]);
       setPropertiesOpen(true);
     },
-    [locked, nodes, edges, pushHistory]
+    [isLocked, nodes, edges, pushHistory]
   );
 
   const updateNodeData = useCallback((nodeId, patch) => {
@@ -654,7 +1017,7 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
 
   const deleteNodes = useCallback(
     (ids) => {
-      if (locked) return;
+      if (isLocked) return;
       const remove = new Set(
         (ids || []).filter((id) => {
           const node = nodes.find((n) => n.id === id);
@@ -670,12 +1033,12 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
       pushHistory(nextNodes, nextEdges);
       setSelectedNodeIds((prev) => prev.filter((id) => !remove.has(id)));
     },
-    [locked, nodes, edges, pushHistory]
+    [isLocked, nodes, edges, pushHistory]
   );
 
   const duplicateNodes = useCallback(
     (ids) => {
-      if (locked) return;
+      if (isLocked) return;
       const sources = nodes.filter(
         (n) => ids.includes(n.id) && n.data?.nodeType !== "start"
       );
@@ -698,7 +1061,7 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
       pushHistory([...cleared, ...clones], edges);
       setSelectedNodeIds(clones.map((c) => c.id));
     },
-    [locked, nodes, edges, pushHistory]
+    [isLocked, nodes, edges, pushHistory]
   );
 
   const undo = useCallback(() => {
@@ -730,10 +1093,10 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
   }, [nodes, edges]);
 
   const autoLayout = useCallback(() => {
-    if (locked) return;
+    if (isLocked) return;
     const laidOut = computeAutoLayout(nodes, edges);
     pushHistory(laidOut, edges);
-  }, [locked, nodes, edges, pushHistory]);
+  }, [isLocked, nodes, edges, pushHistory]);
 
   const validate = useCallback(() => {
     const result = validateWorkflowGraph(nodes, edges, { triggerCatalog });
@@ -742,7 +1105,7 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
   }, [nodes, edges, triggerCatalog]);
 
   const handleSave = useCallback(async () => {
-    if (busy) return;
+    if (busy || readOnly) return;
 
     const result = validateWorkflowGraph(nodes, edges, { triggerCatalog });
     setValidation(result);
@@ -753,7 +1116,41 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
 
     setBusy("save");
     try {
+      if (isTemplateMode) {
+        const payload = buildWorkflowPayload(workflowStatus || WORKFLOW_STATUS.ACTIVE);
+
+        if (isEmbedMode()) {
+          postToParent("hip:builder-save", payload);
+          showToast("success", "Sending template to admin…");
+          return payload;
+        }
+
+        let response;
+        if (workflowId) {
+          response = await updateWorkflowTemplate(workflowId, payload);
+        } else {
+          response = await createWorkflowTemplate(payload);
+          const newId = extractTemplateId(response);
+          if (newId != null) {
+            setWorkflowId(newId);
+            router.replace(`/admin/workflow-templates/${newId}/edit`);
+          }
+        }
+        showToast("success", "Template saved");
+        return response;
+      }
+
       const payload = buildWorkflowPayload(WORKFLOW_STATUS.INACTIVE);
+
+      if (isEmbedMode()) {
+        postToParent("hip:builder-save", {
+          name: payload.name,
+          configuration: payload.configuration,
+          organization_id: payload.organization_id,
+        });
+        showToast("success", "Sending workflow to admin…");
+        return payload;
+      }
 
       let response;
       if (workflowId) {
@@ -768,17 +1165,33 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
       showToast("success", "Workflow Saved");
       return response;
     } catch (error) {
-      showToast("error", error?.message || "Failed to save workflow");
+      showToast(
+        "error",
+        error?.message ||
+          (isTemplateMode ? "Failed to save template" : "Failed to save workflow")
+      );
       if (error?.code !== "missing_organization") {
         throw error;
       }
     } finally {
       setBusy(null);
     }
-  }, [busy, buildWorkflowPayload, workflowId, showToast, nodes, edges, triggerCatalog]);
+  }, [
+    busy,
+    readOnly,
+    isTemplateMode,
+    buildWorkflowPayload,
+    workflowId,
+    workflowStatus,
+    showToast,
+    nodes,
+    edges,
+    triggerCatalog,
+    router,
+  ]);
 
   const handlePublish = useCallback(async () => {
-    if (busy) return;
+    if (busy || isTemplateMode || readOnly) return;
 
     const result = validateWorkflowGraph(nodes, edges, { triggerCatalog });
     setValidation(result);
@@ -787,6 +1200,16 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
     setBusy("publish");
     try {
       const payload = buildWorkflowPayload(WORKFLOW_STATUS.INACTIVE);
+
+      if (isEmbedMode()) {
+        postToParent("hip:builder-publish", {
+          name: payload.name,
+          configuration: payload.configuration,
+          organization_id: payload.organization_id,
+        });
+        showToast("success", "Sending publish request to admin…");
+        return { ...result, embed: true };
+      }
 
       let id = workflowId;
       if (id) {
@@ -841,7 +1264,17 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
     } finally {
       setBusy(null);
     }
-  }, [busy, nodes, edges, buildWorkflowPayload, workflowId, showToast, triggerCatalog]);
+  }, [
+    busy,
+    isTemplateMode,
+    readOnly,
+    nodes,
+    edges,
+    buildWorkflowPayload,
+    workflowId,
+    showToast,
+    triggerCatalog,
+  ]);
 
   const liveValidation = useMemo(
     () => validateWorkflowGraph(nodes, edges, { triggerCatalog }),
@@ -849,7 +1282,7 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
   );
 
   const status = useMemo(() => {
-    if (locked) return { label: "Locked", tone: "warning" };
+    if (isLocked) return { label: "Locked", tone: "warning" };
     if (liveValidation.issues.some((i) => i.level === "error")) {
       return { label: "Invalid", tone: "danger" };
     }
@@ -858,7 +1291,7 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
     }
     if (!edges.length) return { label: "Draft", tone: "info" };
     return { label: "Ready", tone: "success" };
-  }, [locked, edges.length, liveValidation.issues, workflowStatus]);
+  }, [isLocked, edges.length, liveValidation.issues, workflowStatus]);
 
   const focusValidationIssue = useCallback(
     (issue) => {
@@ -891,25 +1324,34 @@ export default function useFlowBuilder({ initialWorkflowId = null } = {}) {
     selectedNode,
     workflowName,
     setWorkflowName,
+    description,
+    setDescription,
     workflowId,
     workflowStatus,
+    setWorkflowStatus,
+    templateMeta,
+    mode,
+    isTemplateMode,
+    readOnly,
     sidebarOpen,
     setSidebarOpen,
     propertiesOpen,
     setPropertiesOpen,
-    locked,
+    locked: isLocked,
     setLocked,
     zoom,
     setZoom,
     status,
     validation: liveValidation,
-    canPublish: liveValidation.valid,
+    canPublish: !isTemplateMode && !readOnly && liveValidation.valid,
+    showPublish: !isTemplateMode && !readOnly,
+    showSave: !readOnly,
     busy,
     toast,
     showToast,
     clearToast,
-    canUndo: past.length > 0,
-    canRedo: future.length > 0,
+    canUndo: past.length > 0 && !readOnly,
+    canRedo: future.length > 0 && !readOnly,
     workflowTriggerKey,
     onNodesChange,
     onEdgesChange,

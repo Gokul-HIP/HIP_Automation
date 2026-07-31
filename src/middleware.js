@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 
 const PUBLIC_PATHS = ["/login"];
 
+function isEmbedRoute(pathname) {
+  return pathname === "/embed" || pathname.startsWith("/embed/");
+}
+
 export function middleware(request) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get("crm-token")?.value;
@@ -15,6 +19,12 @@ export function middleware(request) {
     pathname.startsWith("/favicon") ||
     pathname.includes(".")
   ) {
+    return NextResponse.next();
+  }
+
+  // Only dedicated /embed/* routes bypass frontend auth (Laravel Admin iframe).
+  // ?embed=true on normal routes does NOT skip login.
+  if (isEmbedRoute(pathname)) {
     return NextResponse.next();
   }
 

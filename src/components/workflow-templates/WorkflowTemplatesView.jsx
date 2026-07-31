@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
   HiOutlineRefresh,
   HiOutlineExclamation,
@@ -11,54 +10,55 @@ import {
   HiChevronLeft,
   HiChevronRight,
 } from "react-icons/hi";
-import WorkflowToolbar from "@/components/workflow/WorkflowToolbar";
-import WorkflowTable from "@/components/workflow/WorkflowTable";
-import EmptyWorkflow from "@/components/workflow/EmptyWorkflow";
-import DeleteWorkflowModal from "@/components/workflow/DeleteWorkflowModal";
-import CreateWorkflowModal from "@/components/workflow/CreateWorkflowModal";
+import WorkflowTemplateToolbar from "./WorkflowTemplateToolbar";
+import WorkflowTemplateTable from "./WorkflowTemplateTable";
+import EmptyTemplate from "./EmptyTemplate";
+import DeleteTemplateModal from "./DeleteTemplateModal";
 import {
-  useWorkflows,
-  useDeleteWorkflow,
-  usePublishWorkflow,
-} from "@/hooks/useWorkflowApi";
+  useAdminWorkflowTemplates,
+  useDeleteWorkflowTemplate,
+  useDuplicateWorkflowTemplate,
+} from "@/hooks/useWorkflowTemplateApi";
 import {
   filterWorkflowItems,
   paginateWorkflowItems,
 } from "@/utils/workflowList";
-import styles from "./Workflows.module.css";
+import styles from "@/components/workflow/Workflows.module.css";
 
 const PER_PAGE = 10;
 
-export default function WorkflowsView() {
+export default function WorkflowTemplatesView() {
   const router = useRouter();
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [status, setStatus] = useState("all");
-  const [sort, setSort] = useState("newest");
+  const [moduleFilter, setModuleFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [busyAction, setBusyAction] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [toast, setToast] = useState(null);
-  const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
-    const handle = window.setTimeout(() => setDebouncedSearch(search), 400);
+    const handle = window.setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 400);
     return () => window.clearTimeout(handle);
   }, [search]);
 
-  const { data, isLoading, error, refetch, isFetching } = useWorkflows({
+  const { data, isLoading, error, refetch, isFetching } = useAdminWorkflowTemplates({
     search: debouncedSearch,
     status,
-    sort,
+    module: moduleFilter,
     page,
     perPage: PER_PAGE,
   });
 
-  const deleteMutation = useDeleteWorkflow();
-  const publishMutation = usePublishWorkflow();
+  const deleteMutation = useDeleteWorkflowTemplate();
+  const duplicateMutation = useDuplicateWorkflowTemplate();
 
-  const workflows = data?.items ?? [];
+  const templates = useMemo(() => data?.items ?? [], [data?.items]);
 
   const showToast = useCallback((type, message) => {
     setToast({ type, message });
@@ -66,8 +66,13 @@ export default function WorkflowsView() {
   }, []);
 
   const filtered = useMemo(
-    () => filterWorkflowItems(workflows, { search, status, sort }),
-    [workflows, search, status, sort]
+    () =>
+      filterWorkflowItems(templates, {
+        search,
+        status,
+        sort: "newest",
+      }),
+    [templates, search, status]
   );
 
   const paginated = useMemo(
@@ -75,38 +80,14 @@ export default function WorkflowsView() {
     [filtered, page]
   );
 
-  useEffect(() => {
+  const handleStatusChange = (value) => {
+    setStatus(value);
     setPage(1);
-  }, [debouncedSearch, status, sort]);
-
-  const handleCreate = () => setCreateOpen(true);
-
-  const handleBlankWorkflow = () => router.push("/workflows/new");
-
-  const handleSelectTemplate = (template) => {
-    router.push(`/workflows/new?templateId=${template.id}`);
   };
 
-  const handleOpenWorkflow = (workflow, mode) => {
-    router.push(`/workflows/${workflow.id}${mode === "view" ? "?mode=view" : ""}`);
-  };
-
-  const handlePublish = async (workflow) => {
-    setBusyAction(workflow.id);
-    try {
-      const result = await publishMutation.mutateAsync(workflow.id);
-      const version =
-        result?.version ?? result?.data?.version ?? result?.published_version;
-      showToast(
-        "success",
-        version ? `Published v${version}` : result?.message || "Workflow published"
-      );
-      await refetch();
-    } catch (err) {
-      showToast("error", err?.message || "Failed to publish workflow.");
-    } finally {
-      setBusyAction(null);
-    }
+  const handleModuleChange = (value) => {
+    setModuleFilter(value);
+    setPage(1);
   };
 
   const handleDeleteConfirm = async () => {
@@ -114,10 +95,23 @@ export default function WorkflowsView() {
     try {
       await deleteMutation.mutateAsync(deleteTarget.id);
       setDeleteTarget(null);
-      showToast("success", "Workflow deleted successfully.");
+      showToast("success", "Template deleted successfully.");
       await refetch();
     } catch (err) {
-      showToast("error", err?.message || "Failed to delete workflow.");
+      showToast("error", err?.message || "Failed to delete template.");
+    }
+  };
+
+  const handleDuplicate = async (template) => {
+    setBusyAction(template.id);
+    try {
+      await duplicateMutation.mutateAsync(template.id);
+      showToast("success", "Template duplicated.");
+      await refetch();
+    } catch (err) {
+      showToast("error", err?.message || "Failed to duplicate template.");
+    } finally {
+      setBusyAction(null);
     }
   };
 
@@ -128,30 +122,27 @@ export default function WorkflowsView() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Hospital Workflows</h1>
+        <h1 className={styles.title}>Workflow Templates</h1>
         <p className={styles.subtitle}>
-          Manage automation workflows connected to Builder Connect APIs.
+          Reusable React Flow blueprints. Templates are never executed — copy
+          them into a workflow when ready.
         </p>
-        <Link href="/workflows/executions" className={styles.btnGhost}>
-          View execution history
-        </Link>
       </header>
 
-      <WorkflowToolbar
+      <WorkflowTemplateToolbar
         search={search}
         onSearchChange={setSearch}
         status={status}
-        onStatusChange={setStatus}
-        sort={sort}
-        onSortChange={setSort}
-        onCreate={handleCreate}
+        onStatusChange={handleStatusChange}
+        moduleFilter={moduleFilter}
+        onModuleChange={handleModuleChange}
         disabled={loading || deleteMutation.isPending}
       />
 
-      {loading && workflows.length === 0 ? (
+      {loading && templates.length === 0 ? (
         <div className={styles.stateCard}>
           <span className={styles.loadingSpinner} aria-hidden="true" />
-          <p className={styles.stateText}>Loading workflows…</p>
+          <p className={styles.stateText}>Loading templates…</p>
         </div>
       ) : null}
 
@@ -162,37 +153,54 @@ export default function WorkflowsView() {
               <HiOutlineExclamation aria-hidden="true" />
             </span>
             <div>
-              <h2 className={styles.errorTitle}>Unable to load workflows</h2>
+              <h2 className={styles.errorTitle}>Unable to load templates</h2>
               <p className={styles.errorText}>{error.message}</p>
             </div>
           </div>
-          <button type="button" onClick={() => refetch()} className={styles.btnSecondary}>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className={styles.btnSecondary}
+          >
             <HiOutlineRefresh aria-hidden="true" />
             Retry
           </button>
         </div>
       ) : null}
 
-      {showEmpty ? <EmptyWorkflow onCreate={handleCreate} disabled={loading} /> : null}
+      {showEmpty ? <EmptyTemplate /> : null}
 
       {showTable ? (
         <>
-          <WorkflowTable
-            workflows={paginated.items}
+          <WorkflowTemplateTable
+            templates={paginated.items}
             loading={loading}
-            onView={(workflow) => handleOpenWorkflow(workflow, "view")}
-            onEdit={(workflow) => handleOpenWorkflow(workflow, "edit")}
+            onView={(t) => router.push(`/admin/workflow-templates/${t.id}`)}
+            onEdit={(t) =>
+              router.push(`/admin/workflow-templates/${t.id}/edit`)
+            }
+            onPreview={(t) =>
+              router.push(`/admin/workflow-templates/${t.id}/preview`)
+            }
+            onDuplicate={handleDuplicate}
             onDelete={setDeleteTarget}
-            onPublish={handlePublish}
             busyAction={busyAction}
-            disabled={loading || deleteMutation.isPending}
+            disabled={
+              loading ||
+              deleteMutation.isPending ||
+              duplicateMutation.isPending
+            }
           />
 
           <div className={styles.pagination}>
             <p className={styles.paginationText}>
               Showing{" "}
-              <span className={styles.paginationStrong}>{paginated.items.length}</span> of{" "}
-              <span className={styles.paginationStrong}>{paginated.total}</span> workflows
+              <span className={styles.paginationStrong}>
+                {paginated.items.length}
+              </span>{" "}
+              of{" "}
+              <span className={styles.paginationStrong}>{paginated.total}</span>{" "}
+              templates
             </p>
             <div className={styles.paginationControls}>
               <button
@@ -210,7 +218,9 @@ export default function WorkflowsView() {
               <button
                 type="button"
                 onClick={() =>
-                  setPage((current) => Math.min(paginated.totalPages, current + 1))
+                  setPage((current) =>
+                    Math.min(paginated.totalPages, current + 1)
+                  )
                 }
                 disabled={loading || paginated.page >= paginated.totalPages}
                 className={styles.pageBtn}
@@ -223,21 +233,12 @@ export default function WorkflowsView() {
         </>
       ) : null}
 
-      <DeleteWorkflowModal
+      <DeleteTemplateModal
         open={Boolean(deleteTarget)}
-        workflow={deleteTarget}
+        template={deleteTarget}
         loading={deleteMutation.isPending}
-        onCancel={() => {
-          if (!deleteMutation.isPending) setDeleteTarget(null);
-        }}
+        onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDeleteConfirm}
-      />
-
-      <CreateWorkflowModal
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        onBlank={handleBlankWorkflow}
-        onSelectTemplate={handleSelectTemplate}
       />
 
       {toast ? (

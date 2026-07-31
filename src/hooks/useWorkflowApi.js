@@ -97,11 +97,13 @@ export function useSaveWorkflowMutation() {
   });
 }
 
-export function useTriggers() {
+export function useTriggers(options = {}) {
   return useQuery({
     queryKey: queryKeys.triggers,
     queryFn: fetchTriggers,
     staleTime: 5 * 60 * 1000,
+    enabled: options.enabled ?? true,
+    retry: options.retry,
   });
 }
 

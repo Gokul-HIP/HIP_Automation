@@ -14,8 +14,10 @@ import {
 import styles from "./styles/flow.module.css";
 
 export default function FlowToolbar({
+  entityLabel = "Workflow",
   workflowName,
   onWorkflowNameChange,
+  nameReadOnly = false,
   workflowStatus,
   zoom,
   status,
@@ -23,6 +25,9 @@ export default function FlowToolbar({
   canUndo,
   canRedo,
   canPublish = true,
+  showPublish = true,
+  showSave = true,
+  saveLabel = "Save",
   onUndo,
   onRedo,
   onAutoLayout,
@@ -59,12 +64,14 @@ export default function FlowToolbar({
         </motion.button>
 
         <div className={styles.flowNameWrap}>
-          <span className={styles.flowLabel}>Workflow</span>
+          <span className={styles.flowLabel}>{entityLabel}</span>
           <input
             className={styles.flowNameInput}
             value={workflowName}
             onChange={(e) => onWorkflowNameChange?.(e.target.value)}
-            aria-label="Workflow name"
+            aria-label={`${entityLabel} name`}
+            readOnly={nameReadOnly}
+            disabled={nameReadOnly}
           />
         </div>
 
@@ -75,7 +82,7 @@ export default function FlowToolbar({
 
         {workflowStatus ? (
           <span className={styles.statusPill} data-tone="info">
-            {workflowStatus === "active" ? "Published" : "Draft"}
+            {workflowStatus === "active" ? "Active" : workflowStatus}
           </span>
         ) : null}
       </div>
@@ -106,6 +113,7 @@ export default function FlowToolbar({
             onClick={onAutoLayout}
             aria-label="Auto layout"
             title="Auto layout"
+            disabled={nameReadOnly}
           >
             <HiOutlineTemplate />
           </button>
@@ -121,39 +129,43 @@ export default function FlowToolbar({
           <span className={styles.zoomBadge}>{zoom}%</span>
         </div>
 
-        <motion.button
-          type="button"
-          className={`${styles.toolBtn} ${styles.toolBtnGhost}`}
-          whileTap={{ scale: 0.96 }}
-          onClick={onSave}
-          disabled={!!busy}
-          aria-busy={busy === "save"}
-        >
-          {busy === "save" ? (
-            <span className={styles.btnSpinner} aria-hidden="true" />
-          ) : (
-            <HiOutlineSave />
-          )}
-          {busy === "save" ? "Saving…" : "Save"}
-        </motion.button>
+        {showSave ? (
+          <motion.button
+            type="button"
+            className={`${styles.toolBtn} ${styles.toolBtnGhost}`}
+            whileTap={{ scale: 0.96 }}
+            onClick={onSave}
+            disabled={!!busy}
+            aria-busy={busy === "save"}
+          >
+            {busy === "save" ? (
+              <span className={styles.btnSpinner} aria-hidden="true" />
+            ) : (
+              <HiOutlineSave />
+            )}
+            {busy === "save" ? "Saving…" : saveLabel}
+          </motion.button>
+        ) : null}
 
-        <motion.button
-          type="button"
-          className={`${styles.toolBtn} ${styles.toolBtnPrimary}`}
-          whileHover={{ scale: canPublish && !busy ? 1.02 : 1 }}
-          whileTap={{ scale: canPublish && !busy ? 0.97 : 1 }}
-          onClick={onPublish}
-          disabled={!!busy || !canPublish}
-          title={
-            canPublish
-              ? "Publish workflow"
-              : "Fix validation errors before publishing"
-          }
-          aria-busy={busy === "publish"}
-        >
-          <HiOutlineUpload />
-          {busy === "publish" ? "Publishing…" : "Publish"}
-        </motion.button>
+        {showPublish ? (
+          <motion.button
+            type="button"
+            className={`${styles.toolBtn} ${styles.toolBtnPrimary}`}
+            whileHover={{ scale: canPublish && !busy ? 1.02 : 1 }}
+            whileTap={{ scale: canPublish && !busy ? 0.97 : 1 }}
+            onClick={onPublish}
+            disabled={!!busy || !canPublish}
+            title={
+              canPublish
+                ? "Publish workflow"
+                : "Fix validation errors before publishing"
+            }
+            aria-busy={busy === "publish"}
+          >
+            <HiOutlineUpload />
+            {busy === "publish" ? "Publishing…" : "Publish"}
+          </motion.button>
+        ) : null}
       </div>
     </header>
   );
