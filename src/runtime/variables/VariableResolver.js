@@ -35,6 +35,9 @@ export class VariableResolver {
       ["prescription", context.prescription],
       ["medicine", context.medicine],
       ["hospital", context.hospital],
+      ["payment", context.payment],
+      ["invoice", context.invoice],
+      ["organization", context.organization],
       ["trigger", context.triggerPayload],
     ];
 

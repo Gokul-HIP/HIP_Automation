@@ -12,6 +12,7 @@ import {
   getMessagingFieldErrors,
 } from "../panels/messaging/messagingUx";
 import { validateTriggerNodeFields } from "../panels/triggers/triggerValidation";
+import { validateConditionNodeFields } from "../panels/conditions/conditionValidation";
 import {
   createWorkflow,
   updateWorkflow,
@@ -334,15 +335,16 @@ export function validateWorkflowGraph(nodes, edges, options = {}) {
       }
     }
 
-    if (def?.customPanel === "condition") {
-      const rules = node.data?.rules;
-      if (!Array.isArray(rules) || rules.length === 0) {
+    if (def?.customPanel === "condition" && node.data?.nodeType === "condition") {
+      const conditionIssues = validateConditionNodeFields(node.data, def);
+      for (const issue of conditionIssues) {
         issues.push({
-          level: "error",
-          message: `"${node.data?.label || def.title}" needs at least one condition rule.`,
+          ...issue,
           nodeId: node.id,
         });
       }
+    } else if (def?.customPanel === "condition") {
+      // Specialty condition nodes (e.g. Switch) — keep outgoing edge check only.
     }
 
     if (

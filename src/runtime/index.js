@@ -13,7 +13,13 @@ import { templateManager } from "./templates/TemplateManager";
 import { variableResolver } from "./variables/VariableResolver";
 import { createAnalyticsEngine } from "./analytics/AnalyticsEngine";
 import { conditionEngine } from "./engines/ConditionEngine";
+import { conditionExecutor } from "./executor/ConditionExecutor";
 import { delayScheduler } from "./engines/DelayScheduler";
+import {
+  evaluateJexlCondition,
+  validateJexlSyntax,
+  buildJexlContext,
+} from "./engines/jexlCondition";
 
 const channelManager = createChannelManager({ communicationLogStore });
 
@@ -40,6 +46,10 @@ export {
   templateManager,
   variableResolver,
   conditionEngine,
+  conditionExecutor,
+  evaluateJexlCondition,
+  validateJexlSyntax,
+  buildJexlContext,
   delayScheduler,
   analyticsEngine,
 };

@@ -96,7 +96,9 @@ function conditionNode({ type, title, icon }) {
     tone: toneForCategory("conditions"),
     customPanel: "condition",
     defaultData: buildConditionDefaults(type) || { label: title, status: "draft" },
-    fields: [{ key: "label", label: "Display name", type: "text", required: true }],
+    fields: (schema?.fields || [])
+      .filter((f) => f.required && f.key)
+      .map((f) => ({ key: f.key, label: f.label, type: f.type, required: true })),
   };
 }
 
@@ -169,18 +171,8 @@ export const WORKFLOW_NODES = [
   triggerNode({ type: "scheduledEvent", title: "Scheduled Event", icon: HiOutlineClock }),
 
   /* ── Conditions ── */
-  conditionNode({ type: "condition", title: "IF / ELSE", icon: HiOutlineSwitchHorizontal }),
+  conditionNode({ type: "condition", title: "Condition", icon: HiOutlineSwitchHorizontal }),
   conditionNode({ type: "switch", title: "Switch", icon: HiOutlineCollection }),
-  conditionNode({ type: "logicNot", title: "NOT", icon: HiOutlineFilter }),
-  conditionNode({ type: "compare", title: "Compare", icon: HiOutlineCode }),
-  conditionNode({ type: "patientSegment", title: "Patient Segment", icon: HiOutlineUserGroup }),
-  conditionNode({ type: "disease", title: "Disease", icon: HiOutlineShieldCheck }),
-  conditionNode({ type: "age", title: "Age", icon: HiOutlineUserAdd }),
-  conditionNode({ type: "gender", title: "Gender", icon: HiOutlineUserAdd }),
-  conditionNode({ type: "language", title: "Language", icon: HiOutlineGlobeAlt }),
-  conditionNode({ type: "membership", title: "Membership", icon: HiOutlineGift }),
-  conditionNode({ type: "paymentStatus", title: "Payment Status", icon: HiOutlineCreditCard }),
-  conditionNode({ type: "lastVisit", title: "Last Visit", icon: HiOutlineCalendar }),
 
   /* ── Wait / Delay ── */
   waitNode({ type: "wait", title: "Wait", icon: HiOutlineClock }),

@@ -23,6 +23,12 @@ function resolveNodeDescription(data, def) {
 }
 
 function resolveBodySummary(data, def) {
+  // JEXL Condition node — show expression on canvas
+  if (data?.nodeType === "condition") {
+    const expr = String(data?.expression || "").trim();
+    return expr || "Add a JEXL expression…";
+  }
+
   const parts = [];
   if (Array.isArray(data?.source) && data.source.length) {
     parts.push(`Source: ${data.source.join(", ")}`);
@@ -41,7 +47,6 @@ function resolveBodySummary(data, def) {
   }
   if (parts.length) return parts.slice(0, 2).join(" · ");
 
-  // Prefer a required field hint from local catalog when nothing configured yet.
   const required = (def?.fields || []).filter((f) => f.required).slice(0, 2);
   if (required.length) {
     return required.map((f) => f.label).join(" · ");
@@ -57,11 +62,22 @@ export default function BaseNode({
   showSource = true,
 }) {
   const def = getWorkflowNode(data?.nodeType);
-  const Icon = def?.icon || (data?.isTrigger || data?.triggerKey ? HiOutlineLightningBolt : null);
-  const tone = data?.tone || def?.tone || (data?.isTrigger || data?.triggerKey ? "success" : "primary");
+  const isJexlCondition = data?.nodeType === "condition";
+  const Icon =
+    def?.icon ||
+    (data?.isTrigger || data?.triggerKey ? HiOutlineLightningBolt : null);
+  const tone =
+    data?.tone ||
+    def?.tone ||
+    (data?.isTrigger || data?.triggerKey ? "success" : "primary");
   const category = getCategoryById(data?.category || def?.category);
-  const title = data?.label || def?.title || "Node";
-  const description = resolveNodeDescription(data, def);
+  const title =
+    (isJexlCondition
+      ? data?.name || data?.label || def?.title
+      : data?.label || def?.title) || "Node";
+  const description = isJexlCondition
+    ? "Condition"
+    : resolveNodeDescription(data, def);
   const summary = resolveBodySummary(data, def);
   const categoryLabel =
     data?.module || category?.label || data?.category || "Node";
@@ -78,6 +94,7 @@ export default function BaseNode({
       className={styles.node}
       data-selected={selected ? "true" : "false"}
       data-node-id={id}
+      data-condition={isJexlCondition ? "true" : "false"}
       initial={{ opacity: 0, scale: 0.94, y: 8 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
@@ -99,7 +116,9 @@ export default function BaseNode({
           ) : null}
           <div className={styles.titleWrap}>
             <p className={styles.title}>{title}</p>
-            <p className={styles.category}>{categoryLabel}</p>
+            <p className={styles.category}>
+              {isJexlCondition ? "Condition" : categoryLabel}
+            </p>
           </div>
         </div>
         <span className={styles.status} data-status={statusKey}>
@@ -108,11 +127,23 @@ export default function BaseNode({
       </div>
 
       <div className={styles.body}>
-        {description ? <p className={styles.hint}>{description}</p> : null}
-        {summary ? <p className={styles.summary}>{summary}</p> : null}
-        {!description && !summary ? (
-          <p className={styles.hint}>Configure this node in the property panel.</p>
-        ) : null}
+        {isJexlCondition ? (
+          <>
+            <p className={styles.conditionEyebrow}>Condition</p>
+            <p className={styles.conditionName}>{title}</p>
+            <p className={styles.expression}>{summary}</p>
+          </>
+        ) : (
+          <>
+            {description ? <p className={styles.hint}>{description}</p> : null}
+            {summary ? <p className={styles.summary}>{summary}</p> : null}
+            {!description && !summary ? (
+              <p className={styles.hint}>
+                Configure this node in the property panel.
+              </p>
+            ) : null}
+          </>
+        )}
       </div>
 
       <div className={styles.footer}>
@@ -120,7 +151,28 @@ export default function BaseNode({
         <span className={styles.footerHint}>Edit in panel →</span>
       </div>
 
-      {showSource ? (
+      {showSource && isJexlCondition ? (
+        <>
+          <Handle
+            type="source"
+            id="true"
+            position={Position.Right}
+            style={{ top: "38%" }}
+            className={`${styles.handle} ${styles.handleRight} ${styles.handleTrue}`}
+            title="True"
+          />
+          <Handle
+            type="source"
+            id="false"
+            position={Position.Right}
+            style={{ top: "68%" }}
+            className={`${styles.handle} ${styles.handleRight} ${styles.handleFalse}`}
+            title="False"
+          />
+          <span className={styles.branchLabelTrue}>True</span>
+          <span className={styles.branchLabelFalse}>False</span>
+        </>
+      ) : showSource ? (
         <Handle
           type="source"
           position={Position.Right}

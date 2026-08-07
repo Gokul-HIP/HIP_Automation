@@ -19,8 +19,12 @@
  * @property {Record<string, unknown>} prescription
  * @property {Record<string, unknown>} medicine
  * @property {Record<string, unknown>} hospital
+ * @property {Record<string, unknown>} payment
+ * @property {Record<string, unknown>} invoice
+ * @property {Record<string, unknown>} organization
  * @property {Record<string, unknown>} variables
  * @property {Record<string, unknown>} system
+ * @property {Record<string, unknown>} [outputs]
  */
 
 /**
@@ -152,16 +156,6 @@ export const WAIT_NODE_TYPES = new Set([
 export const CONDITION_NODE_TYPES = new Set([
   "condition",
   "switch",
-  "logicNot",
-  "compare",
-  "patientSegment",
-  "disease",
-  "age",
-  "gender",
-  "language",
-  "membership",
-  "paymentStatus",
-  "lastVisit",
 ]);
 
 export const INTEGRATION_NODE_TYPES = new Set([

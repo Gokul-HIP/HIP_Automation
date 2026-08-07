@@ -1,4 +1,5 @@
 .node {
+  position: relative;
   width: 300px;
   border-radius: 18px;
   border: 1px solid var(--border-color);
@@ -171,6 +172,68 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.conditionEyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.conditionName {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.expression {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.handleTrue {
+  background: var(--success) !important;
+  border-color: var(--success) !important;
+}
+
+.handleFalse {
+  background: var(--danger) !important;
+  border-color: var(--danger) !important;
+}
+
+.branchLabelTrue,
+.branchLabelFalse {
+  position: absolute;
+  right: -42px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.branchLabelTrue {
+  top: calc(38% - 6px);
+  color: var(--success);
+}
+
+.branchLabelFalse {
+  top: calc(68% - 6px);
+  color: var(--danger);
 }
 
 .footer {

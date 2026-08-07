@@ -81,6 +81,42 @@
   line-height: 1.45;
 }
 
+.jexlEditor {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  min-height: 120px;
+  white-space: pre-wrap;
+}
+
+.exampleList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.exampleChip {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--background);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.exampleChip code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+}
+
+.exampleChip:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
 .control:focus,
 .select:focus,
 .textarea:focus,

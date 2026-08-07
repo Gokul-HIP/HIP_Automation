@@ -76,18 +76,8 @@ export class NodeExecutorRegistry {
   }
 
   async #executeCondition(step, context) {
-    const passed = conditionEngine.evaluate({
-      context,
-      logic: String(step.data.logic || "and"),
-      rules: Array.isArray(step.data.rules) ? step.data.rules : [],
-      nodeData: step.data,
-    });
-
-    return {
-      action: "branch",
-      branchHandle: passed ? "true" : "false",
-      output: { passed },
-    };
+    // ConditionExecutor (JEXL) for primary Condition nodes; specialty nodes still supported.
+    return conditionEngine.execute(step, context);
   }
 
   async #executeWait(step, context) {
