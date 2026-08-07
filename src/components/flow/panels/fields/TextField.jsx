@@ -9,6 +9,7 @@ export default function TextField({
   value,
   required = false,
   placeholder = "",
+  readOnly = false,
   onChange,
 }) {
   return (
@@ -22,6 +23,7 @@ export default function TextField({
         className={styles.control}
         value={value ?? ""}
         placeholder={placeholder}
+        readOnly={readOnly}
         onChange={(e) => onChange?.(e.target.value)}
       />
     </div>

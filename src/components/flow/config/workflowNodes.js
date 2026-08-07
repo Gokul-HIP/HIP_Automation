@@ -15,7 +15,21 @@ export function getNodesByCategory(categoryId) {
 }
 
 /**
+ * Normalize trigger titles/keys for duplicate detection across local + API catalogs.
+ * @param {unknown} value
+ */
+function normalizeTriggerLabel(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ");
+}
+
+/**
  * Build sidebar groups from the local catalog plus optional API trigger catalog.
+ * Local trigger cards win when the API exposes the same trigger under another
+ * key or group (e.g. API "chat" vs local Triggers → On Message Received).
  * @param {{ search?: string, apiTriggerCatalog?: { triggers?: { key: string }[], groups?: { group: string, triggers: unknown[] }[] } | null }} options
  */
 export function getSidebarCatalogGroups({ search = "", apiTriggerCatalog = null } = {}) {
@@ -30,16 +44,21 @@ export function getSidebarCatalogGroups({ search = "", apiTriggerCatalog = null 
     );
   };
 
-  const apiTriggerKeys = new Set(
-    (apiTriggerCatalog?.triggers ?? []).map((trigger) => trigger.key)
+  const localTriggers = WORKFLOW_NODES.filter((node) => node.isTrigger);
+  const localTriggerTypes = new Set(localTriggers.map((node) => node.type));
+  const localTriggerTitles = new Set(
+    localTriggers.map((node) => normalizeTriggerLabel(node.title))
   );
-  const hasApiTriggers = apiTriggerKeys.size > 0;
   const groups = [];
 
   for (const { group, triggers } of apiTriggerCatalog?.groups ?? []) {
-    const filteredTriggers = (triggers ?? []).filter((trigger) =>
-      matchesText(trigger.name, trigger.description, trigger.key)
-    );
+    // Prefer the local catalog entry when the API exposes the same trigger
+    // under a different key/group (e.g. "chat" vs Triggers → On Message Received).
+    const filteredTriggers = (triggers ?? []).filter((trigger) => {
+      if (localTriggerTypes.has(trigger.key)) return false;
+      if (localTriggerTitles.has(normalizeTriggerLabel(trigger.name))) return false;
+      return matchesText(trigger.name, trigger.description, trigger.key);
+    });
 
     if (filteredTriggers.length) {
       groups.push({
@@ -58,10 +77,7 @@ export function getSidebarCatalogGroups({ search = "", apiTriggerCatalog = null 
     const nodes = WORKFLOW_NODES.filter((node) => {
       if (node.isStart) return false;
       if (node.category !== category.id) return false;
-      if (category.id === "triggers" && hasApiTriggers && node.isTrigger) {
-        // Keep local trigger types that the API catalog does not yet expose.
-        if (apiTriggerKeys.has(node.type)) return false;
-      }
+      // Prefer local trigger cards; matching API entries are filtered out above. 
       return matchesText(node.title, node.description, node.type);
     });
 
@@ -81,6 +97,7 @@ export function createNodeDefaults(type) {
     nodeType: def.type,
     category: def.category,
     tone: def.tone,
+    description: def.description || "",
     ...structuredClone(def.defaultData),
   };
 

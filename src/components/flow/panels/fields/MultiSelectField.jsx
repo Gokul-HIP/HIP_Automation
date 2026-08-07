@@ -23,6 +23,36 @@ function toValueList(value) {
 }
 
 /**
+ * @param {unknown[]} options
+ * @returns {{ value: string, label: string }[]}
+ */
+function normalizeOptions(options = []) {
+  const seen = new Set();
+  const next = [];
+  for (const opt of options) {
+    if (opt == null) continue;
+    if (typeof opt === "string" || typeof opt === "number") {
+      const value = String(opt);
+      if (seen.has(value)) continue;
+      seen.add(value);
+      next.push({ value, label: value });
+      continue;
+    }
+    if (typeof opt !== "object") continue;
+    const raw = opt.value ?? opt.id ?? opt.key ?? opt.slug ?? opt.name;
+    if (raw == null || raw === "") continue;
+    const value = String(raw);
+    if (seen.has(value)) continue;
+    seen.add(value);
+    next.push({
+      value,
+      label: String(opt.label ?? opt.title ?? opt.name ?? opt.text ?? value),
+    });
+  }
+  return next;
+}
+
+/**
  * Chip-based multi-select. Always emits string[] (never CSV text).
  */
 export default function MultiSelectField({
@@ -34,15 +64,15 @@ export default function MultiSelectField({
   hint = "Select one or more options.",
   onChange,
 }) {
+  const safeOptions = normalizeOptions(options);
   const selected = new Set(toValueList(values));
 
   const toggle = (value) => {
     const next = new Set(selected);
     if (next.has(value)) next.delete(value);
     else next.add(value);
-    // Preserve option order for stable JSON
-    const ordered = options
-      .map((opt) => String(opt.value))
+    const ordered = safeOptions
+      .map((opt) => opt.value)
       .filter((v) => next.has(v));
     const extras = [...next].filter((v) => !ordered.includes(v));
     onChange?.([...ordered, ...extras]);
@@ -54,17 +84,16 @@ export default function MultiSelectField({
         {label}
       </FieldLabel>
       <div id={id} role="group" aria-label={label} className={styles.chipGroup}>
-        {options.map((opt) => {
-          const value = String(opt.value);
-          const active = selected.has(value);
+        {safeOptions.map((opt) => {
+          const active = selected.has(opt.value);
           return (
             <button
-              key={value}
+              key={opt.value}
               type="button"
               aria-pressed={active}
               data-active={active ? "true" : "false"}
               className={styles.chip}
-              onClick={() => toggle(value)}
+              onClick={() => toggle(opt.value)}
             >
               {opt.label}
             </button>

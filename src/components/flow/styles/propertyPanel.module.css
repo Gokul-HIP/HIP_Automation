@@ -2,22 +2,21 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  flex: 1;
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
   padding: 16px;
+  /* Parent .panelScrollRegion owns scrolling — do not nest another scrollport. */
+  flex: none;
+  min-height: min-content;
+  overflow: visible;
 }
 
 .scrollCompact {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  flex: 1;
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
   padding: 12px;
+  flex: none;
+  min-height: min-content;
+  overflow: visible;
 }
 
 .helpBox {
@@ -101,6 +100,51 @@
   border-radius: 10px;
   border: 1px solid var(--border-color);
   background: var(--background);
+}
+
+.kvList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kvRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 28px;
+  gap: 6px;
+  align-items: center;
+}
+
+.kvRemove {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.kvAdd {
+  align-self: flex-start;
+  margin-top: 4px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.kvAdd:hover,
+.kvRemove:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 .chip {

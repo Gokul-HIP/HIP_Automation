@@ -55,6 +55,8 @@ function buildBlankCanvas() {
 const HISTORY_LIMIT = 40;
 const COL_GAP = 280;
 const ROW_GAP = 140;
+const FALLBACK_TRIGGER_DESCRIPTION =
+  "Triggers the workflow when this hospital event occurs.";
 
 function createId(prefix = "node") {
   return `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
@@ -962,6 +964,10 @@ export default function useFlowBuilder({
           category: "triggers",
           tone: localDefaults.tone || "success",
           label: trigger.name || localDefaults.label,
+          description:
+            trigger.description ||
+            localDefaults.description ||
+            FALLBACK_TRIGGER_DESCRIPTION,
           status: "draft",
           isTrigger: true,
           module: trigger.module ?? trigger.group ?? null,

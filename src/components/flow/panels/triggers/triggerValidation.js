@@ -11,9 +11,11 @@ function isEmpty(value) {
 
 export function isSchemaFieldVisible(field, data) {
   if (!field?.showWhen) return true;
-  return Object.entries(field.showWhen).every(
-    ([key, val]) => data?.[key] === val
-  );
+  return Object.entries(field.showWhen).every(([key, val]) => {
+    const actual = data?.[key];
+    if (Array.isArray(val)) return val.includes(actual);
+    return actual === val;
+  });
 }
 
 /**

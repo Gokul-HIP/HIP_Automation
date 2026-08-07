@@ -3,7 +3,7 @@
 import ToggleField from "../fields/ToggleField";
 import SelectField from "../fields/SelectField";
 import NumberField from "../fields/NumberField";
-import { RETRY_INTERVAL_OPTIONS } from "../../config/triggers";
+import { RETRY_INTERVAL_OPTIONS } from "../../config/messaging/schemas";
 import styles from "../../styles/medicineReminder.module.css";
 
 export default function TriggerRetryPolicy({ data, onChange }) {

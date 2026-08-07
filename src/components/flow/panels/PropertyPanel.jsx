@@ -166,6 +166,7 @@ export default function PropertyPanel({
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: 28, opacity: 0 }}
           transition={{ type: "spring", stiffness: 380, damping: 34 }}
+          style={{ height: "100%", minHeight: 0 }}
           aria-label="Property panel"
         >
           <div className={styles.panelHeader}>
@@ -195,7 +196,7 @@ export default function PropertyPanel({
               Select a node on the canvas to edit its configuration.
             </p>
           ) : (
-            <>
+            <div className={styles.panelBodyStack}>
               {!readOnly ? (
                 <div className={styles.actionRow}>
                   <button
@@ -222,6 +223,7 @@ export default function PropertyPanel({
               )}
 
               <div
+                className={styles.panelScrollRegion}
                 style={
                   readOnly
                     ? { pointerEvents: "none", opacity: 0.92 }
@@ -245,7 +247,7 @@ export default function PropertyPanel({
                   />
                 ) : null}
               </div>
-            </>
+            </div>
           )}
         </motion.aside>
       ) : null}

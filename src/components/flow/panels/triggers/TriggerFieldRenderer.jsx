@@ -5,15 +5,32 @@ import SelectField from "../fields/SelectField";
 import ToggleField from "../fields/ToggleField";
 import NumberField from "../fields/NumberField";
 import MultiSelectField from "../fields/MultiSelectField";
+import TagsField from "../fields/TagsField";
+import KeyValueField from "../fields/KeyValueField";
 import TriggerMessageTemplate from "./TriggerMessageTemplate";
 import TriggerRetryPolicy from "./TriggerRetryPolicy";
 import styles from "../../styles/propertyPanel.module.css";
 
+function matchesShowWhenValue(actual, expected) {
+  if (Array.isArray(expected)) return expected.includes(actual);
+  return actual === expected;
+}
+
 function fieldVisible(field, data) {
   if (!field.showWhen) return true;
-  return Object.entries(field.showWhen).every(
-    ([key, val]) => data?.[key] === val
+  return Object.entries(field.showWhen).every(([key, val]) =>
+    matchesShowWhenValue(data?.[key], val)
   );
+}
+
+function randomCredential(prefix = "hip") {
+  const bytes =
+    typeof crypto !== "undefined" && crypto.getRandomValues
+      ? Array.from(crypto.getRandomValues(new Uint8Array(16)))
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("")
+      : `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 14)}`;
+  return `${prefix}_${bytes}`;
 }
 
 /**
@@ -31,8 +48,12 @@ export default function TriggerFieldRenderer({
 
   if (!fieldVisible(field, data)) return null;
 
-  if (field.type === "channels") {
-    const channelValues = Array.isArray(value)
+  if (
+    field.type === "channels" ||
+    field.type === "multiselect" ||
+    field.type === "multi_select"
+  ) {
+    const listValues = Array.isArray(value)
       ? value
       : typeof value === "string"
         ? value.split(/[,\s]+/).map((v) => v.trim()).filter(Boolean)
@@ -40,14 +61,44 @@ export default function TriggerFieldRenderer({
     return (
       <MultiSelectField
         id={id}
-        label={field.label || "Delivery Channels"}
-        values={channelValues}
+        label={field.label || "Options"}
+        values={listValues}
         options={field.options || []}
         required={field.required}
-        hint={field.hint || "Select one or more delivery channels."}
-        onChange={(channels) =>
-          onChange?.({ [field.key || "channels"]: channels })
+        hint={
+          field.hint ||
+          (field.type === "channels"
+            ? "Select one or more delivery channels."
+            : "Select one or more options.")
         }
+        onChange={(next) => onChange?.({ [field.key]: next })}
+      />
+    );
+  }
+
+  if (field.type === "tags") {
+    return (
+      <TagsField
+        id={id}
+        label={field.label || "Tags"}
+        values={value}
+        required={field.required}
+        placeholder={field.placeholder || "appointment, doctor, help"}
+        hint={field.hint || "Enter keywords such as appointment, doctor, help"}
+        onChange={(tags) => onChange?.({ [field.key]: tags })}
+      />
+    );
+  }
+
+  if (field.type === "keyValue") {
+    return (
+      <KeyValueField
+        id={id}
+        label={field.label || "Payload Variables"}
+        pairs={value}
+        required={field.required}
+        hint={field.hint}
+        onChange={(pairs) => onChange?.({ [field.key]: pairs })}
       />
     );
   }
@@ -130,9 +181,6 @@ export default function TriggerFieldRenderer({
           onChange={(next) => onChange?.({ [field.key]: next })}
         />
         {field.hint ? <p className={styles.hint}>{field.hint}</p> : null}
-        {field.dynamic ? (
-          <p className={styles.hint}>Options can be loaded from Laravel later.</p>
-        ) : null}
       </div>
     );
   }
@@ -149,6 +197,7 @@ export default function TriggerFieldRenderer({
           className={styles.textarea}
           value={value ?? ""}
           placeholder={field.placeholder || ""}
+          readOnly={Boolean(field.readOnly)}
           onChange={(e) => onChange?.({ [field.key]: e.target.value })}
         />
         {field.hint ? <p className={styles.hint}>{field.hint}</p> : null}
@@ -166,11 +215,41 @@ export default function TriggerFieldRenderer({
         <input
           id={id}
           type={field.type}
-          className={styles.input}
+          className={styles.control}
           value={value ?? ""}
           required={field.required}
           onChange={(e) => onChange?.({ [field.key]: e.target.value })}
         />
+        {field.hint ? <p className={styles.hint}>{field.hint}</p> : null}
+      </div>
+    );
+  }
+
+  if (field.generate) {
+    return (
+      <div className={styles.field}>
+        <TextField
+          id={id}
+          label={field.label}
+          value={value ?? ""}
+          required={field.required}
+          placeholder={field.placeholder || ""}
+          readOnly={Boolean(field.readOnly)}
+          onChange={(next) => onChange?.({ [field.key]: next })}
+        />
+        <button
+          type="button"
+          className={styles.kvAdd}
+          onClick={() =>
+            onChange?.({
+              [field.key]: randomCredential(
+                field.key === "apiKey" ? "api" : "whsec"
+              ),
+            })
+          }
+        >
+          Generate
+        </button>
         {field.hint ? <p className={styles.hint}>{field.hint}</p> : null}
       </div>
     );
@@ -184,12 +263,10 @@ export default function TriggerFieldRenderer({
         value={value ?? ""}
         required={field.required}
         placeholder={field.placeholder || ""}
+        readOnly={Boolean(field.readOnly)}
         onChange={(next) => onChange?.({ [field.key]: next })}
       />
       {field.hint ? <p className={styles.hint}>{field.hint}</p> : null}
-      {field.dynamic ? (
-        <p className={styles.hint}>Value can be overridden by Laravel later.</p>
-      ) : null}
     </div>
   );
 }

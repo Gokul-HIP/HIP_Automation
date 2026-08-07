@@ -72,6 +72,42 @@ function normalizeTriggerSchema(schema) {
   return { fields: [] };
 }
 
+function normalizeFieldOption(opt, index = 0) {
+  if (opt == null) return null;
+  if (typeof opt === "string" || typeof opt === "number") {
+    const value = String(opt);
+    return { value, label: value };
+  }
+  if (typeof opt !== "object") return null;
+
+  const value =
+    opt.value ??
+    opt.id ??
+    opt.key ??
+    opt.slug ??
+    opt.name ??
+    null;
+  if (value == null || value === "") return null;
+
+  const label = String(
+    opt.label ?? opt.title ?? opt.name ?? opt.text ?? value
+  );
+  return { value: String(value), label };
+}
+
+function normalizeFieldOptions(options) {
+  if (!Array.isArray(options)) return [];
+  const seen = new Set();
+  const next = [];
+  options.forEach((opt, index) => {
+    const normalized = normalizeFieldOption(opt, index);
+    if (!normalized || seen.has(normalized.value)) return;
+    seen.add(normalized.value);
+    next.push(normalized);
+  });
+  return next;
+}
+
 function normalizeField(field) {
   return {
     key: String(field.key ?? field.name ?? ""),
@@ -80,7 +116,7 @@ function normalizeField(field) {
     required: Boolean(field.required),
     hint: field.hint ?? field.description ?? null,
     placeholder: field.placeholder ?? null,
-    options: Array.isArray(field.options) ? field.options : [],
+    options: normalizeFieldOptions(field.options),
     min: field.min ?? null,
     max: field.max ?? null,
     showWhen: field.show_when ?? field.showWhen ?? null,
