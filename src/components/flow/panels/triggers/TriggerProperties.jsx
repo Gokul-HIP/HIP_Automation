@@ -11,7 +11,8 @@ import styles from "../../styles/propertyPanel.module.css";
  * later inject dynamic option lists without redesigning the UI.
  */
 export default function TriggerProperties({ data, onChange }) {
-  const schema = getTriggerSchema(data?.nodeType);
+  const schema =
+    getTriggerSchema(data?.nodeType) || getTriggerSchema(data?.triggerKey);
 
   if (!schema) {
     return (

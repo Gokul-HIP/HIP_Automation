@@ -149,6 +149,8 @@ export const WORKFLOW_NODES = [
   triggerNode({ type: "onChatMessage", title: "On Message Received", icon: HiOutlineChatAlt2 }),
   triggerNode({ type: "patientRegistered", title: "Patient Registered", icon: HiOutlineUserAdd }),
   triggerNode({ type: "appointmentBooked", title: "Appointment Booked", icon: HiOutlineCalendar }),
+  triggerNode({ type: "appointmentRescheduled", title: "Appointment Rescheduled", icon: HiOutlineRefresh }),
+  triggerNode({ type: "appointmentCompleted", title: "Appointment Completed", icon: HiOutlineCalendar }),
   triggerNode({ type: "appointmentCancelled", title: "Appointment Cancelled", icon: HiOutlineXCircle }),
   triggerNode({ type: "appointmentMissed", title: "Appointment Missed", icon: HiOutlineStatusOffline }),
   triggerNode({ type: "prescriptionAdded", title: "Prescription Added", icon: HiOutlineClipboardList }),

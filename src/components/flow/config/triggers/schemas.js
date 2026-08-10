@@ -169,6 +169,80 @@ export const TRIGGER_SCHEMAS = {
     }),
   },
 
+  /* ── Appointment Rescheduled ── */
+  appointmentRescheduled: {
+    description:
+      "Triggers the workflow whenever an existing appointment is rescheduled.",
+    laravelContext: [
+      "context.patient",
+      "context.appointment",
+      "context.doctor",
+      "context.hospital",
+    ],
+    contextCard: {
+      title: "Appointment Context",
+      note: "Injected by Laravel · read only",
+      rows: [
+        { label: "Patient", key: "patient_name" },
+        { label: "Doctor", key: "doctor_name" },
+        { label: "Old Date", key: "old_date" },
+        { label: "New Date", key: "new_date" },
+      ],
+    },
+    fields: [
+      nameField(),
+      {
+        key: "source",
+        type: "multiselect",
+        label: "Source",
+        options: BOOKING_SOURCE_OPTIONS,
+        required: true,
+        hint: "Which booking sources should start this workflow.",
+      },
+    ],
+    defaults: createBaseTriggerDefaults({
+      label: "Appointment Rescheduled",
+      source: ["any"],
+    }),
+  },
+
+  /* ── Appointment Completed ── */
+  appointmentCompleted: {
+    description:
+      "Triggers the workflow whenever an appointment is marked as completed.",
+    laravelContext: [
+      "context.patient",
+      "context.appointment",
+      "context.doctor",
+      "context.hospital",
+    ],
+    contextCard: {
+      title: "Appointment Context",
+      note: "Injected by Laravel · read only",
+      rows: [
+        { label: "Patient", key: "patient_name" },
+        { label: "Doctor", key: "doctor_name" },
+        { label: "Date", key: "appointment_date" },
+        { label: "Time", key: "appointment_time" },
+      ],
+    },
+    fields: [
+      nameField(),
+      {
+        key: "source",
+        type: "multiselect",
+        label: "Source",
+        options: BOOKING_SOURCE_OPTIONS,
+        required: true,
+        hint: "Which booking sources should start this workflow.",
+      },
+    ],
+    defaults: createBaseTriggerDefaults({
+      label: "Appointment Completed",
+      source: ["any"],
+    }),
+  },
+
   /* ── 4. Appointment Cancelled ── */
   appointmentCancelled: {
     description:
@@ -836,8 +910,29 @@ export const TRIGGER_SCHEMAS = {
   },
 };
 
+/** Resolve camelCase / snake_case / alias trigger keys to a schema. */
+const TRIGGER_TYPE_ALIASES = {
+  appointment_rescheduled: "appointmentRescheduled",
+  appointment_completed: "appointmentCompleted",
+  appointment_booked: "appointmentBooked",
+  appointment_cancelled: "appointmentCancelled",
+  appointment_missed: "appointmentMissed",
+  appointment_reminder: "appointmentReminder",
+};
+
+function resolveTriggerType(type) {
+  const raw = String(type || "").trim();
+  if (!raw) return "";
+  if (TRIGGER_SCHEMAS[raw]) return raw;
+  if (TRIGGER_TYPE_ALIASES[raw]) return TRIGGER_TYPE_ALIASES[raw];
+  const camel = raw.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+  if (TRIGGER_SCHEMAS[camel]) return camel;
+  return raw;
+}
+
 export function getTriggerSchema(type) {
-  return TRIGGER_SCHEMAS[type] ?? null;
+  const key = resolveTriggerType(type);
+  return TRIGGER_SCHEMAS[key] ?? null;
 }
 
 export function buildTriggerDefaults(type) {

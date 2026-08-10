@@ -150,7 +150,10 @@ export default function PropertyPanel({
   let PanelComponent = def?.customPanel ? PANEL_MAP[def.customPanel] : null;
   if (isTriggerNode && !isStart) {
     // Prefer rich local trigger schemas (e.g. Medicine Reminder) over API text forms.
-    const hasLocalSchema = Boolean(getTriggerSchema(node?.data?.nodeType));
+    const hasLocalSchema = Boolean(
+      getTriggerSchema(node?.data?.nodeType) ||
+        getTriggerSchema(node?.data?.triggerKey)
+    );
     PanelComponent =
       isApiTrigger && !hasLocalSchema
         ? ApiTriggerProperties
