@@ -46,12 +46,12 @@ const NAV_ITEMS = [
         icon: HiOutlineClipboardList,
         match: (path) => path.startsWith("/workflows/executions"),
       },
-      {
-        href: "/workflows/executions",
-        label: "Logs",
-        icon: HiOutlineDocumentText,
-        match: (path) => path.startsWith("/workflows/executions"),
-      },
+      // {
+      //   href: "/workflows/executions",
+      //   label: "Logs",
+      //   icon: HiOutlineDocumentText,
+      //   match: (path) => path.startsWith("/workflows/executions"),
+      // },
     ],
   },
   { href: "/chatbot", label: "Chatbot", icon: HiOutlineChatAlt2 },

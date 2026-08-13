@@ -205,11 +205,11 @@ export const WORKFLOW_NODES = [
   stubNode({ type: "dbQuery", category: "database", title: "Database Query", icon: HiOutlineDatabase, description: "Read patient or encounter records.", fields: [{ key: "label", label: "Display name", type: "text", required: true }, { key: "query", label: "Query / filter", type: "textarea", required: true }] }),
 
   /* ── Integrations (stubs) ── */
-  stubNode({ type: "webhook", category: "integrations", title: "Webhook", icon: HiOutlineGlobeAlt, description: "Emit or receive a webhook.", fields: [{ key: "label", label: "Display name", type: "text", required: true }, { key: "endpoint", label: "Endpoint", type: "text", required: true }] }),
+  // stubNode({ type: "webhook", category: "integrations", title: "Webhook", icon: HiOutlineGlobeAlt, description: "Emit or receive a webhook.", fields: [{ key: "label", label: "Display name", type: "text", required: true }, { key: "endpoint", label: "Endpoint", type: "text", required: true }] }),
   stubNode({ type: "httpRequest", category: "integrations", title: "REST API", icon: HiOutlineCode, description: "Call an external REST API.", fields: [{ key: "label", label: "Display name", type: "text", required: true }, { key: "url", label: "URL", type: "text", required: true }] }),
   stubNode({ type: "fhir", category: "integrations", title: "FHIR", icon: HiOutlineShieldCheck, description: "Exchange FHIR resources." }),
-  stubNode({ type: "abdm", category: "integrations", title: "ABDM", icon: HiOutlineLink, description: "Integrate with ABDM health stack." }),
-  stubNode({ type: "paymentGateway", category: "integrations", title: "Payment Gateway", icon: HiOutlineCurrencyDollar, description: "Process payments via gateway." }),
+  // stubNode({ type: "abdm", category: "integrations", title: "ABDM", icon: HiOutlineLink, description: "Integrate with ABDM health stack." }),
+  // stubNode({ type: "paymentGateway", category: "integrations", title: "Payment Gateway", icon: HiOutlineCurrencyDollar, description: "Process payments via gateway." }),
   stubNode({ type: "thirdPartyApi", category: "integrations", title: "Third Party API", icon: HiOutlinePuzzle, description: "Connect a third-party service." }),
 
   /* ── AI (stubs) ── */
