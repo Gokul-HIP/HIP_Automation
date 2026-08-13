@@ -11,6 +11,7 @@ export default function WorkflowTable({
   onEdit,
   onDelete,
   onPublish,
+  onDuplicate,
   busyAction = null,
   disabled = false,
 }) {
@@ -41,6 +42,7 @@ export default function WorkflowTable({
                   onEdit={onEdit}
                   onDelete={onDelete}
                   onPublish={onPublish}
+                  onDuplicate={onDuplicate}
                   busyAction={busyAction}
                   disabled={disabled}
                 />

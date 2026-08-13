@@ -5,6 +5,7 @@ import {
   HiOutlinePencil,
   HiOutlineTrash,
   HiOutlineUpload,
+  HiOutlineDuplicate,
 } from "react-icons/hi";
 import {
   formatWorkflowDate,
@@ -25,6 +26,7 @@ export default function WorkflowRow({
   onEdit,
   onDelete,
   onPublish,
+  onDuplicate,
   busyAction = null,
   disabled = false,
 }) {
@@ -84,6 +86,17 @@ export default function WorkflowRow({
             className={`${styles.iconBtn} ${styles.iconBtnEdit}`}
           >
             <HiOutlinePencil aria-hidden="true" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onDuplicate?.(workflow)}
+            disabled={disabled || isBusy}
+            aria-label={`Duplicate ${workflow.name}`}
+            title="Duplicate"
+            className={`${styles.iconBtn} ${styles.iconBtnEdit}`}
+          >
+            <HiOutlineDuplicate aria-hidden="true" />
           </button>
 
           <button

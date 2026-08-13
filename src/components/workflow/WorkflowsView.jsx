@@ -20,7 +20,9 @@ import {
   useWorkflows,
   useDeleteWorkflow,
   usePublishWorkflow,
+  useDuplicateWorkflow,
 } from "@/hooks/useWorkflowApi";
+import { extractWorkflowId } from "@/services/api/workflows";
 import {
   filterWorkflowItems,
   paginateWorkflowItems,
@@ -57,6 +59,7 @@ export default function WorkflowsView() {
 
   const deleteMutation = useDeleteWorkflow();
   const publishMutation = usePublishWorkflow();
+  const duplicateMutation = useDuplicateWorkflow();
 
   const workflows = data?.items ?? [];
 
@@ -109,6 +112,23 @@ export default function WorkflowsView() {
     }
   };
 
+  const handleDuplicate = async (workflow) => {
+    setBusyAction(workflow.id);
+    try {
+      const result = await duplicateMutation.mutateAsync(workflow.id);
+      const newId = extractWorkflowId(result);
+      showToast("success", "Workflow duplicated. You can edit and publish it.");
+      await refetch();
+      if (newId != null) {
+        router.push(`/workflows/${newId}`);
+      }
+    } catch (err) {
+      showToast("error", err?.message || "Failed to duplicate workflow.");
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
     try {
@@ -145,7 +165,9 @@ export default function WorkflowsView() {
         sort={sort}
         onSortChange={setSort}
         onCreate={handleCreate}
-        disabled={loading || deleteMutation.isPending}
+        disabled={
+          loading || deleteMutation.isPending || duplicateMutation.isPending
+        }
       />
 
       {loading && workflows.length === 0 ? (
@@ -184,8 +206,13 @@ export default function WorkflowsView() {
             onEdit={(workflow) => handleOpenWorkflow(workflow, "edit")}
             onDelete={setDeleteTarget}
             onPublish={handlePublish}
+            onDuplicate={handleDuplicate}
             busyAction={busyAction}
-            disabled={loading || deleteMutation.isPending}
+            disabled={
+              loading ||
+              deleteMutation.isPending ||
+              duplicateMutation.isPending
+            }
           />
 
           <div className={styles.pagination}>

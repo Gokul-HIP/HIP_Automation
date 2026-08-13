@@ -6,6 +6,7 @@ import {
   updateWorkflow,
   deleteWorkflow,
   publishWorkflow,
+  duplicateWorkflow,
   loadWorkflowForBuilder,
   buildWorkflowPayload,
 } from "@/services/api/workflows";
@@ -81,6 +82,14 @@ export function usePublishWorkflow() {
       qc.invalidateQueries({ queryKey: ["workflows"] });
       qc.invalidateQueries({ queryKey: queryKeys.workflow(id) });
     },
+  });
+}
+
+export function useDuplicateWorkflow() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: duplicateWorkflow,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["workflows"] }),
   });
 }
 

@@ -139,6 +139,11 @@ export async function publishWorkflow(id) {
   return response.data;
 }
 
+export async function duplicateWorkflow(id) {
+  const response = await apiClient.post(`/workflows/${id}/duplicate`);
+  return response.data;
+}
+
 export async function loadWorkflowForBuilder(id) {
   const response = await fetchWorkflow(id);
   return extractWorkflowState(response);
