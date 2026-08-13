@@ -125,7 +125,7 @@ export default function WorkflowsView() {
     } catch (err) {
       showToast("error", err?.message || "Failed to duplicate workflow.");
     } finally {
-      setBusyAction(null);
+      setBusyAction(null); 
     }
   };
 
