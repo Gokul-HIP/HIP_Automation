@@ -10,6 +10,10 @@
   position: sticky;
   top: 0;
   z-index: 40;
+  transition:
+    background-color var(--duration-theme) var(--ease-theme),
+    border-color var(--duration-theme) var(--ease-theme),
+    color var(--duration-theme) var(--ease-theme);
 }
 
 .start {
@@ -173,6 +177,10 @@
   font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.themeToggleSlot {
+  flex-shrink: 0;
 }
 
 @media (max-width: 1024px) {

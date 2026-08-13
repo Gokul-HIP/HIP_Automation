@@ -8,10 +8,10 @@
   border: 1px solid transparent;
   cursor: pointer;
   transition:
-    background var(--transition),
-    color var(--transition),
-    border-color var(--transition),
-    box-shadow var(--transition),
+    background var(--duration-theme) var(--ease-theme),
+    color var(--duration-theme) var(--ease-theme),
+    border-color var(--duration-theme) var(--ease-theme),
+    box-shadow var(--duration-theme) var(--ease-theme),
     transform var(--transition);
   white-space: nowrap;
 }

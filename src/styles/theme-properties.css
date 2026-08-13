@@ -1,0 +1,124 @@
+/*
+  Register theme colors so the browser can INTERPOLATE them
+  when [data-theme] changes. Without @property, CSS variables snap.
+*/
+
+@property --background {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #101418;
+}
+
+@property --surface {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #1a1f27;
+}
+
+@property --surface-light {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #252b36;
+}
+
+@property --sidebar-bg {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #171b22;
+}
+
+@property --header-bg {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #171b22;
+}
+
+@property --text-primary {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #ffffff;
+}
+
+@property --text-secondary {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #b5bdc9;
+}
+
+@property --text-muted {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #7d8793;
+}
+
+@property --border-color {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #2e3642;
+}
+
+@property --sidebar-link-color {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #b5bdc9;
+}
+
+@property --sidebar-active-bg {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #0da2e720;
+}
+
+@property --sidebar-active-color {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #0da2e7;
+}
+
+@property --card-bg {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #1a1f27;
+}
+
+@property --card-border {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #2e3642;
+}
+
+@property --chart-bar {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #0da2e7;
+}
+
+@property --chart-bar-muted {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #252b36;
+}
+
+@property --overlay-bg {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #0000008c;
+}
+
+@property --primary-color {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #0da2e7;
+}
+
+@property --primary-hover {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #0086c1;
+}
+
+@property --primary-light {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #bde8fc;
+}

@@ -1,0 +1,13 @@
+.edgePath {
+  stroke: var(--success);
+  stroke-width: 2.25;
+  fill: none;
+  stroke-dasharray: 6 4;
+  animation: workflow-dash 0.8s linear infinite;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--success) 40%, transparent));
+}
+
+.edgePathSelected {
+  stroke: var(--primary-color);
+  stroke-width: 2.6;
+}

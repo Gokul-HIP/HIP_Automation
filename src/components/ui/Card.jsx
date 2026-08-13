@@ -11,6 +11,7 @@ export default function Card({
 }) {
   const classes = [
     styles.card,
+    "themeMotionCard",
     styles[`padding${padding.charAt(0).toUpperCase()}${padding.slice(1)}`] ||
       styles.paddingMd,
     className,
@@ -19,7 +20,7 @@ export default function Card({
     .join(" ");
 
   return (
-    <Tag className={classes}>
+    <Tag className={classes} data-theme-motion="card">
       {(title || action) && (
         <header className={styles.header}>
           <div className={styles.heading}>

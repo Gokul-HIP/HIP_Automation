@@ -3,39 +3,46 @@
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { useUI } from "@/context/UIContext";
+import { useThemeMotion } from "@/components/theme/ThemeProvider";
 import styles from "./settings.module.css";
 
 export default function SettingsView() {
-  const {
-    theme,
-    setTheme,
-    locale,
-    setLocale,
-    sidebarCollapsed,
-    setSidebarCollapsed,
-  } = useUI();
+  const { locale, setLocale, sidebarCollapsed, setSidebarCollapsed } = useUI();
+  const { theme, setThemeWithMotion, isAnimating } = useThemeMotion();
 
   return (
     <div className="pageShell">
       <header>
         <h1 className="pageTitle">Settings</h1>
         <p className="pageSubtitle">
-          Theme, language, and layout preferences — all driven by CSS variables.
+          Theme colors morph via CSS variables — the dashboard never disappears.
         </p>
       </header>
 
       <div className={styles.grid}>
-        <Card title="Appearance" subtitle="Switch themes without changing components">
+        <Card title="Appearance" subtitle="Circular clip-path reveal — dashboard stays visible">
           <div className={styles.row}>
             <Button
               variant={theme === "dark" ? "primary" : "secondary"}
-              onClick={() => setTheme("dark")}
+              onClick={(e) =>
+                setThemeWithMotion("dark", {
+                  x: e.clientX,
+                  y: e.clientY,
+                })
+              }
+              disabled={isAnimating}
             >
               Dark
             </Button>
             <Button
               variant={theme === "light" ? "primary" : "secondary"}
-              onClick={() => setTheme("light")}
+              onClick={(e) =>
+                setThemeWithMotion("light", {
+                  x: e.clientX,
+                  y: e.clientY,
+                })
+              }
+              disabled={isAnimating}
             >
               Light
             </Button>
