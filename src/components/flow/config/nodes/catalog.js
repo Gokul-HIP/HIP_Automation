@@ -174,14 +174,9 @@ export const WORKFLOW_NODES = [
 
   /* ── Conditions ── */
   conditionNode({ type: "condition", title: "Condition", icon: HiOutlineSwitchHorizontal }),
-  conditionNode({ type: "switch", title: "Switch", icon: HiOutlineCollection }),
 
   /* ── Wait / Delay ── */
   waitNode({ type: "wait", title: "Wait", icon: HiOutlineClock }),
-  waitNode({ type: "delay", title: "Delay", icon: HiOutlineClock }),
-  waitNode({ type: "waitUntil", title: "Wait Until", icon: HiOutlineCalendar }),
-  waitNode({ type: "cronSchedule", title: "Cron Schedule", icon: HiOutlineRefresh }),
-  waitNode({ type: "recurring", title: "Recurring", icon: HiOutlineRefresh }),
 
   /* ── Messaging ── */
   messagingNode({ type: "sendWhatsApp", title: "Send WhatsApp", icon: HiOutlineDeviceMobile }),
@@ -198,35 +193,19 @@ export const WORKFLOW_NODES = [
   stubNode({ type: "dbCreate", category: "database", title: "Create Record", icon: HiOutlineDatabase, description: "Create a hospital record." }),
   stubNode({ type: "dbUpdate", category: "database", title: "Update Record", icon: HiOutlineDatabase, description: "Update a hospital record.", fields: [{ key: "label", label: "Display name", type: "text", required: true }, { key: "entity", label: "Entity", type: "select", options: [{ value: "patient", label: "Patient" }, { value: "appointment", label: "Appointment" }], required: true }] }),
   stubNode({ type: "dbDelete", category: "database", title: "Delete Record", icon: HiOutlineDatabase, description: "Delete a hospital record." }),
-  stubNode({ type: "assignPatient", category: "database", title: "Assign Patient", icon: HiOutlineUserAdd, description: "Assign a patient to a care team." }),
   stubNode({ type: "updateAppointment", category: "database", title: "Update Appointment", icon: HiOutlineCalendar, description: "Update appointment details." }),
   stubNode({ type: "updatePrescription", category: "database", title: "Update Prescription", icon: HiOutlineClipboardList, description: "Update prescription data." }),
   stubNode({ type: "updateMembership", category: "database", title: "Update Membership", icon: HiOutlineGift, description: "Update membership status." }),
   stubNode({ type: "dbQuery", category: "database", title: "Database Query", icon: HiOutlineDatabase, description: "Read patient or encounter records.", fields: [{ key: "label", label: "Display name", type: "text", required: true }, { key: "query", label: "Query / filter", type: "textarea", required: true }] }),
 
   /* ── Integrations (stubs) ── */
-  // stubNode({ type: "webhook", category: "integrations", title: "Webhook", icon: HiOutlineGlobeAlt, description: "Emit or receive a webhook.", fields: [{ key: "label", label: "Display name", type: "text", required: true }, { key: "endpoint", label: "Endpoint", type: "text", required: true }] }),
+ 
   stubNode({ type: "httpRequest", category: "integrations", title: "REST API", icon: HiOutlineCode, description: "Call an external REST API.", fields: [{ key: "label", label: "Display name", type: "text", required: true }, { key: "url", label: "URL", type: "text", required: true }] }),
-  stubNode({ type: "fhir", category: "integrations", title: "FHIR", icon: HiOutlineShieldCheck, description: "Exchange FHIR resources." }),
-  // stubNode({ type: "abdm", category: "integrations", title: "ABDM", icon: HiOutlineLink, description: "Integrate with ABDM health stack." }),
-  // stubNode({ type: "paymentGateway", category: "integrations", title: "Payment Gateway", icon: HiOutlineCurrencyDollar, description: "Process payments via gateway." }),
-  stubNode({ type: "thirdPartyApi", category: "integrations", title: "Third Party API", icon: HiOutlinePuzzle, description: "Connect a third-party service." }),
 
   /* ── AI (stubs) ── */
-  stubNode({ type: "aiChat", category: "ai", title: "AI Chat", icon: HiOutlineChatAlt2, description: "Run an AI chat step." }),
-  stubNode({ type: "aiVoice", category: "ai", title: "AI Voice", icon: HiOutlinePhone, description: "Run an AI voice step." }),
-  stubNode({ type: "aiSummarize", category: "ai", title: "Summarize Patient", icon: HiOutlineSparkles, description: "Summarize patient context." }),
-  stubNode({ type: "aiIntent", category: "ai", title: "Intent Detection", icon: HiOutlineSearchCircle, description: "Detect patient intent." }),
-  stubNode({ type: "aiRag", category: "ai", title: "RAG Search", icon: HiOutlineSearchCircle, description: "Search knowledge base with RAG." }),
-  stubNode({ type: "aiRecommend", category: "ai", title: "Recommendations", icon: HiOutlineTrendingUp, description: "Generate care recommendations." }),
-  stubNode({ type: "aiSentiment", category: "ai", title: "Sentiment Analysis", icon: HiOutlineEmojiHappy, description: "Analyze message sentiment." }),
-  stubNode({ type: "aiClassify", category: "ai", title: "AI Classification", icon: HiOutlineChip, description: "Classify intent or urgency." }),
+  stubNode({ type: "ai", category: "ai", title: "AI", icon: HiOutlineChatAlt2, description: "Run an AI chat step." }),
 
   /* ── Flow ── */
-  stubNode({ type: "loop", category: "flow", title: "Loop", icon: HiOutlineRefresh, description: "Repeat a branch until a condition is met." }),
-  stubNode({ type: "merge", category: "flow", title: "Merge", icon: HiOutlineShare, description: "Merge parallel branches." }),
-  stubNode({ type: "split", category: "flow", title: "Split", icon: HiOutlineDuplicate, description: "Split into parallel paths." }),
-  stubNode({ type: "parallel", category: "flow", title: "Parallel", icon: HiOutlineLightningBolt, description: "Run steps in parallel." }),
   {
     type: "end",
     category: "flow",
@@ -238,7 +217,5 @@ export const WORKFLOW_NODES = [
     defaultData: { label: "End", status: "ready", outcome: "completed" },
     fields: [{ key: "label", label: "Display name", type: "text", required: true }],
   },
-  stubNode({ type: "note", category: "flow", title: "Note", icon: HiOutlineCog, description: "Document intent for collaborators.", defaultData: { status: "ready" } }),
-  stubNode({ type: "setVariable", category: "flow", title: "Set Variable", icon: HiOutlineVariable, description: "Write a workflow variable.", fields: [{ key: "label", label: "Display name", type: "text", required: true }, { key: "variableName", label: "Variable name", type: "text", required: true }] }),
-  stubNode({ type: "getVariable", category: "flow", title: "Get Variable", icon: HiOutlineVariable, description: "Read a workflow variable.", fields: [{ key: "label", label: "Display name", type: "text", required: true }, { key: "variableName", label: "Variable name", type: "text", required: true }] }),
+
 ];

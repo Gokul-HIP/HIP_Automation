@@ -15,7 +15,7 @@ export const WORKFLOW_CATEGORIES = [
   },
   {
     id: "wait",
-    label: "Wait / Delay",
+    label: "Wait",
     description: "Pause the workflow for a duration or schedule.",
   },
   {
@@ -26,22 +26,22 @@ export const WORKFLOW_CATEGORIES = [
   {
     id: "database",
     label: "Database",
-    description: "Create, update, and assign hospital records.",
+    description: "Create, update, and assign records.",
   },
   {
     id: "integrations",
     label: "Integrations",
-    description: "Connect webhooks, APIs, FHIR, ABDM, and payments.",
+    description: "Connect to third-party services.",
   },
   {
     id: "ai",
     label: "AI",
-    description: "AI chat, voice, intent, RAG, and sentiment.",
+    description: "Run an AI chat step.",
   },
   {
     id: "flow",
     label: "Flow",
-    description: "Loop, merge, split, parallel paths, and end.",
+    description: "End a workflow.",
   },
 ];
 
