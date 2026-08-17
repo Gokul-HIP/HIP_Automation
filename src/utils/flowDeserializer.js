@@ -87,6 +87,7 @@ export function extractWorkflowState(response) {
     name: data?.name ?? "Hospital workflow",
     status: normalizeWorkflowStatus(data?.status),
     organizationId: data?.organization_id ?? null,
+    hospitalId: data?.hospital_id ?? null,
     createdBy: data?.created_by ?? null,
     nodes: hydrated.nodes,
     edges: hydrated.edges,

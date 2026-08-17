@@ -14,6 +14,7 @@ import { fetchTriggers } from "@/services/api/triggers";
 import { fetchVariables } from "@/services/api/variables";
 import { fetchTemplates, previewTemplate } from "@/services/api/templates";
 import { fetchExecutions } from "@/services/api/executions";
+import { fetchHospitals } from "@/services/api/hospitals";
 
 export const queryKeys = {
   workflows: (params) => ["workflows", params],
@@ -22,6 +23,7 @@ export const queryKeys = {
   variables: (trigger) => ["workflow-variables", trigger ?? "all"],
   templates: (channel) => ["workflow-templates", channel ?? "all"],
   executions: (params) => ["workflow-executions", params],
+  hospitals: (params) => ["hospitals", params],
 };
 
 export function useWorkflows(params = {}) {
@@ -145,5 +147,14 @@ export function useExecutions(params = {}) {
   return useQuery({
     queryKey: queryKeys.executions(params),
     queryFn: () => fetchExecutions(params),
+  });
+}
+
+export function useHospitals(params = {}, options = {}) {
+  return useQuery({
+    queryKey: queryKeys.hospitals(params),
+    queryFn: () => fetchHospitals(params),
+    staleTime: 5 * 60 * 1000,
+    enabled: options.enabled ?? true,
   });
 }

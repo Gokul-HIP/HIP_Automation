@@ -1,18 +1,23 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   HiOutlineX,
   HiOutlineTemplate,
   HiOutlineDocumentAdd,
   HiOutlineSearch,
+  HiOutlineOfficeBuilding,
+  HiOutlineCheckCircle,
 } from "react-icons/hi";
 import { useWorkflowTemplates } from "@/hooks/useWorkflowTemplateApi";
+import { useHospitals } from "@/hooks/useWorkflowApi";
 import styles from "./Workflows.module.css";
 
 /**
- * Create Workflow chooser — Blank vs Use Template.
- * Templates are admin-managed; users only pick active blueprints to copy.
+ * Create Workflow flow:
+ * 1) Select hospital
+ * 2) Blank vs Use Template
+ * 3) Pick template (optional)
  */
 export default function CreateWorkflowModal({
   open,
@@ -20,22 +25,68 @@ export default function CreateWorkflowModal({
   onBlank,
   onSelectTemplate,
 }) {
-  const [step, setStep] = useState("chooser"); // chooser | templates
+  const [step, setStep] = useState("hospital"); // hospital | chooser | templates
   const [search, setSearch] = useState("");
+  const [hospitalSearch, setHospitalSearch] = useState("");
+  const [debouncedHospitalSearch, setDebouncedHospitalSearch] = useState("");
+  const [selectedHospitalId, setSelectedHospitalId] = useState(null);
+
+  useEffect(() => {
+    const handle = window.setTimeout(
+      () => setDebouncedHospitalSearch(hospitalSearch),
+      300
+    );
+    return () => window.clearTimeout(handle);
+  }, [hospitalSearch]);
+
+  const {
+    data: hospitalData,
+    isLoading: hospitalsLoading,
+    error: hospitalsError,
+  } = useHospitals(
+    {
+      search: debouncedHospitalSearch.trim() || undefined,
+      perPage: 50,
+    },
+    { enabled: open }
+  );
 
   const { data, isLoading, error } = useWorkflowTemplates({
     search: search.trim() || undefined,
     perPage: 50,
   });
 
+  const hospitals = useMemo(
+    () => hospitalData?.items ?? [],
+    [hospitalData?.items]
+  );
   const templates = useMemo(() => data?.items ?? [], [data?.items]);
 
   if (!open) return null;
 
-  const close = () => {
-    setStep("chooser");
+  const reset = () => {
+    setStep("hospital");
     setSearch("");
+    setHospitalSearch("");
+    setDebouncedHospitalSearch("");
+    setSelectedHospitalId(null);
+  };
+
+  const close = () => {
+    reset();
     onClose?.();
+  };
+
+  const title =
+    step === "hospital"
+      ? "Select Hospital"
+      : step === "chooser"
+        ? "Create Workflow"
+        : "Use Template";
+
+  const goToChooser = () => {
+    if (selectedHospitalId == null) return;
+    setStep("chooser");
   };
 
   return (
@@ -51,7 +102,7 @@ export default function CreateWorkflowModal({
       <div className={`${styles.modal} ${styles.createWorkflowModal}`}>
         <div className={styles.createModalHeader}>
           <h2 id="create-workflow-title" className={styles.modalTitle}>
-            {step === "chooser" ? "Create Workflow" : "Use Template"}
+            {title}
           </h2>
           <button
             type="button"
@@ -63,43 +114,141 @@ export default function CreateWorkflowModal({
           </button>
         </div>
 
+        {step === "hospital" ? (
+          <div className={styles.templatePickWrap}>
+            <p className={styles.createStepHint}>
+              Choose which hospital this workflow belongs to. You can edit and
+              publish it after creating.
+            </p>
+
+            <label className={styles.searchWrap}>
+              <HiOutlineSearch className={styles.searchIcon} aria-hidden="true" />
+              <input
+                type="search"
+                className={styles.searchInput}
+                placeholder="Search hospitals…"
+                value={hospitalSearch}
+                onChange={(e) => setHospitalSearch(e.target.value)}
+              />
+            </label>
+
+            {hospitalsLoading ? (
+              <p className={styles.stateText}>Loading hospitals…</p>
+            ) : null}
+
+            {hospitalsError ? (
+              <p className={styles.errorText}>{hospitalsError.message}</p>
+            ) : null}
+
+            {!hospitalsLoading && !hospitalsError && hospitals.length === 0 ? (
+              <p className={styles.stateText}>
+                No hospitals available. Ask an administrator to add hospitals,
+                then try again.
+              </p>
+            ) : null}
+
+            <div className={styles.templateCardGrid} role="listbox" aria-label="Hospitals">
+              {hospitals.map((hospital) => {
+                const selected = selectedHospitalId === hospital.id;
+                return (
+                  <button
+                    key={hospital.id}
+                    type="button"
+                    role="option"
+                    aria-selected={selected}
+                    className={`${styles.templatePickCard} ${
+                      selected ? styles.hospitalPickCardSelected : ""
+                    }`}
+                    onClick={() => setSelectedHospitalId(hospital.id)}
+                  >
+                    <span className={styles.hospitalPickHeader}>
+                      <span className={styles.createOptionIcon}>
+                        <HiOutlineOfficeBuilding aria-hidden="true" />
+                      </span>
+                      {selected ? (
+                        <HiOutlineCheckCircle
+                          className={styles.hospitalPickCheck}
+                          aria-hidden="true"
+                        />
+                      ) : null}
+                    </span>
+                    <span className={styles.templatePickName}>{hospital.name}</span>
+                    <span className={styles.templatePickMeta}>
+                      {hospital.code ? <span>{hospital.code}</span> : null}
+                      {hospital.city ? <span>{hospital.city}</span> : null}
+                      <span>ID #{hospital.id}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className={styles.createStepActions}>
+              <button type="button" className={styles.btnGhost} onClick={close}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={styles.btnPrimary}
+                disabled={selectedHospitalId == null}
+                onClick={goToChooser}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         {step === "chooser" ? (
-          <div className={styles.createOptions}>
+          <div className={styles.templatePickWrap}>
             <button
               type="button"
-              className={styles.createOptionCard}
-              onClick={() => setStep("templates")}
+              className={styles.btnGhost}
+              onClick={() => setStep("hospital")}
             >
-              <span className={styles.createOptionIcon}>
-                <HiOutlineTemplate aria-hidden="true" />
-              </span>
-              <span className={styles.createOptionTitle}>Use Template</span>
-              <span className={styles.createOptionText}>
-                Start from an admin-managed blueprint. Your workflow is an
-                independent copy.
-              </span>
+              ← Back
             </button>
 
-            <button
-              type="button"
-              className={styles.createOptionCard}
-              onClick={() => {
-                close();
-                onBlank?.();
-              }}
-            >
-              <span className={styles.createOptionIcon}>
-                <HiOutlineDocumentAdd aria-hidden="true" />
-              </span>
-              <span className={styles.createOptionTitle}>
-                Create My Own Workflow
-              </span>
-              <span className={styles.createOptionText}>
-                Open a blank Workflow Builder and design from scratch.
-              </span>
-            </button>
+            <div className={styles.createOptions}>
+              <button
+                type="button"
+                className={styles.createOptionCard}
+                onClick={() => setStep("templates")}
+              >
+                <span className={styles.createOptionIcon}>
+                  <HiOutlineTemplate aria-hidden="true" />
+                </span>
+                <span className={styles.createOptionTitle}>Use Template</span>
+                <span className={styles.createOptionText}>
+                  Start from an admin-managed blueprint. Your workflow is an
+                  independent copy.
+                </span>
+              </button>
+
+              <button
+                type="button"
+                className={styles.createOptionCard}
+                onClick={() => {
+                  const hospitalId = selectedHospitalId;
+                  close();
+                  onBlank?.(hospitalId);
+                }}
+              >
+                <span className={styles.createOptionIcon}>
+                  <HiOutlineDocumentAdd aria-hidden="true" />
+                </span>
+                <span className={styles.createOptionTitle}>
+                  Create My Own Workflow
+                </span>
+                <span className={styles.createOptionText}>
+                  Open a blank Workflow Builder and design from scratch.
+                </span>
+              </button>
+            </div>
           </div>
-        ) : (
+        ) : null}
+
+        {step === "templates" ? (
           <div className={styles.templatePickWrap}>
             <button
               type="button"
@@ -142,8 +291,9 @@ export default function CreateWorkflowModal({
                   type="button"
                   className={styles.templatePickCard}
                   onClick={() => {
+                    const hospitalId = selectedHospitalId;
                     close();
-                    onSelectTemplate?.(tpl);
+                    onSelectTemplate?.(tpl, hospitalId);
                   }}
                 >
                   <span className={styles.templatePickName}>{tpl.name}</span>
@@ -161,7 +311,7 @@ export default function CreateWorkflowModal({
               ))}
             </div>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

@@ -855,6 +855,39 @@
   color: var(--text-muted);
 }
 
+.createStepHint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.createStepActions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.hospitalPickHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+}
+
+.hospitalPickCheck {
+  font-size: 1.15rem;
+  color: var(--primary-color, #0da2e7);
+}
+
+.hospitalPickCardSelected {
+  border-color: var(--primary-color, #0da2e7);
+  box-shadow: 0 0 0 1px var(--primary-color, #0da2e7);
+}
+
 .srOnly {
   position: absolute;
   width: 1px;
@@ -1035,4 +1068,37 @@
   gap: 8px;
   font-size: 0.75rem;
   color: var(--text-muted);
+}
+
+.createStepHint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.createStepActions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.hospitalPickHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+}
+
+.hospitalPickCheck {
+  font-size: 1.15rem;
+  color: var(--primary-color, #0da2e7);
+}
+
+.hospitalPickCardSelected {
+  border-color: var(--primary-color, #0da2e7);
+  box-shadow: 0 0 0 1px var(--primary-color, #0da2e7);
 }

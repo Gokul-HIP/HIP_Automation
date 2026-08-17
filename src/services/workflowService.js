@@ -202,6 +202,7 @@ export async function loadWorkflow(id) {
  * @param {{ x: number, y: number, zoom: number }} [params.viewport]
  * @param {string} params.name
  * @param {number} [params.organizationId]
+ * @param {number} [params.hospitalId]
  */
 export async function publishWorkflow({
   id,
@@ -210,6 +211,7 @@ export async function publishWorkflow({
   viewport,
   name,
   organizationId,
+  hospitalId,
   createdBy,
 }) {
   const payload = serializeWorkflow({
@@ -219,6 +221,7 @@ export async function publishWorkflow({
     name,
     status: WORKFLOW_STATUS.ACTIVE,
     organizationId,
+    hospitalId,
     createdBy,
   });
 

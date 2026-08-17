@@ -382,6 +382,7 @@ export function validateWorkflowGraph(nodes, edges, options = {}) {
  * @param {string|number|null} [options.initialWorkflowId]
  * @param {string|number|null} [options.initialId]
  * @param {string|number|null} [options.fromTemplateId] — copy template into a new workflow (not linked)
+ * @param {string|number|null} [options.initialHospitalId] — hospital selected at create time
  * @param {Record<string, unknown>|null} [options.embedInitMessage]
  * @param {"workflow"|"template"} [options.mode]
  * @param {boolean} [options.readOnly]
@@ -391,6 +392,7 @@ export default function useFlowBuilder({
   initialWorkflowId = null,
   initialId = null,
   fromTemplateId = null,
+  initialHospitalId = null,
   embedInitMessage = null,
   mode = "workflow",
   readOnly = false,
@@ -433,6 +435,9 @@ export default function useFlowBuilder({
   );
   const [workflowStatus, setWorkflowStatus] = useState(
     isTemplateMode ? WORKFLOW_STATUS.ACTIVE : WORKFLOW_STATUS.INACTIVE
+  );
+  const [hospitalId, setHospitalId] = useState(
+    normalizeOrganizationId(initialHospitalId)
   );
   const [templateMeta, setTemplateMeta] = useState({
     module: null,
@@ -528,6 +533,7 @@ export default function useFlowBuilder({
         viewport: getViewport(),
         status,
         organizationId: orgId != null ? Number(orgId) : undefined,
+        hospitalId: hospitalId != null ? Number(hospitalId) : undefined,
         createdBy: creatorId,
         module: triggerNode?.data?.module ?? null,
         triggerKey:
@@ -537,6 +543,7 @@ export default function useFlowBuilder({
     [
       user,
       organizationId,
+      hospitalId,
       createdById,
       nodes,
       edges,
@@ -779,6 +786,12 @@ export default function useFlowBuilder({
         setWorkflowName(state.name);
         setDescription(state.description ?? "");
         setWorkflowStatus(state.status ?? WORKFLOW_STATUS.INACTIVE);
+        if (!(fromTemplateId && !isTemplateMode)) {
+          const loadedHospitalId = normalizeOrganizationId(state.hospitalId);
+          if (loadedHospitalId != null) setHospitalId(loadedHospitalId);
+        } else if (normalizeOrganizationId(initialHospitalId) != null) {
+          setHospitalId(normalizeOrganizationId(initialHospitalId));
+        }
         setTemplateMeta({
           module: state.module ?? null,
           triggerType: state.triggerType ?? null,
@@ -840,7 +853,7 @@ export default function useFlowBuilder({
     return () => {
       cancelled = true;
     };
-  }, [entityId, fromTemplateId, isTemplateMode, usePreviewEndpoint, showToast]);
+  }, [entityId, fromTemplateId, initialHospitalId, isTemplateMode, usePreviewEndpoint, showToast]);
 
   const selectedNodeId = selectedNodeIds[0] ?? null;
   const selectedNode = useMemo(
@@ -1155,6 +1168,7 @@ export default function useFlowBuilder({
           name: payload.name,
           configuration: payload.configuration,
           organization_id: payload.organization_id,
+          hospital_id: payload.hospital_id,
         });
         showToast("success", "Sending workflow to admin…");
         return payload;
@@ -1214,6 +1228,7 @@ export default function useFlowBuilder({
           name: payload.name,
           configuration: payload.configuration,
           organization_id: payload.organization_id,
+          hospital_id: payload.hospital_id,
         });
         showToast("success", "Sending publish request to admin…");
         return { ...result, embed: true };
@@ -1337,6 +1352,7 @@ export default function useFlowBuilder({
     workflowId,
     workflowStatus,
     setWorkflowStatus,
+    hospitalId,
     templateMeta,
     mode,
     isTemplateMode,

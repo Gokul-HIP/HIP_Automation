@@ -8,11 +8,16 @@ import FlowBuilder from "@/components/flow/FlowBuilder";
 function NewWorkflowBuilder() {
   const searchParams = useSearchParams();
   const templateId = searchParams.get("templateId");
+  const hospitalIdParam = searchParams.get("hospitalId");
+  const hospitalId = hospitalIdParam
+    ? Number(hospitalIdParam) || hospitalIdParam
+    : null;
 
   return (
     <FlowBuilder
       mode="workflow"
       fromTemplateId={templateId ? Number(templateId) || templateId : null}
+      initialHospitalId={hospitalId}
     />
   );
 }

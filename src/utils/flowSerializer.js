@@ -67,6 +67,7 @@ export function serializeEdge(edge) {
  * @param {string} params.name
  * @param {string} [params.status]
  * @param {number | string | null} [params.organizationId]
+ * @param {number | string | null} [params.hospitalId]
  * @param {string | number | null} [params.createdBy]
  * @returns {import('../types/workflow').MedicineWorkflowPayload}
  */
@@ -77,10 +78,12 @@ export function serializeWorkflow({
   name,
   status = "inactive",
   organizationId = null,
+  hospitalId = null,
   createdBy = null,
 }) {
   const vp = viewport ?? { x: 0, y: 0, zoom: 1 };
   const orgId = normalizeOrganizationId(organizationId);
+  const hospId = normalizeOrganizationId(hospitalId);
   const createdById = normalizeUserId(createdBy);
 
   const startIds = new Set(
@@ -99,6 +102,7 @@ export function serializeWorkflow({
   /** @type {import('../types/workflow').MedicineWorkflowPayload} */
   const payload = {
     organization_id: orgId != null ? Number(orgId) : null,
+    hospital_id: hospId != null ? Number(hospId) : null,
     created_by: createdById,
     name: String(name || "Untitled Workflow"),
     status: normalizeWorkflowStatus(status),

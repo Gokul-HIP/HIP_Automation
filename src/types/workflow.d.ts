@@ -34,6 +34,7 @@ export type WorkflowConfiguration = {
 
 export type MedicineWorkflowPayload = {
   organization_id: number | null;
+  hospital_id?: number | null;
   created_by?: string | null;
   name: string;
   status: WorkflowStatus;

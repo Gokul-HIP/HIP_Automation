@@ -50,6 +50,7 @@ export function buildWorkflowPayload({
   module: moduleName,
   triggerKey,
   organizationId,
+  hospitalId,
   createdBy,
   ...rest
 }) {
@@ -62,6 +63,7 @@ export function buildWorkflowPayload({
     ...(moduleName != null ? { module: moduleName } : {}),
     ...(triggerKey != null ? { trigger: triggerKey } : {}),
     ...(organizationId != null ? { organization_id: organizationId } : {}),
+    ...(hospitalId != null ? { hospital_id: hospitalId } : {}),
     ...(createdBy != null ? { created_by: createdBy } : {}),
     configuration: {
       builderVersion: BUILDER_VERSION,

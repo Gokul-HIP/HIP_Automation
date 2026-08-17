@@ -84,10 +84,18 @@ export default function WorkflowsView() {
 
   const handleCreate = () => setCreateOpen(true);
 
-  const handleBlankWorkflow = () => router.push("/workflows/new");
+  const handleBlankWorkflow = (hospitalId) => {
+    const params = new URLSearchParams();
+    if (hospitalId != null) params.set("hospitalId", String(hospitalId));
+    const qs = params.toString();
+    router.push(qs ? `/workflows/new?${qs}` : "/workflows/new");
+  };
 
-  const handleSelectTemplate = (template) => {
-    router.push(`/workflows/new?templateId=${template.id}`);
+  const handleSelectTemplate = (template, hospitalId) => {
+    const params = new URLSearchParams();
+    params.set("templateId", String(template.id));
+    if (hospitalId != null) params.set("hospitalId", String(hospitalId));
+    router.push(`/workflows/new?${params.toString()}`);
   };
 
   const handleOpenWorkflow = (workflow, mode) => {

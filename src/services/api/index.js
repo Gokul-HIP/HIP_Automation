@@ -4,3 +4,4 @@ export * from "./triggers";
 export * from "./variables";
 export * from "./templates";
 export * from "./executions";
+export * from "./hospitals";
