@@ -56,7 +56,9 @@
             "nodeType": "dbDelete",
             "category": "database",
             "status": "draft",
-            "label": "Delete Record"
+            "label": "Delete Record",
+            "entity": "appointment",
+            "recordId": "{{appointment_id}}"
           }
         },
         {

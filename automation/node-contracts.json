@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-08-27T06:50:24.199Z",
+  "generatedAt": "2026-08-27T07:39:46.525Z",
   "sourceOfTruth": {
     "frontendCatalog": "src/components/flow/config/nodes/catalog.js",
     "triggerSchemas": "src/components/flow/config/triggers/schemas.js",
@@ -3421,13 +3421,23 @@
       "nodeType": "dbDelete",
       "category": "database",
       "status": "stub",
-      "description": "Delete a hospital record.",
+      "description": "Delete a single hospital-scoped patient or appointment record. Does not allow arbitrary SQL or tables.",
       "title": "Delete Record",
       "input": {
         "label": {
           "type": "string",
           "required": true,
           "description": "Display name"
+        },
+        "entity": {
+          "type": "string",
+          "required": true,
+          "description": "Catalog field. Example: \"appointment\""
+        },
+        "recordId": {
+          "type": "string",
+          "required": true,
+          "description": "Catalog field. Example: \"{{appointment_id}}\""
         }
       },
       "contextRequired": [],
@@ -3435,7 +3445,9 @@
         "nodeType": "dbDelete",
         "category": "database",
         "status": "draft",
-        "label": "Delete Record"
+        "label": "Delete Record",
+        "entity": "appointment",
+        "recordId": "{{appointment_id}}"
       },
       "output": {
         "success": true,

@@ -17,6 +17,7 @@ export const WORKFLOW_VARIABLE_GROUPS = [
     label: "Patient",
     variables: [
       entry("patient_name", "Patient"),
+      entry("patient_id", "Patient ID"),
       entry("patient_mobile", "Patient Mobile"),
       entry("patient_email", "Patient Email"),
       entry("patient_age", "Patient Age"),

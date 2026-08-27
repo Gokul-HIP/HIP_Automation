@@ -13,6 +13,7 @@ import {
 } from "../panels/messaging/messagingUx";
 import { validateTriggerNodeFields } from "../panels/triggers/triggerValidation";
 import { validateConditionNodeFields } from "../panels/conditions/conditionValidation";
+import { validateDbDeleteNodeFields } from "../panels/database/dbDeleteValidation";
 import {
   createWorkflow,
   updateWorkflow,
@@ -345,6 +346,15 @@ export function validateWorkflowGraph(nodes, edges, options = {}) {
       }
     } else if (def?.customPanel === "condition") {
       // Specialty condition nodes (e.g. Switch) — keep outgoing edge check only.
+    }
+
+    if (def?.customPanel === "database" && node.data?.nodeType === "dbDelete") {
+      validateDbDeleteNodeFields(node.data, def).forEach((issue) => {
+        issues.push({
+          ...issue,
+          nodeId: node.id,
+        });
+      });
     }
 
     if (

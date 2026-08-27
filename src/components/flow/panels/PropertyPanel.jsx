@@ -10,6 +10,7 @@ import ApiTriggerProperties from "@/components/property-panel/ApiTriggerProperti
 import MessagingProperties from "./messaging/MessagingProperties";
 import ConditionProperties from "./conditions/ConditionProperties";
 import WaitProperties from "./wait/WaitProperties";
+import DatabaseProperties from "./database/DatabaseProperties";
 import EndProperties from "./flow/EndProperties";
 import styles from "../styles/flow.module.css";
 
@@ -123,6 +124,7 @@ const PANEL_MAP = {
   messaging: MessagingProperties,
   condition: ConditionProperties,
   wait: WaitProperties,
+  database: DatabaseProperties,
   end: EndProperties,
 };
 

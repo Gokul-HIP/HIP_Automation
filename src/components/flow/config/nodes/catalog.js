@@ -48,6 +48,7 @@ import { getTriggerSchema, buildTriggerDefaults } from "../triggers";
 import { getMessagingSchema, buildMessagingDefaults } from "../messaging/schemas";
 import { getConditionSchema, buildConditionDefaults } from "../conditions/schemas";
 import { getWaitSchema, buildWaitDefaults } from "../wait/schemas";
+import { getDatabaseSchema, buildDatabaseDefaults } from "../database/schemas";
 import { toneForCategory } from "../nodeTones";
 
 function triggerNode({ type, title, icon, tone }) {
@@ -133,6 +134,30 @@ function stubNode({ type, category, title, description, icon, fields, defaultDat
   };
 }
 
+function databaseNode({ type, title, icon }) {
+  const schema = getDatabaseSchema(type);
+  return {
+    type,
+    category: "database",
+    title,
+    description: schema?.description || title,
+    icon,
+    tone: toneForCategory("database"),
+    customPanel: "database",
+    defaultData: buildDatabaseDefaults(type) || { label: title, status: "draft" },
+    fields: (schema?.fields || [])
+      .filter((f) => f.required && f.key)
+      .map((f) => ({
+        key: f.key,
+        label: f.label,
+        type: f.type,
+        required: true,
+        options: f.options,
+        placeholder: f.placeholder,
+      })),
+  };
+}
+
 export const WORKFLOW_NODES = [
   /* ── Triggers ── */
   {
@@ -192,7 +217,7 @@ export const WORKFLOW_NODES = [
   /* ── Database (stubs) ── */
   stubNode({ type: "dbCreate", category: "database", title: "Create Record", icon: HiOutlineDatabase, description: "Create a hospital record." }),
   stubNode({ type: "dbUpdate", category: "database", title: "Update Record", icon: HiOutlineDatabase, description: "Update a hospital record.", fields: [{ key: "label", label: "Display name", type: "text", required: true }, { key: "entity", label: "Entity", type: "select", options: [{ value: "patient", label: "Patient" }, { value: "appointment", label: "Appointment" }], required: true }] }),
-  stubNode({ type: "dbDelete", category: "database", title: "Delete Record", icon: HiOutlineDatabase, description: "Delete a hospital record." }),
+  databaseNode({ type: "dbDelete", title: "Delete Record", icon: HiOutlineDatabase }),
   stubNode({ type: "updateAppointment", category: "database", title: "Update Appointment", icon: HiOutlineCalendar, description: "Update appointment details." }),
   stubNode({ type: "updatePrescription", category: "database", title: "Update Prescription", icon: HiOutlineClipboardList, description: "Update prescription data." }),
   stubNode({ type: "updateMembership", category: "database", title: "Update Membership", icon: HiOutlineGift, description: "Update membership status." }),

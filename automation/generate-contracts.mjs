@@ -57,7 +57,7 @@ const CATALOG = [
 
   { nodeType: "dbCreate", category: "database", title: "Create Record", description: "Create a hospital record.", kind: "stub", fields: { label: "Create Record" } },
   { nodeType: "dbUpdate", category: "database", title: "Update Record", description: "Update a hospital record.", kind: "stub", fields: { label: "Update Record", entity: "patient" } },
-  { nodeType: "dbDelete", category: "database", title: "Delete Record", description: "Delete a hospital record.", kind: "stub", fields: { label: "Delete Record" } },
+  { nodeType: "dbDelete", category: "database", title: "Delete Record", description: "Delete a single hospital-scoped patient or appointment record. Does not allow arbitrary SQL or tables.", kind: "stub", fields: { label: "Delete Record", entity: "appointment", recordId: "{{appointment_id}}" } },
   { nodeType: "updateAppointment", category: "database", title: "Update Appointment", description: "Update appointment details.", kind: "stub", fields: { label: "Update Appointment" } },
   { nodeType: "updatePrescription", category: "database", title: "Update Prescription", description: "Update prescription data.", kind: "stub", fields: { label: "Update Prescription" } },
   { nodeType: "updateMembership", category: "database", title: "Update Membership", description: "Update membership status.", kind: "stub", fields: { label: "Update Membership" } },
