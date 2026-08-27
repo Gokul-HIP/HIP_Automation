@@ -1,0 +1,3749 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-08-27T06:50:24.199Z",
+  "sourceOfTruth": {
+    "frontendCatalog": "src/components/flow/config/nodes/catalog.js",
+    "triggerSchemas": "src/components/flow/config/triggers/schemas.js",
+    "messagingSchemas": "src/components/flow/config/messaging/schemas.js",
+    "conditionSchemas": "src/components/flow/config/conditions/schemas.js",
+    "waitSchemas": "src/components/flow/config/wait/schemas.js",
+    "variables": "src/components/flow/config/variables.js",
+    "jsRuntime": [
+      "src/runtime/compiler/WorkflowCompiler.js",
+      "src/runtime/executor/WorkflowExecutor.js",
+      "src/runtime/executor/NodeExecutorRegistry.js",
+      "src/runtime/executor/ConditionExecutor.js",
+      "src/runtime/dispatch/ActionDispatcher.js",
+      "src/runtime/channels/ChannelManager.js",
+      "src/runtime/variables/VariableResolver.js",
+      "src/runtime/engines/DelayScheduler.js"
+    ],
+    "laravelNote": "Laravel classes (NodeTypeNormalizer, AppointmentBookedTriggerExecutor, AutomationContextBuilder, etc.) are NOT in this repository. appointmentBooked is marked implemented per product reference; other Laravel executors must be verified against the PHP codebase."
+  },
+  "hospitalIsolation": {
+    "rule": "Production workflow lookup is hospital-scoped.",
+    "appointmentBooked": {
+      "hospital_id_canonical_source": "DoctorBooking.hospital_id",
+      "selection": {
+        "trigger_type": "appointmentBooked",
+        "status": "published|active",
+        "hospital_id": "booking.hospital_id"
+      },
+      "noGlobalNullFallback": true
+    },
+    "workflowPayloadField": "hospital_id",
+    "frontendCreateFlow": "CreateWorkflowModal requires hospital selection before blank/template"
+  },
+  "executionResultContract": {
+    "documentedIdeal": {
+      "success": true,
+      "nodeType": "<nodeType>",
+      "data": {},
+      "metadata": {}
+    },
+    "currentImplementation": {
+      "note": "Do not change runtime to force ideal shape. Document actual NodeExecutionResult.",
+      "shape": {
+        "action": "continue | branch | delay | end | error",
+        "nextNodeId": "string|null (optional)",
+        "branchHandle": "true|false (optional)",
+        "delayMs": "number|null (optional)",
+        "output": "object (optional)",
+        "error": "string|null (optional)"
+      },
+      "source": "src/runtime/types.js NodeExecutionResult"
+    }
+  },
+  "variables": {
+    "patient_name": {
+      "source": "context.patient.name | flattened as patient_name / PatientName",
+      "type": "string",
+      "uiPicker": true
+    },
+    "patient_mobile": {
+      "source": "context.patient.mobile",
+      "type": "string",
+      "uiPicker": true
+    },
+    "patient_email": {
+      "source": "context.patient.email",
+      "type": "string",
+      "uiPicker": true
+    },
+    "patient_age": {
+      "source": "context.patient.age",
+      "type": "number",
+      "uiPicker": true
+    },
+    "patient_gender": {
+      "source": "context.patient.gender",
+      "type": "string",
+      "uiPicker": true
+    },
+    "doctor_name": {
+      "source": "context.doctor.name | flattened as doctor_name",
+      "type": "string",
+      "uiPicker": true
+    },
+    "department": {
+      "source": "context.doctor.department | context",
+      "type": "string",
+      "uiPicker": true
+    },
+    "appointment_date": {
+      "source": "context.appointment.date | appointment_date",
+      "type": "string",
+      "uiPicker": true
+    },
+    "appointment_time": {
+      "source": "context.appointment.time | appointment_time",
+      "type": "string",
+      "uiPicker": true
+    },
+    "appointment_id": {
+      "source": "context.appointment.id | appointment_id",
+      "type": "string|number",
+      "uiPicker": true
+    },
+    "branch_name": {
+      "source": "context.appointment.branch_name | hospital branch",
+      "type": "string",
+      "uiPicker": true
+    },
+    "invoice_amount": {
+      "source": "context.invoice.amount",
+      "type": "number",
+      "uiPicker": true
+    },
+    "payment_status": {
+      "source": "context.payment.status | patient.payment_status",
+      "type": "string",
+      "uiPicker": true
+    },
+    "prescription_id": {
+      "source": "context.prescription.id",
+      "type": "string|number",
+      "uiPicker": true
+    },
+    "pharmacy_link": {
+      "source": "context.prescription.pharmacy_link",
+      "type": "string",
+      "uiPicker": true
+    },
+    "medicine_name": {
+      "source": "context.medicine.name",
+      "type": "string",
+      "uiPicker": true
+    },
+    "dosage": {
+      "source": "context.medicine.dosage",
+      "type": "string",
+      "uiPicker": true
+    },
+    "frequency": {
+      "source": "context.medicine.frequency",
+      "type": "string",
+      "uiPicker": true
+    },
+    "reminder_time": {
+      "source": "context.medicine.reminder_time",
+      "type": "string",
+      "uiPicker": true
+    },
+    "time": {
+      "source": "context.medicine.time | generic",
+      "type": "string",
+      "uiPicker": true
+    },
+    "date": {
+      "source": "context.medicine.date | generic",
+      "type": "string",
+      "uiPicker": true
+    },
+    "hospital_name": {
+      "source": "context.hospital.name | hospital_name",
+      "type": "string",
+      "uiPicker": true
+    },
+    "hospital_phone": {
+      "source": "context.hospital.phone | hospital_phone",
+      "type": "string",
+      "uiPicker": true
+    },
+    "workflow_id": {
+      "source": "context.system.workflow_id",
+      "type": "string|number",
+      "uiPicker": true
+    },
+    "triggered_at": {
+      "source": "context.system.triggered_at",
+      "type": "string",
+      "uiPicker": true
+    }
+  },
+  "runtimeContextKeysNotInUiPicker": {
+    "patient_id": {
+      "source": "context.patient.id (flattened as id, patient.id, patient_id)",
+      "type": "string|number",
+      "uiPicker": false,
+      "note": "Not in WORKFLOW_VARIABLE_GROUPS; ActionDispatcher reads context.patient.id"
+    },
+    "doctor_id": {
+      "source": "context.doctor.id (flattened if present on doctor object)",
+      "type": "string|number",
+      "uiPicker": false,
+      "note": "Not in WORKFLOW_VARIABLE_GROUPS; available only if Laravel injects doctor.id"
+    },
+    "hospital_id": {
+      "source": "context.hospital.id AND workflow.hospital_id for lookup scoping",
+      "type": "number",
+      "uiPicker": false,
+      "note": "Not in WORKFLOW_VARIABLE_GROUPS. Canonical for workflow selection from DoctorBooking.hospital_id. Required on workflow records; no global/null hospital fallback."
+    }
+  },
+  "variableResolverBehavior": {
+    "tokenPattern": "{{word}}",
+    "flattening": "For each context section (patient, doctor, appointment, prescription, medicine, hospital, payment, invoice, organization, triggerPayload), exposes bare key, prefix.key, prefix_key, and PascalCase aliases.",
+    "source": "src/runtime/variables/VariableResolver.js"
+  },
+  "schemaOnlyTypesNotInCatalog": {
+    "note": "Present in runtime type sets or schemas but NOT in WORKFLOW_NODES catalog — no fixtures generated.",
+    "types": [
+      "sendInApp",
+      "switch",
+      "delay",
+      "waitUntil",
+      "cronSchedule",
+      "recurring",
+      "webhook",
+      "fhir",
+      "abdm",
+      "paymentGateway",
+      "thirdPartyApi",
+      "aiChat",
+      "aiVoice",
+      "aiSummarize",
+      "aiIntent",
+      "aiRag",
+      "aiRecommend",
+      "aiSentiment",
+      "aiClassify",
+      "assignPatient",
+      "loop",
+      "split",
+      "parallel",
+      "merge"
+    ]
+  },
+  "mismatches": [
+    {
+      "id": "MESSAGING_sendInApp",
+      "detail": "MESSAGING_NODE_TYPES includes sendInApp but catalog messaging entry is commented out / absent."
+    },
+    {
+      "id": "CONDITION_switch",
+      "detail": "conditions/schemas.js defines switch; catalog only exposes condition."
+    },
+    {
+      "id": "WAIT_extra_types",
+      "detail": "wait/schemas.js defines delay, waitUntil, cronSchedule, recurring; catalog only exposes wait."
+    },
+    {
+      "id": "RUNTIME_TYPES_vs_CATALOG",
+      "detail": "INTEGRATION_NODE_TYPES / AI_NODE_TYPES include many types not present in catalog (catalog has httpRequest + ai stubs only)."
+    },
+    {
+      "id": "VARIABLE_IDS",
+      "detail": "hospital_id, patient_id, doctor_id are not in WORKFLOW_VARIABLE_GROUPS; appointment_id and hospital_name are. hospital_id is a workflow record field for isolation."
+    },
+    {
+      "id": "CHANNEL_ADAPTERS_STUB",
+      "detail": "JS ChannelManager BaseChannelAdapter always returns success with stub:true — not production delivery."
+    },
+    {
+      "id": "LARAVEL_NOT_IN_REPO",
+      "detail": "Cannot verify AppointmentBookedTriggerExecutor / AutomationContextBuilder / NodeTypeNormalizer field-level payloads from this repo alone."
+    }
+  ],
+  "summary": {
+    "totalNodes": 46,
+    "implemented": [
+      "appointmentBooked",
+      "condition",
+      "wait",
+      "end"
+    ],
+    "partial": [
+      "start",
+      "onChatMessage",
+      "patientRegistered",
+      "appointmentRescheduled",
+      "appointmentCompleted",
+      "appointmentCancelled",
+      "appointmentMissed",
+      "prescriptionAdded",
+      "medicineReminder",
+      "labTestOrdered",
+      "labReportNotification",
+      "pharmacyRefillDue",
+      "appointmentReminder",
+      "birthday",
+      "anniversary",
+      "membershipExpiry",
+      "userPlanExpiry",
+      "rewardUpdated",
+      "rewardsTierUpgraded",
+      "familyPackageTierUpdated",
+      "invoiceGenerated",
+      "paymentReceived",
+      "webhookEvent",
+      "apiEvent",
+      "scheduledEvent",
+      "sendWhatsApp",
+      "sendSms",
+      "sendEmail",
+      "sendPush",
+      "sendAiChat",
+      "sendAiVoice",
+      "sendIvr",
+      "sendTemplate"
+    ],
+    "stub": [
+      "dbCreate",
+      "dbUpdate",
+      "dbDelete",
+      "updateAppointment",
+      "updatePrescription",
+      "updateMembership",
+      "dbQuery",
+      "httpRequest",
+      "ai"
+    ]
+  },
+  "nodes": [
+    {
+      "nodeType": "start",
+      "category": "triggers",
+      "status": "partial",
+      "description": "Entry point for every hospital automation workflow.",
+      "title": "Workflow Start",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name / Trigger Name"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "draft | ready | published (UI)"
+        }
+      },
+      "contextRequired": [],
+      "configuration": {
+        "nodeType": "start",
+        "category": "triggers",
+        "label": "Workflow Start",
+        "status": "ready",
+        "triggerSource": "manual"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "nodeType": "start",
+            "context": "<executionId>"
+          }
+        },
+        "note": "Stripped from Laravel payload by stripFrontendStartNodes / serializeWorkflow"
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "NodeExecutorRegistry.#executePassthrough (JS); frontend-only — stripped before Laravel save",
+      "nextStepBehavior": "continue to first outgoing edge (usually trigger); omitted from persisted Laravel graph"
+    },
+    {
+      "nodeType": "onChatMessage",
+      "category": "triggers",
+      "status": "partial",
+      "description": "Triggers when a new incoming message is received on a supported channel.",
+      "title": "On Message Received",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name / Trigger Name"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "draft | ready | published (UI)"
+        },
+        "channel": {
+          "type": "array|string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: [\"any\"]"
+        },
+        "messageType": {
+          "type": "array|string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: [\"any\"]"
+        },
+        "messageMatch": {
+          "type": "string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: \"any\""
+        },
+        "tags": {
+          "type": "array|string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: []"
+        }
+      },
+      "contextRequired": [
+        "context.patient",
+        "context.message",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "onChatMessage",
+        "category": "triggers",
+        "label": "On Message Received",
+        "status": "draft",
+        "channel": [
+          "any"
+        ],
+        "messageType": [
+          "any"
+        ],
+        "messageMatch": "any",
+        "tags": [],
+        "note": "Persisted on node.data in React Flow configuration.nodes[].data"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "triggered": true,
+            "nodeType": "onChatMessage",
+            "timing": null,
+            "eventName": null
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "onChatMessage",
+          "data": {
+            "triggered": true
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "JS NodeExecutorRegistry.#executeTrigger (generic passthrough). Laravel executor not present in this repo.",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "patientRegistered",
+      "category": "triggers",
+      "status": "partial",
+      "description": "Triggers when a patient is registered in HIP.",
+      "title": "Patient Registered",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name / Trigger Name"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "draft | ready | published (UI)"
+        },
+        "registrationSource": {
+          "type": "array|string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: [\"any\"]"
+        },
+        "patientType": {
+          "type": "string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: \"any\""
+        }
+      },
+      "contextRequired": [
+        "context.patient",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "patientRegistered",
+        "category": "triggers",
+        "label": "Patient Registered",
+        "status": "draft",
+        "registrationSource": [
+          "any"
+        ],
+        "patientType": "any",
+        "note": "Persisted on node.data in React Flow configuration.nodes[].data"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "triggered": true,
+            "nodeType": "patientRegistered",
+            "timing": null,
+            "eventName": null
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "patientRegistered",
+          "data": {
+            "triggered": true
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "JS NodeExecutorRegistry.#executeTrigger (generic passthrough). Laravel executor not present in this repo.",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "appointmentBooked",
+      "category": "triggers",
+      "status": "implemented",
+      "description": "Triggers the workflow whenever a new appointment is successfully booked.",
+      "title": "Appointment Booked",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name / Trigger Name"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "draft | ready | published (UI)"
+        },
+        "source": {
+          "type": "array|string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: [\"any\"]"
+        }
+      },
+      "contextRequired": [
+        "context.patient",
+        "context.appointment",
+        "context.doctor",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "appointmentBooked",
+        "category": "triggers",
+        "label": "Appointment Booked",
+        "status": "draft",
+        "source": [
+          "any"
+        ],
+        "note": "Persisted on node.data in React Flow configuration.nodes[].data"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "triggered": true,
+            "nodeType": "appointmentBooked",
+            "timing": null,
+            "eventName": null
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "appointmentBooked",
+          "data": {
+            "triggered": true
+          },
+          "metadata": {}
+        },
+        "appointmentBookedEventPayloadNote": "Laravel injects context.patient / appointment / doctor / hospital. UI contextCard keys: patient_name, doctor_name, appointment_date, appointment_time. Variable picker also supports appointment_id, hospital_name. hospital_id is used for workflow lookup, not as a {{token}} in WORKFLOW_VARIABLE_GROUPS."
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "Laravel AppointmentBookedTriggerExecutor (reference) + JS NodeExecutorRegistry.#executeTrigger (passthrough metadata)",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)",
+      "triggerContract": {
+        "configuration": {
+          "source": [
+            "any"
+          ],
+          "label": "Appointment Booked",
+          "status": "draft"
+        },
+        "eventPayload": {
+          "note": "Laravel DoctorBooking / AppointmentBookedTriggerExecutor — not defined in this frontend repo. Document only keys known from frontend contracts.",
+          "knownUiContextCardKeys": [
+            "patient_name",
+            "doctor_name",
+            "appointment_date",
+            "appointment_time"
+          ],
+          "knownVariablePickerKeys": [
+            "patient_name",
+            "doctor_name",
+            "appointment_date",
+            "appointment_time",
+            "appointment_id",
+            "hospital_name",
+            "hospital_phone"
+          ],
+          "hospitalIsolation": {
+            "hospital_id_source": "DoctorBooking.hospital_id (canonical)",
+            "workflowLookup": {
+              "trigger_type": "appointmentBooked",
+              "status": "published|active",
+              "hospital_id": "booking.hospital_id",
+              "noGlobalNullFallback": true
+            }
+          },
+          "idsNotInUiPicker": {
+            "patient_id": "Available via context.patient.id if injected",
+            "doctor_id": "Available via context.doctor.id if injected",
+            "hospital_id": "Used for workflow scoping; not a UI {{token}}",
+            "appointment_id": "In UI variable picker as appointment_id"
+          }
+        },
+        "runtimeContext": [
+          "context.patient",
+          "context.appointment",
+          "context.doctor",
+          "context.hospital"
+        ],
+        "output": {
+          "success": true,
+          "currentImplementation": {
+            "action": "continue",
+            "output": {
+              "triggered": true,
+              "nodeType": "appointmentBooked",
+              "timing": null,
+              "eventName": null
+            }
+          },
+          "recommendedNormalized": {
+            "success": true,
+            "nodeType": "appointmentBooked",
+            "data": {
+              "triggered": true
+            },
+            "metadata": {}
+          },
+          "appointmentBookedEventPayloadNote": "Laravel injects context.patient / appointment / doctor / hospital. UI contextCard keys: patient_name, doctor_name, appointment_date, appointment_time. Variable picker also supports appointment_id, hospital_name. hospital_id is used for workflow lookup, not as a {{token}} in WORKFLOW_VARIABLE_GROUPS."
+        }
+      }
+    },
+    {
+      "nodeType": "appointmentRescheduled",
+      "category": "triggers",
+      "status": "partial",
+      "description": "Triggers when an existing appointment is rescheduled.",
+      "title": "Appointment Rescheduled",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name / Trigger Name"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "draft | ready | published (UI)"
+        },
+        "source": {
+          "type": "array|string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: [\"any\"]"
+        }
+      },
+      "contextRequired": [
+        "context.patient",
+        "context.appointment",
+        "context.doctor",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "appointmentRescheduled",
+        "category": "triggers",
+        "label": "Appointment Rescheduled",
+        "status": "draft",
+        "source": [
+          "any"
+        ],
+        "note": "Persisted on node.data in React Flow configuration.nodes[].data"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "triggered": true,
+            "nodeType": "appointmentRescheduled",
+            "timing": null,
+            "eventName": null
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "appointmentRescheduled",
+          "data": {
+            "triggered": true
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "JS NodeExecutorRegistry.#executeTrigger (generic passthrough). Laravel executor not present in this repo.",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "appointmentCompleted",
+      "category": "triggers",
+      "status": "partial",
+      "description": "Triggers when an appointment is completed.",
+      "title": "Appointment Completed",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name / Trigger Name"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "draft | ready | published (UI)"
+        },
+        "source": {
+          "type": "array|string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: [\"any\"]"
+        }
+      },
+      "contextRequired": [
+        "context.patient",
+        "context.appointment",
+        "context.doctor",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "appointmentCompleted",
+        "category": "triggers",
+        "label": "Appointment Completed",
+        "status": "draft",
+        "source": [
+          "any"
+        ],
+        "note": "Persisted on node.data in React Flow configuration.nodes[].data"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "triggered": true,
+            "nodeType": "appointmentCompleted",
+            "timing": null,
+            "eventName": null
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "appointmentCompleted",
+          "data": {
+            "triggered": true
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "JS NodeExecutorRegistry.#executeTrigger (generic passthrough). Laravel executor not present in this repo.",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "appointmentCancelled",
+      "category": "triggers",
+      "status": "partial",
+      "description": "Triggers when an appointment is cancelled.",
+      "title": "Appointment Cancelled",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name / Trigger Name"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "draft | ready | published (UI)"
+        },
+        "source": {
+          "type": "array|string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: [\"any\"]"
+        },
+        "cancelledBy": {
+          "type": "array|string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: [\"any\"]"
+        }
+      },
+      "contextRequired": [
+        "context.patient",
+        "context.appointment",
+        "context.doctor",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "appointmentCancelled",
+        "category": "triggers",
+        "label": "Appointment Cancelled",
+        "status": "draft",
+        "source": [
+          "any"
+        ],
+        "cancelledBy": [
+          "any"
+        ],
+        "note": "Persisted on node.data in React Flow configuration.nodes[].data"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "triggered": true,
+            "nodeType": "appointmentCancelled",
+            "timing": null,
+            "eventName": null
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "appointmentCancelled",
+          "data": {
+            "triggered": true
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "JS NodeExecutorRegistry.#executeTrigger (generic passthrough). Laravel executor not present in this repo.",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "appointmentMissed",
+      "category": "triggers",
+      "status": "partial",
+      "description": "Triggers when an appointment is missed / no-show.",
+      "title": "Appointment Missed",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name / Trigger Name"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "draft | ready | published (UI)"
+        }
+      },
+      "contextRequired": [
+        "context.patient",
+        "context.appointment",
+        "context.doctor",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "appointmentMissed",
+        "category": "triggers",
+        "label": "Appointment Missed",
+        "status": "draft",
+        "note": "Persisted on node.data in React Flow configuration.nodes[].data"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "triggered": true,
+            "nodeType": "appointmentMissed",
+            "timing": null,
+            "eventName": null
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "appointmentMissed",
+          "data": {
+            "triggered": true
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "JS NodeExecutorRegistry.#executeTrigger (generic passthrough). Laravel executor not present in this repo.",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "prescriptionAdded",
+      "category": "triggers",
+      "status": "partial",
+      "description": "Triggers when a prescription is added.",
+      "title": "Prescription Added",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name / Trigger Name"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "draft | ready | published (UI)"
+        },
+        "source": {
+          "type": "array|string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: [\"any\"]"
+        }
+      },
+      "contextRequired": [
+        "context.patient",
+        "context.prescription",
+        "context.doctor",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "prescriptionAdded",
+        "category": "triggers",
+        "label": "Prescription Added",
+        "status": "draft",
+        "source": [
+          "any"
+        ],
+        "note": "Persisted on node.data in React Flow configuration.nodes[].data"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "triggered": true,
+            "nodeType": "prescriptionAdded",
+            "timing": null,
+            "eventName": null
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "prescriptionAdded",
+          "data": {
+            "triggered": true
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "JS NodeExecutorRegistry.#executeTrigger (generic passthrough). Laravel executor not present in this repo.",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "medicineReminder",
+      "category": "triggers",
+      "status": "partial",
+      "description": "Triggers when a medicine reminder is due.",
+      "title": "Medicine Reminder Due",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name / Trigger Name"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "draft | ready | published (UI)"
+        },
+        "reminderTiming": {
+          "type": "string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: \"at_due\""
+        },
+        "minutesBefore": {
+          "type": "number",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: 30"
+        }
+      },
+      "contextRequired": [
+        "context.patient",
+        "context.prescription",
+        "context.medicines",
+        "context.doctor",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "medicineReminder",
+        "category": "triggers",
+        "label": "Medicine Reminder Due",
+        "status": "draft",
+        "reminderTiming": "at_due",
+        "minutesBefore": 30,
+        "note": "Persisted on node.data in React Flow configuration.nodes[].data"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "triggered": true,
+            "nodeType": "medicineReminder",
+            "timing": null,
+            "eventName": null
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "medicineReminder",
+          "data": {
+            "triggered": true
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "JS NodeExecutorRegistry.#executeTrigger (generic passthrough). Laravel executor not present in this repo.",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "labTestOrdered",
+      "category": "triggers",
+      "status": "partial",
+      "description": "Triggers when a lab test is ordered.",
+      "title": "Lab Test Ordered",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name / Trigger Name"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "draft | ready | published (UI)"
+        },
+        "source": {
+          "type": "array|string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: [\"any\"]"
+        }
+      },
+      "contextRequired": [
+        "context.patient",
+        "context.lab",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "labTestOrdered",
+        "category": "triggers",
+        "label": "Lab Test Ordered",
+        "status": "draft",
+        "source": [
+          "any"
+        ],
+        "note": "Persisted on node.data in React Flow configuration.nodes[].data"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "triggered": true,
+            "nodeType": "labTestOrdered",
+            "timing": null,
+            "eventName": null
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "labTestOrdered",
+          "data": {
+            "triggered": true
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "JS NodeExecutorRegistry.#executeTrigger (generic passthrough). Laravel executor not present in this repo.",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "labReportNotification",
+      "category": "triggers",
+      "status": "partial",
+      "description": "Triggers when a lab report is ready.",
+      "title": "Lab Report Ready",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name / Trigger Name"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "draft | ready | published (UI)"
+        }
+      },
+      "contextRequired": [
+        "context.patient",
+        "context.lab",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "labReportNotification",
+        "category": "triggers",
+        "label": "Lab Report Ready",
+        "status": "draft",
+        "note": "Persisted on node.data in React Flow configuration.nodes[].data"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "triggered": true,
+            "nodeType": "labReportNotification",
+            "timing": null,
+            "eventName": null
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "labReportNotification",
+          "data": {
+            "triggered": true
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "JS NodeExecutorRegistry.#executeTrigger (generic passthrough). Laravel executor not present in this repo.",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "pharmacyRefillDue",
+      "category": "triggers",
+      "status": "partial",
+      "description": "Triggers when a pharmacy refill is due.",
+      "title": "Pharmacy Refill Due",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name / Trigger Name"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "draft | ready | published (UI)"
+        },
+        "daysBeforeRefill": {
+          "type": "number",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: 3"
+        }
+      },
+      "contextRequired": [
+        "context.patient",
+        "context.pharmacy",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "pharmacyRefillDue",
+        "category": "triggers",
+        "label": "Pharmacy Refill Due",
+        "status": "draft",
+        "daysBeforeRefill": 3,
+        "note": "Persisted on node.data in React Flow configuration.nodes[].data"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "triggered": true,
+            "nodeType": "pharmacyRefillDue",
+            "timing": null,
+            "eventName": null
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "pharmacyRefillDue",
+          "data": {
+            "triggered": true
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "JS NodeExecutorRegistry.#executeTrigger (generic passthrough). Laravel executor not present in this repo.",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "appointmentReminder",
+      "category": "triggers",
+      "status": "partial",
+      "description": "Triggers relative to appointment time.",
+      "title": "Appointment Reminder",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name / Trigger Name"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "draft | ready | published (UI)"
+        },
+        "triggerTiming": {
+          "type": "string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: \"before_24h\""
+        }
+      },
+      "contextRequired": [
+        "context.patient",
+        "context.appointment",
+        "context.doctor",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "appointmentReminder",
+        "category": "triggers",
+        "label": "Appointment Reminder",
+        "status": "draft",
+        "triggerTiming": "before_24h",
+        "note": "Persisted on node.data in React Flow configuration.nodes[].data"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "triggered": true,
+            "nodeType": "appointmentReminder",
+            "timing": null,
+            "eventName": null
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "appointmentReminder",
+          "data": {
+            "triggered": true
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "JS NodeExecutorRegistry.#executeTrigger (generic passthrough). Laravel executor not present in this repo.",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "birthday",
+      "category": "triggers",
+      "status": "partial",
+      "description": "Triggers on patient birthday.",
+      "title": "Birthday",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name / Trigger Name"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "draft | ready | published (UI)"
+        },
+        "triggerTiming": {
+          "type": "string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: \"on_birthday\""
+        },
+        "daysBefore": {
+          "type": "number",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: 1"
+        },
+        "executionTime": {
+          "type": "string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: \"09:00\""
+        }
+      },
+      "contextRequired": [
+        "context.patient",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "birthday",
+        "category": "triggers",
+        "label": "Birthday",
+        "status": "draft",
+        "triggerTiming": "on_birthday",
+        "daysBefore": 1,
+        "executionTime": "09:00",
+        "note": "Persisted on node.data in React Flow configuration.nodes[].data"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "triggered": true,
+            "nodeType": "birthday",
+            "timing": null,
+            "eventName": null
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "birthday",
+          "data": {
+            "triggered": true
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "JS NodeExecutorRegistry.#executeTrigger (generic passthrough). Laravel executor not present in this repo.",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "anniversary",
+      "category": "triggers",
+      "status": "partial",
+      "description": "Triggers on anniversary date.",
+      "title": "Anniversary",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name / Trigger Name"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "draft | ready | published (UI)"
+        },
+        "anniversaryType": {
+          "type": "string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: \"registration\""
+        },
+        "triggerTiming": {
+          "type": "string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: \"on_date\""
+        },
+        "daysBefore": {
+          "type": "number",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: 1"
+        },
+        "executionTime": {
+          "type": "string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: \"09:00\""
+        }
+      },
+      "contextRequired": [
+        "context.patient",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "anniversary",
+        "category": "triggers",
+        "label": "Anniversary",
+        "status": "draft",
+        "anniversaryType": "registration",
+        "triggerTiming": "on_date",
+        "daysBefore": 1,
+        "executionTime": "09:00",
+        "note": "Persisted on node.data in React Flow configuration.nodes[].data"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "triggered": true,
+            "nodeType": "anniversary",
+            "timing": null,
+            "eventName": null
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "anniversary",
+          "data": {
+            "triggered": true
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "JS NodeExecutorRegistry.#executeTrigger (generic passthrough). Laravel executor not present in this repo.",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "membershipExpiry",
+      "category": "triggers",
+      "status": "partial",
+      "description": "Triggers around hospital membership expiry.",
+      "title": "Hospital Membership Expiry",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name / Trigger Name"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "draft | ready | published (UI)"
+        },
+        "triggerTiming": {
+          "type": "string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: \"before_expiry\""
+        },
+        "numberOfDays": {
+          "type": "number",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: 7"
+        },
+        "executionTime": {
+          "type": "string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: \"09:00\""
+        }
+      },
+      "contextRequired": [
+        "context.patient",
+        "context.membership",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "membershipExpiry",
+        "category": "triggers",
+        "label": "Hospital Membership Expiry",
+        "status": "draft",
+        "triggerTiming": "before_expiry",
+        "numberOfDays": 7,
+        "executionTime": "09:00",
+        "note": "Persisted on node.data in React Flow configuration.nodes[].data"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "triggered": true,
+            "nodeType": "membershipExpiry",
+            "timing": null,
+            "eventName": null
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "membershipExpiry",
+          "data": {
+            "triggered": true
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "JS NodeExecutorRegistry.#executeTrigger (generic passthrough). Laravel executor not present in this repo.",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "userPlanExpiry",
+      "category": "triggers",
+      "status": "partial",
+      "description": "Triggers around user plan expiry.",
+      "title": "User Plan Expiry",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name / Trigger Name"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "draft | ready | published (UI)"
+        },
+        "triggerTiming": {
+          "type": "string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: \"before_expiry\""
+        },
+        "numberOfDays": {
+          "type": "number",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: 7"
+        },
+        "executionTime": {
+          "type": "string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: \"09:00\""
+        }
+      },
+      "contextRequired": [
+        "context.patient",
+        "context.plan",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "userPlanExpiry",
+        "category": "triggers",
+        "label": "User Plan Expiry",
+        "status": "draft",
+        "triggerTiming": "before_expiry",
+        "numberOfDays": 7,
+        "executionTime": "09:00",
+        "note": "Persisted on node.data in React Flow configuration.nodes[].data"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "triggered": true,
+            "nodeType": "userPlanExpiry",
+            "timing": null,
+            "eventName": null
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "userPlanExpiry",
+          "data": {
+            "triggered": true
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "JS NodeExecutorRegistry.#executeTrigger (generic passthrough). Laravel executor not present in this repo.",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "rewardUpdated",
+      "category": "triggers",
+      "status": "partial",
+      "description": "Triggers when reward points are updated.",
+      "title": "Reward Points Updated",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name / Trigger Name"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "draft | ready | published (UI)"
+        },
+        "updateType": {
+          "type": "array|string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: [\"any\"]"
+        }
+      },
+      "contextRequired": [
+        "context.patient",
+        "context.rewards",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "rewardUpdated",
+        "category": "triggers",
+        "label": "Reward Points Updated",
+        "status": "draft",
+        "updateType": [
+          "any"
+        ],
+        "note": "Persisted on node.data in React Flow configuration.nodes[].data"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "triggered": true,
+            "nodeType": "rewardUpdated",
+            "timing": null,
+            "eventName": null
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "rewardUpdated",
+          "data": {
+            "triggered": true
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "JS NodeExecutorRegistry.#executeTrigger (generic passthrough). Laravel executor not present in this repo.",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "rewardsTierUpgraded",
+      "category": "triggers",
+      "status": "partial",
+      "description": "Triggers when rewards tier is upgraded.",
+      "title": "Rewards Tier Upgraded",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name / Trigger Name"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "draft | ready | published (UI)"
+        }
+      },
+      "contextRequired": [
+        "context.patient",
+        "context.rewards",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "rewardsTierUpgraded",
+        "category": "triggers",
+        "label": "Rewards Tier Upgraded",
+        "status": "draft",
+        "note": "Persisted on node.data in React Flow configuration.nodes[].data"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "triggered": true,
+            "nodeType": "rewardsTierUpgraded",
+            "timing": null,
+            "eventName": null
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "rewardsTierUpgraded",
+          "data": {
+            "triggered": true
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "JS NodeExecutorRegistry.#executeTrigger (generic passthrough). Laravel executor not present in this repo.",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "familyPackageTierUpdated",
+      "category": "triggers",
+      "status": "partial",
+      "description": "Triggers when family package plan tier changes.",
+      "title": "Family Package Plan Tier Updated",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name / Trigger Name"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "draft | ready | published (UI)"
+        },
+        "updateType": {
+          "type": "string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: \"any\""
+        }
+      },
+      "contextRequired": [
+        "context.patient",
+        "context.plan",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "familyPackageTierUpdated",
+        "category": "triggers",
+        "label": "Family Package Plan Tier Updated",
+        "status": "draft",
+        "updateType": "any",
+        "note": "Persisted on node.data in React Flow configuration.nodes[].data"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "triggered": true,
+            "nodeType": "familyPackageTierUpdated",
+            "timing": null,
+            "eventName": null
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "familyPackageTierUpdated",
+          "data": {
+            "triggered": true
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "JS NodeExecutorRegistry.#executeTrigger (generic passthrough). Laravel executor not present in this repo.",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "invoiceGenerated",
+      "category": "triggers",
+      "status": "partial",
+      "description": "Triggers when an invoice is generated.",
+      "title": "Invoice Generated",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name / Trigger Name"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "draft | ready | published (UI)"
+        },
+        "source": {
+          "type": "array|string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: [\"any\"]"
+        }
+      },
+      "contextRequired": [
+        "context.patient",
+        "context.invoice",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "invoiceGenerated",
+        "category": "triggers",
+        "label": "Invoice Generated",
+        "status": "draft",
+        "source": [
+          "any"
+        ],
+        "note": "Persisted on node.data in React Flow configuration.nodes[].data"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "triggered": true,
+            "nodeType": "invoiceGenerated",
+            "timing": null,
+            "eventName": null
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "invoiceGenerated",
+          "data": {
+            "triggered": true
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "JS NodeExecutorRegistry.#executeTrigger (generic passthrough). Laravel executor not present in this repo.",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "paymentReceived",
+      "category": "triggers",
+      "status": "partial",
+      "description": "Triggers when a payment is received.",
+      "title": "Payment Received",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name / Trigger Name"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "draft | ready | published (UI)"
+        },
+        "paymentMode": {
+          "type": "array|string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: [\"any\"]"
+        },
+        "source": {
+          "type": "array|string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: [\"any\"]"
+        }
+      },
+      "contextRequired": [
+        "context.patient",
+        "context.payment",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "paymentReceived",
+        "category": "triggers",
+        "label": "Payment Received",
+        "status": "draft",
+        "paymentMode": [
+          "any"
+        ],
+        "source": [
+          "any"
+        ],
+        "note": "Persisted on node.data in React Flow configuration.nodes[].data"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "triggered": true,
+            "nodeType": "paymentReceived",
+            "timing": null,
+            "eventName": null
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "paymentReceived",
+          "data": {
+            "triggered": true
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "JS NodeExecutorRegistry.#executeTrigger (generic passthrough). Laravel executor not present in this repo.",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "webhookEvent",
+      "category": "triggers",
+      "status": "partial",
+      "description": "Triggers from an external webhook.",
+      "title": "Webhook Event",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name / Trigger Name"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "draft | ready | published (UI)"
+        },
+        "webhookName": {
+          "type": "string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: \"\""
+        },
+        "webhookUrl": {
+          "type": "string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: \"https://api.healthinpocket.in/api/webhooks/{workflow_id}\""
+        },
+        "httpMethod": {
+          "type": "string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: \"POST\""
+        },
+        "secretKey": {
+          "type": "string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: \"\""
+        },
+        "payloadVariables": {
+          "type": "array|string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: [{\"key\":\"\",\"variable\":\"\"}]"
+        }
+      },
+      "contextRequired": [],
+      "configuration": {
+        "nodeType": "webhookEvent",
+        "category": "triggers",
+        "label": "Webhook Event",
+        "status": "draft",
+        "webhookName": "",
+        "webhookUrl": "https://api.healthinpocket.in/api/webhooks/{workflow_id}",
+        "httpMethod": "POST",
+        "secretKey": "",
+        "payloadVariables": [
+          {
+            "key": "",
+            "variable": ""
+          }
+        ],
+        "note": "Persisted on node.data in React Flow configuration.nodes[].data"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "triggered": true,
+            "nodeType": "webhookEvent",
+            "timing": null,
+            "eventName": null
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "webhookEvent",
+          "data": {
+            "triggered": true
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "JS NodeExecutorRegistry.#executeTrigger (generic passthrough). Laravel executor not present in this repo.",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "apiEvent",
+      "category": "triggers",
+      "status": "partial",
+      "description": "Triggers from an external API event.",
+      "title": "API Event",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name / Trigger Name"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "draft | ready | published (UI)"
+        },
+        "eventName": {
+          "type": "string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: \"\""
+        },
+        "apiKey": {
+          "type": "string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: \"\""
+        },
+        "payloadVariables": {
+          "type": "array|string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: [{\"key\":\"\",\"variable\":\"\"}]"
+        }
+      },
+      "contextRequired": [],
+      "configuration": {
+        "nodeType": "apiEvent",
+        "category": "triggers",
+        "label": "API Event",
+        "status": "draft",
+        "eventName": "",
+        "apiKey": "",
+        "payloadVariables": [
+          {
+            "key": "",
+            "variable": ""
+          }
+        ],
+        "note": "Persisted on node.data in React Flow configuration.nodes[].data"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "triggered": true,
+            "nodeType": "apiEvent",
+            "timing": null,
+            "eventName": null
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "apiEvent",
+          "data": {
+            "triggered": true
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "JS NodeExecutorRegistry.#executeTrigger (generic passthrough). Laravel executor not present in this repo.",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "scheduledEvent",
+      "category": "triggers",
+      "status": "partial",
+      "description": "Triggers on a date/time or recurring schedule.",
+      "title": "Scheduled Event",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name / Trigger Name"
+        },
+        "status": {
+          "type": "string",
+          "required": false,
+          "description": "draft | ready | published (UI)"
+        },
+        "scheduleType": {
+          "type": "string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: \"once\""
+        },
+        "startDate": {
+          "type": "string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: \"\""
+        },
+        "executionTime": {
+          "type": "string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: \"09:00\""
+        },
+        "repeatFrequency": {
+          "type": "string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: \"daily\""
+        },
+        "endCondition": {
+          "type": "string",
+          "required": true,
+          "description": "Trigger configuration field from frontend schema. Default: \"never\""
+        }
+      },
+      "contextRequired": [],
+      "configuration": {
+        "nodeType": "scheduledEvent",
+        "category": "triggers",
+        "label": "Scheduled Event",
+        "status": "draft",
+        "scheduleType": "once",
+        "startDate": "",
+        "executionTime": "09:00",
+        "repeatFrequency": "daily",
+        "endCondition": "never",
+        "note": "Persisted on node.data in React Flow configuration.nodes[].data"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "triggered": true,
+            "nodeType": "scheduledEvent",
+            "timing": null,
+            "eventName": null
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "scheduledEvent",
+          "data": {
+            "triggered": true
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "JS NodeExecutorRegistry.#executeTrigger (generic passthrough). Laravel executor not present in this repo.",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "condition",
+      "category": "conditions",
+      "status": "implemented",
+      "description": "Evaluate a JEXL expression against the workflow context and route to True or False.",
+      "title": "Condition",
+      "input": {
+        "name": {
+          "type": "string",
+          "required": false,
+          "description": "Condition display name"
+        },
+        "expression": {
+          "type": "string (JEXL)",
+          "required": true,
+          "description": "Boolean JEXL expression evaluated against execution context"
+        },
+        "label": {
+          "type": "string",
+          "required": false,
+          "description": "Node label"
+        }
+      },
+      "contextRequired": [
+        "JEXL scope: patient, customer(=patient), doctor, hospital, appointment, payment, invoice, prescription, organization, medicine, workflow, variables, outputs"
+      ],
+      "configuration": {
+        "nodeType": "condition",
+        "category": "conditions",
+        "name": "Condition",
+        "label": "Condition",
+        "expression": "appointment.status == \"Confirmed\"",
+        "status": "draft"
+      },
+      "output": {
+        "success": true,
+        "result": true,
+        "branch": "true",
+        "currentImplementation": {
+          "action": "branch",
+          "branchHandle": "true",
+          "output": {
+            "name": "Condition",
+            "expression": "...",
+            "passed": true,
+            "branch": "true"
+          }
+        }
+      },
+      "failure": {
+        "type": "error",
+        "message": "Invalid condition expression. | Condition evaluation failed.",
+        "currentImplementation": {
+          "action": "error",
+          "error": "<message>",
+          "output": {
+            "name": "…",
+            "expression": "…"
+          }
+        }
+      },
+      "executor": "ConditionExecutor (JEXL) via ConditionEngine.execute",
+      "nextStepBehavior": "action=branch; WorkflowExecutor matches outgoing edge sourceHandle === 'true'|'false'"
+    },
+    {
+      "nodeType": "wait",
+      "category": "wait",
+      "status": "implemented",
+      "description": "Pause the workflow for a duration or until a schedule.",
+      "title": "Wait",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name"
+        },
+        "waitType": {
+          "type": "string",
+          "required": true,
+          "description": "duration | until | cron | recurring"
+        },
+        "amount": {
+          "type": "number",
+          "required": false,
+          "description": "Duration amount when waitType=duration. Default 30"
+        },
+        "unit": {
+          "type": "string",
+          "required": false,
+          "description": "minutes | hours | days when waitType=duration. Default minutes"
+        },
+        "untilDate": {
+          "type": "string",
+          "required": false,
+          "description": "ISO/date string when waitType=until"
+        },
+        "cron": {
+          "type": "string",
+          "required": false,
+          "description": "Cron expression when waitType=cron (JS scheduler stubs to 1h)"
+        },
+        "recurringInterval": {
+          "type": "string",
+          "required": false,
+          "description": "daily | weekly | monthly when waitType=recurring"
+        }
+      },
+      "contextRequired": [],
+      "configuration": {
+        "nodeType": "wait",
+        "category": "wait",
+        "label": "Wait",
+        "waitType": "duration",
+        "amount": 30,
+        "unit": "minutes",
+        "status": "draft"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "delay",
+          "delayMs": 1800000,
+          "output": {
+            "jobId": "delay_…",
+            "delayMs": 1800000,
+            "resumeNodeId": "<wait-node-id>"
+          }
+        },
+        "afterResume": {
+          "action": "continue to next edge target"
+        }
+      },
+      "failure": {
+        "type": "none-documented",
+        "message": "Wait node does not currently return action:error in NodeExecutorRegistry; invalid untilDate yields delayMs=0"
+      },
+      "executor": "NodeExecutorRegistry.#executeWait + DelayScheduler.calculateDelayMs",
+      "nextStepBehavior": "action=delay; scheduler resumes then follows first outgoing edge"
+    },
+    {
+      "nodeType": "sendWhatsApp",
+      "category": "messaging",
+      "status": "partial",
+      "description": "Send an approved WhatsApp template to the patient or care team.",
+      "title": "Send WhatsApp",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name"
+        },
+        "templateId": {
+          "type": "string",
+          "required": true,
+          "description": "Template id / key"
+        },
+        "recipient": {
+          "type": "string",
+          "required": false,
+          "description": "patient | doctor | caregiver | custom (defaults patient)"
+        },
+        "customRecipient": {
+          "type": "string",
+          "required": false,
+          "description": "Used when recipient=custom"
+        },
+        "repeatReminder": {
+          "type": "boolean",
+          "required": false,
+          "description": "Retry on failure"
+        },
+        "retryInterval": {
+          "type": "number",
+          "required": false,
+          "description": "Minutes between retries (default 15)"
+        },
+        "maxRetryCount": {
+          "type": "number",
+          "required": false,
+          "description": "Max retries (default 2)"
+        },
+        "fallbackChannel": {
+          "type": "string",
+          "required": false,
+          "description": "Fallback channel key"
+        },
+        "variables": {
+          "type": "object",
+          "required": false,
+          "description": "Template variable map"
+        },
+        "message": {
+          "type": "string",
+          "required": true,
+          "description": "Message body (supports {{tokens}})"
+        },
+        "buttons": {
+          "type": "string",
+          "required": false,
+          "description": "Optional WhatsApp buttons"
+        }
+      },
+      "contextRequired": [
+        "context.patient (recipient resolution)",
+        "context.doctor (if recipient=doctor)",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "sendWhatsApp",
+        "category": "messaging",
+        "label": "Send WhatsApp",
+        "templateId": "tpl_example",
+        "recipient": "patient",
+        "repeatReminder": false,
+        "retryInterval": 15,
+        "maxRetryCount": 2,
+        "fallbackChannel": "sms",
+        "variables": {},
+        "status": "draft",
+        "message": "Hi {{patient_name}}, appointment with {{doctor_name}} on {{appointment_date}} at {{appointment_time}}.",
+        "buttons": ""
+      },
+      "output": {
+        "success": true,
+        "channel": "whatsapp",
+        "recipient": "<resolved>",
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "success": true,
+            "messageId": "msg_…",
+            "logId": "clog_…",
+            "channel": "whatsapp",
+            "meta": {
+              "channel": "whatsapp",
+              "stub": true
+            }
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "sendWhatsApp",
+          "data": {
+            "channel": "whatsapp",
+            "recipient": "<resolved>",
+            "messageId": "…"
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "error",
+        "message": "Action failed | Unknown channel | Channel send failed",
+        "currentImplementation": {
+          "action": "error",
+          "error": "<message>",
+          "output": {
+            "success": false,
+            "error": "…"
+          }
+        }
+      },
+      "executor": "ActionDispatcher.#dispatchMessaging → ChannelManager.send (JS adapters currently stub adapters)",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "sendSms",
+      "category": "messaging",
+      "status": "partial",
+      "description": "Send an SMS using an approved template.",
+      "title": "Send SMS",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name"
+        },
+        "templateId": {
+          "type": "string",
+          "required": true,
+          "description": "Template id / key"
+        },
+        "recipient": {
+          "type": "string",
+          "required": false,
+          "description": "patient | doctor | caregiver | custom (defaults patient)"
+        },
+        "customRecipient": {
+          "type": "string",
+          "required": false,
+          "description": "Used when recipient=custom"
+        },
+        "repeatReminder": {
+          "type": "boolean",
+          "required": false,
+          "description": "Retry on failure"
+        },
+        "retryInterval": {
+          "type": "number",
+          "required": false,
+          "description": "Minutes between retries (default 15)"
+        },
+        "maxRetryCount": {
+          "type": "number",
+          "required": false,
+          "description": "Max retries (default 2)"
+        },
+        "fallbackChannel": {
+          "type": "string",
+          "required": false,
+          "description": "Fallback channel key"
+        },
+        "variables": {
+          "type": "object",
+          "required": false,
+          "description": "Template variable map"
+        },
+        "message": {
+          "type": "string",
+          "required": true,
+          "description": "SMS body"
+        }
+      },
+      "contextRequired": [
+        "context.patient (recipient resolution)",
+        "context.doctor (if recipient=doctor)",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "sendSms",
+        "category": "messaging",
+        "label": "Send SMS",
+        "templateId": "tpl_example",
+        "recipient": "patient",
+        "repeatReminder": false,
+        "retryInterval": 15,
+        "maxRetryCount": 2,
+        "fallbackChannel": "",
+        "variables": {},
+        "status": "draft",
+        "message": "Hi {{patient_name}}, reminder from {{hospital_name}}."
+      },
+      "output": {
+        "success": true,
+        "channel": "sms",
+        "recipient": "<resolved>",
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "success": true,
+            "messageId": "msg_…",
+            "logId": "clog_…",
+            "channel": "sms",
+            "meta": {
+              "channel": "sms",
+              "stub": true
+            }
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "sendSms",
+          "data": {
+            "channel": "sms",
+            "recipient": "<resolved>",
+            "messageId": "…"
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "error",
+        "message": "Action failed | Unknown channel | Channel send failed",
+        "currentImplementation": {
+          "action": "error",
+          "error": "<message>",
+          "output": {
+            "success": false,
+            "error": "…"
+          }
+        }
+      },
+      "executor": "ActionDispatcher.#dispatchMessaging → ChannelManager.send (JS adapters currently stub adapters)",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "sendEmail",
+      "category": "messaging",
+      "status": "partial",
+      "description": "Send a transactional email.",
+      "title": "Send Email",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name"
+        },
+        "templateId": {
+          "type": "string",
+          "required": false,
+          "description": "Template id / key"
+        },
+        "recipient": {
+          "type": "string",
+          "required": false,
+          "description": "patient | doctor | caregiver | custom (defaults patient)"
+        },
+        "customRecipient": {
+          "type": "string",
+          "required": false,
+          "description": "Used when recipient=custom"
+        },
+        "repeatReminder": {
+          "type": "boolean",
+          "required": false,
+          "description": "Retry on failure"
+        },
+        "retryInterval": {
+          "type": "number",
+          "required": false,
+          "description": "Minutes between retries (default 15)"
+        },
+        "maxRetryCount": {
+          "type": "number",
+          "required": false,
+          "description": "Max retries (default 2)"
+        },
+        "fallbackChannel": {
+          "type": "string",
+          "required": false,
+          "description": "Fallback channel key"
+        },
+        "variables": {
+          "type": "object",
+          "required": false,
+          "description": "Template variable map"
+        },
+        "subject": {
+          "type": "string",
+          "required": false,
+          "description": "Email subject"
+        },
+        "body": {
+          "type": "string",
+          "required": false,
+          "description": "Email body"
+        }
+      },
+      "contextRequired": [
+        "context.patient (recipient resolution)",
+        "context.doctor (if recipient=doctor)",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "sendEmail",
+        "category": "messaging",
+        "label": "Send Email",
+        "templateId": "tpl_example",
+        "recipient": "patient",
+        "repeatReminder": false,
+        "retryInterval": 15,
+        "maxRetryCount": 2,
+        "fallbackChannel": "",
+        "variables": {},
+        "status": "draft",
+        "subject": "Appointment — {{hospital_name}}",
+        "body": "Dear {{patient_name}}, see you on {{appointment_date}}."
+      },
+      "output": {
+        "success": true,
+        "channel": "email",
+        "recipient": "<resolved>",
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "success": true,
+            "messageId": "msg_…",
+            "logId": "clog_…",
+            "channel": "email",
+            "meta": {
+              "channel": "email",
+              "stub": true
+            }
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "sendEmail",
+          "data": {
+            "channel": "email",
+            "recipient": "<resolved>",
+            "messageId": "…"
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "error",
+        "message": "Action failed | Unknown channel | Channel send failed",
+        "currentImplementation": {
+          "action": "error",
+          "error": "<message>",
+          "output": {
+            "success": false,
+            "error": "…"
+          }
+        }
+      },
+      "executor": "ActionDispatcher.#dispatchMessaging → ChannelManager.send (JS adapters currently stub adapters)",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "sendPush",
+      "category": "messaging",
+      "status": "partial",
+      "description": "Send a push notification.",
+      "title": "Send Push Notification",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name"
+        },
+        "templateId": {
+          "type": "string",
+          "required": false,
+          "description": "Template id / key"
+        },
+        "recipient": {
+          "type": "string",
+          "required": false,
+          "description": "patient | doctor | caregiver | custom (defaults patient)"
+        },
+        "customRecipient": {
+          "type": "string",
+          "required": false,
+          "description": "Used when recipient=custom"
+        },
+        "repeatReminder": {
+          "type": "boolean",
+          "required": false,
+          "description": "Retry on failure"
+        },
+        "retryInterval": {
+          "type": "number",
+          "required": false,
+          "description": "Minutes between retries (default 15)"
+        },
+        "maxRetryCount": {
+          "type": "number",
+          "required": false,
+          "description": "Max retries (default 2)"
+        },
+        "fallbackChannel": {
+          "type": "string",
+          "required": false,
+          "description": "Fallback channel key"
+        },
+        "variables": {
+          "type": "object",
+          "required": false,
+          "description": "Template variable map"
+        },
+        "title": {
+          "type": "string",
+          "required": false,
+          "description": "Push title"
+        },
+        "body": {
+          "type": "string",
+          "required": false,
+          "description": "Push body"
+        },
+        "priority": {
+          "type": "string",
+          "required": false,
+          "description": "normal | high"
+        }
+      },
+      "contextRequired": [
+        "context.patient (recipient resolution)",
+        "context.doctor (if recipient=doctor)",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "sendPush",
+        "category": "messaging",
+        "label": "Send Push Notification",
+        "templateId": "tpl_example",
+        "recipient": "patient",
+        "repeatReminder": false,
+        "retryInterval": 15,
+        "maxRetryCount": 2,
+        "fallbackChannel": "",
+        "variables": {},
+        "status": "draft",
+        "title": "Appointment booked",
+        "body": "Hi {{patient_name}}",
+        "priority": "normal"
+      },
+      "output": {
+        "success": true,
+        "channel": "push",
+        "recipient": "<resolved>",
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "success": true,
+            "messageId": "msg_…",
+            "logId": "clog_…",
+            "channel": "push",
+            "meta": {
+              "channel": "push",
+              "stub": true
+            }
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "sendPush",
+          "data": {
+            "channel": "push",
+            "recipient": "<resolved>",
+            "messageId": "…"
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "error",
+        "message": "Action failed | Unknown channel | Channel send failed",
+        "currentImplementation": {
+          "action": "error",
+          "error": "<message>",
+          "output": {
+            "success": false,
+            "error": "…"
+          }
+        }
+      },
+      "executor": "ActionDispatcher.#dispatchMessaging → ChannelManager.send (JS adapters currently stub adapters)",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "sendAiChat",
+      "category": "messaging",
+      "status": "partial",
+      "description": "Send an AI chat message.",
+      "title": "Send AI Chat",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name"
+        },
+        "templateId": {
+          "type": "string",
+          "required": true,
+          "description": "Template id / key"
+        },
+        "recipient": {
+          "type": "string",
+          "required": false,
+          "description": "patient | doctor | caregiver | custom (defaults patient)"
+        },
+        "customRecipient": {
+          "type": "string",
+          "required": false,
+          "description": "Used when recipient=custom"
+        },
+        "repeatReminder": {
+          "type": "boolean",
+          "required": false,
+          "description": "Retry on failure"
+        },
+        "retryInterval": {
+          "type": "number",
+          "required": false,
+          "description": "Minutes between retries (default 15)"
+        },
+        "maxRetryCount": {
+          "type": "number",
+          "required": false,
+          "description": "Max retries (default 2)"
+        },
+        "fallbackChannel": {
+          "type": "string",
+          "required": false,
+          "description": "Fallback channel key"
+        },
+        "variables": {
+          "type": "object",
+          "required": false,
+          "description": "Template variable map"
+        },
+        "prompt": {
+          "type": "string",
+          "required": true,
+          "description": "AI prompt"
+        },
+        "temperature": {
+          "type": "number",
+          "required": false,
+          "description": "0–2"
+        }
+      },
+      "contextRequired": [
+        "context.patient (recipient resolution)",
+        "context.doctor (if recipient=doctor)",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "sendAiChat",
+        "category": "messaging",
+        "label": "Send AI Chat",
+        "templateId": "tpl_example",
+        "recipient": "patient",
+        "repeatReminder": false,
+        "retryInterval": 15,
+        "maxRetryCount": 2,
+        "fallbackChannel": "",
+        "variables": {},
+        "status": "draft",
+        "prompt": "You are a helpful hospital care assistant.",
+        "temperature": 0.7
+      },
+      "output": {
+        "success": true,
+        "channel": "ai_chat",
+        "recipient": "<resolved>",
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "success": true,
+            "messageId": "msg_…",
+            "logId": "clog_…",
+            "channel": "ai_chat",
+            "meta": {
+              "channel": "ai_chat",
+              "stub": true
+            }
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "sendAiChat",
+          "data": {
+            "channel": "ai_chat",
+            "recipient": "<resolved>",
+            "messageId": "…"
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "error",
+        "message": "Action failed | Unknown channel | Channel send failed",
+        "currentImplementation": {
+          "action": "error",
+          "error": "<message>",
+          "output": {
+            "success": false,
+            "error": "…"
+          }
+        }
+      },
+      "executor": "ActionDispatcher.#dispatchMessaging → ChannelManager.send (JS adapters currently stub adapters)",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "sendAiVoice",
+      "category": "messaging",
+      "status": "partial",
+      "description": "Send an AI voice call.",
+      "title": "Send AI Voice Call",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name"
+        },
+        "templateId": {
+          "type": "string",
+          "required": false,
+          "description": "Template id / key"
+        },
+        "recipient": {
+          "type": "string",
+          "required": false,
+          "description": "patient | doctor | caregiver | custom (defaults patient)"
+        },
+        "customRecipient": {
+          "type": "string",
+          "required": false,
+          "description": "Used when recipient=custom"
+        },
+        "repeatReminder": {
+          "type": "boolean",
+          "required": false,
+          "description": "Retry on failure"
+        },
+        "retryInterval": {
+          "type": "number",
+          "required": false,
+          "description": "Minutes between retries (default 15)"
+        },
+        "maxRetryCount": {
+          "type": "number",
+          "required": false,
+          "description": "Max retries (default 2)"
+        },
+        "fallbackChannel": {
+          "type": "string",
+          "required": false,
+          "description": "Fallback channel key"
+        },
+        "variables": {
+          "type": "object",
+          "required": false,
+          "description": "Template variable map"
+        },
+        "voiceProvider": {
+          "type": "string",
+          "required": true,
+          "description": "default | openai | azure | custom"
+        },
+        "prompt": {
+          "type": "string",
+          "required": true,
+          "description": "Voice script / prompt"
+        },
+        "language": {
+          "type": "string",
+          "required": false,
+          "description": "en | hi | ta | te | ar"
+        },
+        "voice": {
+          "type": "string",
+          "required": false,
+          "description": "Voice id"
+        },
+        "gender": {
+          "type": "string",
+          "required": false,
+          "description": "neutral | female | male"
+        },
+        "retryCount": {
+          "type": "number",
+          "required": false,
+          "description": "0–5"
+        }
+      },
+      "contextRequired": [
+        "context.patient (recipient resolution)",
+        "context.doctor (if recipient=doctor)",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "sendAiVoice",
+        "category": "messaging",
+        "label": "Send AI Voice Call",
+        "templateId": "tpl_example",
+        "recipient": "patient",
+        "repeatReminder": false,
+        "retryInterval": 15,
+        "maxRetryCount": 2,
+        "fallbackChannel": "",
+        "variables": {},
+        "status": "draft",
+        "voiceProvider": "default",
+        "prompt": "Remind {{patient_name}} about the appointment.",
+        "language": "en",
+        "voice": "",
+        "gender": "neutral",
+        "retryCount": 1
+      },
+      "output": {
+        "success": true,
+        "channel": "ai_voice",
+        "recipient": "<resolved>",
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "success": true,
+            "messageId": "msg_…",
+            "logId": "clog_…",
+            "channel": "ai_voice",
+            "meta": {
+              "channel": "ai_voice",
+              "stub": true
+            }
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "sendAiVoice",
+          "data": {
+            "channel": "ai_voice",
+            "recipient": "<resolved>",
+            "messageId": "…"
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "error",
+        "message": "Action failed | Unknown channel | Channel send failed",
+        "currentImplementation": {
+          "action": "error",
+          "error": "<message>",
+          "output": {
+            "success": false,
+            "error": "…"
+          }
+        }
+      },
+      "executor": "ActionDispatcher.#dispatchMessaging → ChannelManager.send (JS adapters currently stub adapters)",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "sendIvr",
+      "category": "messaging",
+      "status": "partial",
+      "description": "Send an IVR call.",
+      "title": "Send IVR",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name"
+        },
+        "templateId": {
+          "type": "string",
+          "required": true,
+          "description": "Template id / key"
+        },
+        "recipient": {
+          "type": "string",
+          "required": false,
+          "description": "patient | doctor | caregiver | custom (defaults patient)"
+        },
+        "customRecipient": {
+          "type": "string",
+          "required": false,
+          "description": "Used when recipient=custom"
+        },
+        "repeatReminder": {
+          "type": "boolean",
+          "required": false,
+          "description": "Retry on failure"
+        },
+        "retryInterval": {
+          "type": "number",
+          "required": false,
+          "description": "Minutes between retries (default 15)"
+        },
+        "maxRetryCount": {
+          "type": "number",
+          "required": false,
+          "description": "Max retries (default 2)"
+        },
+        "fallbackChannel": {
+          "type": "string",
+          "required": false,
+          "description": "Fallback channel key"
+        },
+        "variables": {
+          "type": "object",
+          "required": false,
+          "description": "Template variable map"
+        }
+      },
+      "contextRequired": [
+        "context.patient (recipient resolution)",
+        "context.doctor (if recipient=doctor)",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "sendIvr",
+        "category": "messaging",
+        "label": "Send IVR",
+        "templateId": "tpl_example",
+        "recipient": "patient",
+        "repeatReminder": false,
+        "retryInterval": 15,
+        "maxRetryCount": 2,
+        "fallbackChannel": "",
+        "variables": {},
+        "status": "draft"
+      },
+      "output": {
+        "success": true,
+        "channel": "ivr",
+        "recipient": "<resolved>",
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "success": true,
+            "messageId": "msg_…",
+            "logId": "clog_…",
+            "channel": "ivr",
+            "meta": {
+              "channel": "ivr",
+              "stub": true
+            }
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "sendIvr",
+          "data": {
+            "channel": "ivr",
+            "recipient": "<resolved>",
+            "messageId": "…"
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "error",
+        "message": "Action failed | Unknown channel | Channel send failed",
+        "currentImplementation": {
+          "action": "error",
+          "error": "<message>",
+          "output": {
+            "success": false,
+            "error": "…"
+          }
+        }
+      },
+      "executor": "ActionDispatcher.#dispatchMessaging → ChannelManager.send (JS adapters currently stub adapters)",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "sendTemplate",
+      "category": "messaging",
+      "status": "partial",
+      "description": "Send a template on a selected channel.",
+      "title": "Send Template",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name"
+        },
+        "templateId": {
+          "type": "string",
+          "required": true,
+          "description": "Template id / key"
+        },
+        "recipient": {
+          "type": "string",
+          "required": false,
+          "description": "patient | doctor | caregiver | custom (defaults patient)"
+        },
+        "customRecipient": {
+          "type": "string",
+          "required": false,
+          "description": "Used when recipient=custom"
+        },
+        "repeatReminder": {
+          "type": "boolean",
+          "required": false,
+          "description": "Retry on failure"
+        },
+        "retryInterval": {
+          "type": "number",
+          "required": false,
+          "description": "Minutes between retries (default 15)"
+        },
+        "maxRetryCount": {
+          "type": "number",
+          "required": false,
+          "description": "Max retries (default 2)"
+        },
+        "fallbackChannel": {
+          "type": "string",
+          "required": false,
+          "description": "Fallback channel key"
+        },
+        "variables": {
+          "type": "object",
+          "required": false,
+          "description": "Template variable map"
+        },
+        "channel": {
+          "type": "string",
+          "required": true,
+          "description": "whatsapp | sms | email | push"
+        }
+      },
+      "contextRequired": [
+        "context.patient (recipient resolution)",
+        "context.doctor (if recipient=doctor)",
+        "context.hospital"
+      ],
+      "configuration": {
+        "nodeType": "sendTemplate",
+        "category": "messaging",
+        "label": "Send Template",
+        "templateId": "tpl_example",
+        "recipient": "patient",
+        "repeatReminder": false,
+        "retryInterval": 15,
+        "maxRetryCount": 2,
+        "fallbackChannel": "",
+        "variables": {},
+        "status": "draft",
+        "channel": "whatsapp"
+      },
+      "output": {
+        "success": true,
+        "channel": "multi",
+        "recipient": "<resolved>",
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "success": true,
+            "messageId": "msg_…",
+            "logId": "clog_…",
+            "channel": "whatsapp",
+            "meta": {
+              "channel": "multi",
+              "stub": true
+            }
+          }
+        },
+        "recommendedNormalized": {
+          "success": true,
+          "nodeType": "sendTemplate",
+          "data": {
+            "channel": "multi",
+            "recipient": "<resolved>",
+            "messageId": "…"
+          },
+          "metadata": {}
+        }
+      },
+      "failure": {
+        "type": "error",
+        "message": "Action failed | Unknown channel | Channel send failed",
+        "currentImplementation": {
+          "action": "error",
+          "error": "<message>",
+          "output": {
+            "success": false,
+            "error": "…"
+          }
+        }
+      },
+      "executor": "ActionDispatcher.#dispatchMessaging → ChannelManager.send (JS adapters currently stub adapters)",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "dbCreate",
+      "category": "database",
+      "status": "stub",
+      "description": "Create a hospital record.",
+      "title": "Create Record",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name"
+        }
+      },
+      "contextRequired": [],
+      "configuration": {
+        "nodeType": "dbCreate",
+        "category": "database",
+        "status": "draft",
+        "label": "Create Record"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "action": "database",
+            "nodeType": "dbCreate",
+            "stub": true
+          }
+        },
+        "note": "Stub — no production side effects in JS runtime"
+      },
+      "failure": {
+        "type": "not_applicable",
+        "message": "Stub dispatcher currently returns success:true with stub:true — failures not modeled yet"
+      },
+      "executor": "ActionDispatcher.#dispatchDatabase (returns stub:true)",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "dbUpdate",
+      "category": "database",
+      "status": "stub",
+      "description": "Update a hospital record.",
+      "title": "Update Record",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name"
+        },
+        "entity": {
+          "type": "string",
+          "required": true,
+          "description": "Catalog field. Example: \"patient\""
+        }
+      },
+      "contextRequired": [],
+      "configuration": {
+        "nodeType": "dbUpdate",
+        "category": "database",
+        "status": "draft",
+        "label": "Update Record",
+        "entity": "patient"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "action": "database",
+            "nodeType": "dbUpdate",
+            "stub": true
+          }
+        },
+        "note": "Stub — no production side effects in JS runtime"
+      },
+      "failure": {
+        "type": "not_applicable",
+        "message": "Stub dispatcher currently returns success:true with stub:true — failures not modeled yet"
+      },
+      "executor": "ActionDispatcher.#dispatchDatabase (returns stub:true)",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "dbDelete",
+      "category": "database",
+      "status": "stub",
+      "description": "Delete a hospital record.",
+      "title": "Delete Record",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name"
+        }
+      },
+      "contextRequired": [],
+      "configuration": {
+        "nodeType": "dbDelete",
+        "category": "database",
+        "status": "draft",
+        "label": "Delete Record"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "action": "database",
+            "nodeType": "dbDelete",
+            "stub": true
+          }
+        },
+        "note": "Stub — no production side effects in JS runtime"
+      },
+      "failure": {
+        "type": "not_applicable",
+        "message": "Stub dispatcher currently returns success:true with stub:true — failures not modeled yet"
+      },
+      "executor": "ActionDispatcher.#dispatchDatabase (returns stub:true)",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "updateAppointment",
+      "category": "database",
+      "status": "stub",
+      "description": "Update appointment details.",
+      "title": "Update Appointment",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name"
+        }
+      },
+      "contextRequired": [],
+      "configuration": {
+        "nodeType": "updateAppointment",
+        "category": "database",
+        "status": "draft",
+        "label": "Update Appointment"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "action": "database",
+            "nodeType": "updateAppointment",
+            "stub": true
+          }
+        },
+        "note": "Stub — no production side effects in JS runtime"
+      },
+      "failure": {
+        "type": "not_applicable",
+        "message": "Stub dispatcher currently returns success:true with stub:true — failures not modeled yet"
+      },
+      "executor": "ActionDispatcher.#dispatchDatabase (returns stub:true)",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "updatePrescription",
+      "category": "database",
+      "status": "stub",
+      "description": "Update prescription data.",
+      "title": "Update Prescription",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name"
+        }
+      },
+      "contextRequired": [],
+      "configuration": {
+        "nodeType": "updatePrescription",
+        "category": "database",
+        "status": "draft",
+        "label": "Update Prescription"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "action": "database",
+            "nodeType": "updatePrescription",
+            "stub": true
+          }
+        },
+        "note": "Stub — no production side effects in JS runtime"
+      },
+      "failure": {
+        "type": "not_applicable",
+        "message": "Stub dispatcher currently returns success:true with stub:true — failures not modeled yet"
+      },
+      "executor": "ActionDispatcher.#dispatchDatabase (returns stub:true)",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "updateMembership",
+      "category": "database",
+      "status": "stub",
+      "description": "Update membership status.",
+      "title": "Update Membership",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name"
+        }
+      },
+      "contextRequired": [],
+      "configuration": {
+        "nodeType": "updateMembership",
+        "category": "database",
+        "status": "draft",
+        "label": "Update Membership"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "action": "database",
+            "nodeType": "updateMembership",
+            "stub": true
+          }
+        },
+        "note": "Stub — no production side effects in JS runtime"
+      },
+      "failure": {
+        "type": "not_applicable",
+        "message": "Stub dispatcher currently returns success:true with stub:true — failures not modeled yet"
+      },
+      "executor": "ActionDispatcher.#dispatchDatabase (returns stub:true)",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "dbQuery",
+      "category": "database",
+      "status": "stub",
+      "description": "Read patient or encounter records.",
+      "title": "Database Query",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name"
+        },
+        "query": {
+          "type": "string",
+          "required": true,
+          "description": "Catalog field. Example: \"patient.id == context.patient.id\""
+        }
+      },
+      "contextRequired": [],
+      "configuration": {
+        "nodeType": "dbQuery",
+        "category": "database",
+        "status": "draft",
+        "label": "Database Query",
+        "query": "patient.id == context.patient.id"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "action": "database",
+            "nodeType": "dbQuery",
+            "stub": true
+          }
+        },
+        "note": "Stub — no production side effects in JS runtime"
+      },
+      "failure": {
+        "type": "not_applicable",
+        "message": "Stub dispatcher currently returns success:true with stub:true — failures not modeled yet"
+      },
+      "executor": "ActionDispatcher.#dispatchDatabase (returns stub:true)",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "httpRequest",
+      "category": "integrations",
+      "status": "stub",
+      "description": "Call an external REST API.",
+      "title": "REST API",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name"
+        },
+        "url": {
+          "type": "string",
+          "required": true,
+          "description": "Catalog field. Example: \"https://example.com/api\""
+        }
+      },
+      "contextRequired": [],
+      "configuration": {
+        "nodeType": "httpRequest",
+        "category": "integrations",
+        "status": "draft",
+        "label": "REST API",
+        "url": "https://example.com/api"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "action": "integration",
+            "nodeType": "httpRequest",
+            "stub": true
+          }
+        },
+        "note": "Stub — no production side effects in JS runtime"
+      },
+      "failure": {
+        "type": "not_applicable",
+        "message": "Stub dispatcher currently returns success:true with stub:true — failures not modeled yet"
+      },
+      "executor": "ActionDispatcher.#dispatchIntegration (returns stub:true)",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "ai",
+      "category": "ai",
+      "status": "stub",
+      "description": "Run an AI chat step.",
+      "title": "AI",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name"
+        }
+      },
+      "contextRequired": [],
+      "configuration": {
+        "nodeType": "ai",
+        "category": "ai",
+        "status": "draft",
+        "label": "AI"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "continue",
+          "output": {
+            "action": "ai",
+            "nodeType": "ai",
+            "stub": true
+          }
+        },
+        "note": "Stub — no production side effects in JS runtime"
+      },
+      "failure": {
+        "type": "not_applicable",
+        "message": "Stub dispatcher currently returns success:true with stub:true — failures not modeled yet"
+      },
+      "executor": "ActionDispatcher.#dispatchAI (returns stub:true)",
+      "nextStepBehavior": "action=continue; follow first outgoing edge (parallel fan-out not implemented)"
+    },
+    {
+      "nodeType": "end",
+      "category": "flow",
+      "status": "implemented",
+      "description": "Marks the end of a workflow branch.",
+      "title": "End",
+      "input": {
+        "label": {
+          "type": "string",
+          "required": true,
+          "description": "Display name"
+        },
+        "outcome": {
+          "type": "string",
+          "required": false,
+          "description": "completed | cancelled | failed (default completed)"
+        }
+      },
+      "contextRequired": [],
+      "configuration": {
+        "nodeType": "end",
+        "category": "flow",
+        "label": "End",
+        "outcome": "completed",
+        "status": "ready"
+      },
+      "output": {
+        "success": true,
+        "currentImplementation": {
+          "action": "end",
+          "output": {
+            "outcome": "completed"
+          }
+        },
+        "executionStatus": "completed"
+      },
+      "failure": {
+        "type": "execution_error",
+        "message": "WorkflowExecutor throws when action=error or missing outgoing edge"
+      },
+      "executor": "NodeExecutorRegistry.#executeFlow (action: end)",
+      "nextStepBehavior": "action=end; execution status=completed; branch terminates"
+    }
+  ]
+}

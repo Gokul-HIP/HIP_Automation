@@ -1,0 +1,154 @@
+{
+  "meta": {
+    "name": "Fixture — membershipExpiry",
+    "focusNodeType": "membershipExpiry",
+    "hospitalIsolation": {
+      "hospital_id": 12,
+      "rule": "Production workflow lookup MUST filter trigger_type + status(published/active) + hospital_id=booking.hospital_id. No global/null hospital fallback."
+    },
+    "notes": [
+      "Minimal executable fixture for Laravel Automation Engine implementation/tests.",
+      "start node omitted (frontend-only; stripped on save).",
+      "Valid nodeType + configuration fields from frontend catalog/schemas."
+    ]
+  },
+  "workflow": {
+    "name": "Fixture — membershipExpiry",
+    "organization_id": 2,
+    "hospital_id": 12,
+    "status": "inactive",
+    "trigger": "appointmentBooked",
+    "module": "appointments",
+    "configuration": {
+      "builderVersion": "1",
+      "reactFlowVersion": "12.x",
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "zoom": 1
+      },
+      "nodes": [
+        {
+          "id": "n_membershipExpiry",
+          "type": "workflow",
+          "position": {
+            "x": 40,
+            "y": 160
+          },
+          "data": {
+            "nodeType": "membershipExpiry",
+            "category": "triggers",
+            "label": "Hospital Membership Expiry",
+            "status": "draft",
+            "triggerTiming": "before_expiry",
+            "numberOfDays": 7,
+            "executionTime": "09:00",
+            "note": "Persisted on node.data in React Flow configuration.nodes[].data"
+          }
+        },
+        {
+          "id": "n_end",
+          "type": "workflow",
+          "position": {
+            "x": 560,
+            "y": 160
+          },
+          "data": {
+            "nodeType": "end",
+            "category": "flow",
+            "label": "End",
+            "outcome": "completed",
+            "status": "ready"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "source": "n_membershipExpiry",
+          "target": "n_end",
+          "type": "smoothstep",
+          "sourceHandle": null,
+          "targetHandle": null
+        }
+      ]
+    }
+  },
+  "test": {
+    "inputContext": {
+      "executionId": "exec_fixture_1",
+      "workflowId": 101,
+      "workflowName": "Fixture Workflow",
+      "triggerPayload": {
+        "trigger_type": "membershipExpiry"
+      },
+      "patient": {
+        "id": 501,
+        "name": "Riya Sharma",
+        "patient_name": "Riya Sharma",
+        "mobile": "+919876543210",
+        "email": "riya@example.com",
+        "age": 32,
+        "gender": "female"
+      },
+      "doctor": {
+        "id": 77,
+        "name": "Dr. Mehta",
+        "doctor_name": "Dr. Mehta",
+        "department": "Cardiology",
+        "mobile": "+919811122233"
+      },
+      "appointment": {
+        "id": 9001,
+        "appointment_id": 9001,
+        "appointment_date": "2026-08-27",
+        "appointment_time": "10:30",
+        "status": "Confirmed",
+        "branch_name": "Main Campus"
+      },
+      "hospital": {
+        "id": 12,
+        "hospital_id": 12,
+        "name": "Sunrise Hospital",
+        "hospital_name": "Sunrise Hospital",
+        "phone": "+912212345678",
+        "hospital_phone": "+912212345678"
+      },
+      "prescription": {},
+      "medicine": {},
+      "payment": {},
+      "invoice": {},
+      "organization": {
+        "id": 2
+      },
+      "variables": {},
+      "system": {
+        "triggered_at": "2026-08-26T06:00:00.000Z",
+        "workflow_id": 101
+      }
+    },
+    "expectedNodeExecution": [
+      "membershipExpiry trigger metadata recorded",
+      "end"
+    ],
+    "expectedOutput": {
+      "trigger": {
+        "action": "continue",
+        "output": {
+          "triggered": true,
+          "nodeType": "membershipExpiry"
+        }
+      },
+      "end": {
+        "action": "end",
+        "output": {
+          "outcome": "completed"
+        }
+      }
+    },
+    "expectedNextNode": {
+      "n_membershipExpiry": "n_end"
+    },
+    "expectedFailureBehavior": "No outgoing edge → WorkflowExecutor throws"
+  }
+}
