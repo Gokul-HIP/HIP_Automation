@@ -118,6 +118,8 @@ export default function TemplatePicker({
   value,
   channel = null,
   label = "Template",
+  required = false,
+  helperText = "Select an existing template, or leave empty to enter your own content.",
   triggerKey = null,
   nodeType = null,
   error = null,
@@ -218,8 +220,7 @@ export default function TemplatePicker({
   useEffect(() => {
     if (!value) {
       lastHandledId.current = null;
-      setPreview(null);
-      setPreviewError(false);
+      lastFilledId.current = null;
       return;
     }
 
@@ -227,7 +228,16 @@ export default function TemplatePicker({
     if (String(lastHandledId.current) === String(value)) return;
     if (previewMutation.isPending) return;
 
-    loadPreview(value, selectedTemplate, false);
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      if (cancelled) return;
+      loadPreview(value, selectedTemplate, false);
+    }, 0);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, selectedTemplate?.id]);
 
@@ -242,42 +252,14 @@ export default function TemplatePicker({
 
   const templatesLoading = isLoading || (isFetching && templates.length === 0);
   const channelLabel = channelDisplayName(channel);
-
-  if (!templatesLoading && !isError && templates.length === 0) {
-    const isVoice = String(channel || "").toLowerCase() === "voice";
-    return (
-      <div className={styles.field}>
-        <label className={styles.label}>{label}</label>
-        <div className={styles.emptyTemplateBox}>
-          <p className={styles.sectionHint}>
-            {isVoice
-              ? "Voice templates are not implemented yet."
-              : `No templates available for ${channelLabel}.`}
-          </p>
-          <button
-            type="button"
-            className={styles.retryBtn}
-            disabled
-            title={
-              isVoice
-                ? "Voice templates are not implemented yet."
-                : "Template creation is not available in the builder yet."
-            }
-          >
-            Create Template
-          </button>
-        </div>
-        {error ? <p className={styles.fieldError}>{error}</p> : null}
-      </div>
-    );
-  }
+  const isVoice = String(channel || "").toLowerCase() === "voice";
 
   return (
     <div className={styles.templateLayout}>
       <div className={styles.field}>
         <label className={styles.label} htmlFor="template-select">
           {label}
-          {" *"}
+          {required ? " *" : ""}
         </label>
         <select
           id="template-select"
@@ -296,6 +278,10 @@ export default function TemplatePicker({
           ))}
         </select>
 
+        {helperText && !required ? (
+          <p className={styles.sectionHint}>{helperText}</p>
+        ) : null}
+
         {templatesLoading ? (
           <p className={styles.hint}>Loading templates…</p>
         ) : null}
@@ -304,6 +290,18 @@ export default function TemplatePicker({
           <p className={styles.fieldError}>
             Failed to load templates for {channelLabel}.
           </p>
+        ) : null}
+
+        {!templatesLoading && !isError && templates.length === 0 ? (
+          <p className={styles.sectionHint}>
+            {isVoice
+              ? "Voice templates are not implemented yet. Enter content manually below."
+              : `No saved templates for ${channelLabel} yet. Enter content manually below, then use + Add to Template.`}
+          </p>
+        ) : null}
+
+        {value ? (
+          <p className={styles.sectionHint}>Using template content</p>
         ) : null}
 
         {error ? <p className={styles.fieldError}>{error}</p> : null}

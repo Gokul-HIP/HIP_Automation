@@ -743,6 +743,27 @@
   background: var(--surface-light);
 }
 
+.addToTemplateBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  height: 34px;
+  padding: 0 12px;
+  margin-top: 4px;
+  border-radius: 8px;
+  border: 1px dashed color-mix(in srgb, var(--primary-color) 55%, var(--border-color));
+  background: transparent;
+  color: var(--primary-color);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.addToTemplateBtn:hover {
+  background: color-mix(in srgb, var(--primary-color) 8%, var(--surface));
+}
+
 .retryBtn {
   align-self: flex-start;
   height: 32px;

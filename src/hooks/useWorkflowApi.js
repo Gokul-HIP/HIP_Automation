@@ -12,7 +12,7 @@ import {
 } from "@/services/api/workflows";
 import { fetchTriggers } from "@/services/api/triggers";
 import { fetchVariables } from "@/services/api/variables";
-import { fetchTemplates, previewTemplate } from "@/services/api/templates";
+import { fetchTemplates, previewTemplate, createTemplate } from "@/services/api/templates";
 import { fetchExecutions } from "@/services/api/executions";
 import { fetchHospitals } from "@/services/api/hospitals";
 
@@ -140,6 +140,18 @@ export function useTemplates(channel = null) {
 export function useTemplatePreview() {
   return useMutation({
     mutationFn: ({ id, payload }) => previewTemplate(id, payload),
+  });
+}
+
+export function useCreateTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: createTemplate,
+    onSuccess: (_data, variables) => {
+      const channel = variables?.channel ?? null;
+      qc.invalidateQueries({ queryKey: queryKeys.templates(channel) });
+      qc.invalidateQueries({ queryKey: ["workflow-templates"] });
+    },
   });
 }
 

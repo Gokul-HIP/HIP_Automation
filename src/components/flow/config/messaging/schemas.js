@@ -18,7 +18,8 @@ const MESSAGING_VARS = WORKFLOW_VARIABLE_GROUPS;
 
 export const MESSAGING_SCHEMAS = {
   sendWhatsApp: {
-    description: "Send an approved WhatsApp template to the patient or care team.",
+    description:
+      "Send a WhatsApp message. Select an approved template, or enter the message manually.",
     channel: "whatsapp",
     variableGroups: MESSAGING_VARS,
     fields: [
@@ -27,14 +28,14 @@ export const MESSAGING_SCHEMAS = {
         key: "templateId",
         type: "templateSelect",
         label: "Template",
-        required: true,
+        required: false,
       },
       {
         key: "message",
         type: "textarea",
         label: "Message",
         placeholder: "Template message body",
-        required: true,
+        required: false,
       },
       {
         key: "buttons",
@@ -53,7 +54,8 @@ export const MESSAGING_SCHEMAS = {
   },
 
   sendSms: {
-    description: "Send an SMS using an approved template.",
+    description:
+      "Send an SMS. Select an approved template, or enter the message manually.",
     channel: "sms",
     variableGroups: MESSAGING_VARS,
     fields: [
@@ -62,14 +64,14 @@ export const MESSAGING_SCHEMAS = {
         key: "templateId",
         type: "templateSelect",
         label: "Template",
-        required: true,
+        required: false,
       },
       {
         key: "message",
         type: "textarea",
         label: "Message",
         placeholder: "SMS message body",
-        required: true,
+        required: false,
       },
     ],
     defaults: createMessagingDefaults({ label: "Send SMS", message: "" }),
@@ -168,7 +170,8 @@ export const MESSAGING_SCHEMAS = {
   },
 
   sendAiChat: {
-    description: "Start an AI chat conversation with the patient.",
+    description:
+      "Start an AI chat conversation. Select a template, or enter a prompt manually.",
     channel: "ai",
     variableGroups: MESSAGING_VARS,
     fields: [
@@ -177,9 +180,9 @@ export const MESSAGING_SCHEMAS = {
         key: "templateId",
         type: "templateSelect",
         label: "Template",
-        required: true,
+        required: false,
       },
-      { key: "prompt", type: "textarea", label: "Prompt", required: true },
+      { key: "prompt", type: "textarea", label: "Prompt", required: false },
       {
         key: "temperature",
         type: "number",
@@ -224,7 +227,7 @@ export const MESSAGING_SCHEMAS = {
         type: "textarea",
         label: "Prompt",
         placeholder: "Spoken script or AI prompt…",
-        required: true,
+        required: false,
       },
       {
         key: "language",

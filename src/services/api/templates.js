@@ -181,6 +181,24 @@ export async function fetchTemplates(channel = null) {
   return normalizeTemplates(response.data);
 }
 
+/**
+ * Create a notification template via the existing Builder Connect templates resource.
+ * Companion to GET /workflow/templates (no prior create helper existed in this repo).
+ *
+ * @param {Record<string, unknown>} payload
+ */
+export async function createTemplate(payload) {
+  const response = await apiClient.post("/workflow/templates", payload);
+  const raw = unwrapData(response.data);
+  const item =
+    raw && typeof raw === "object" && !Array.isArray(raw)
+      ? raw.template && typeof raw.template === "object"
+        ? raw.template
+        : raw
+      : null;
+  return normalizeTemplateItem(item || response.data);
+}
+
 export async function previewTemplate(id, payload = {}) {
   const response = await apiClient.post(`/workflow/templates/${id}/preview`, payload);
   return normalizeTemplatePreview(response.data);
