@@ -4,6 +4,8 @@
  * In production, swap with Laravel queue / Redis scheduler.
  */
 
+import { resolveRelativeDateTargetMs } from "../services/FollowupContext";
+
 export class DelayScheduler {
   constructor() {
     /** @type {Map<string, {timeoutId: *, resumeAt: string, nodeId: string}>} */
@@ -13,11 +15,13 @@ export class DelayScheduler {
   /**
    * Calculate delay in milliseconds from wait node data.
    * @param {Record<string, unknown>} data
+   * @param {Record<string, unknown>} [context] required for relative_date
    */
-  calculateDelayMs(data) {
+  calculateDelayMs(data, context = {}) {
     const nodeType = data.nodeType;
+    const waitType = String(data.waitType || "");
 
-    if (nodeType === "waitUntil" || data.waitType === "until") {
+    if (nodeType === "waitUntil" || waitType === "until") {
       const target = new Date(String(data.untilDate ?? "")).getTime();
       if (Number.isFinite(target)) {
         return Math.max(0, target - Date.now());
@@ -25,12 +29,21 @@ export class DelayScheduler {
       return 0;
     }
 
-    if (nodeType === "cronSchedule" || data.waitType === "cron") {
+    if (waitType === "relative_date") {
+      const targetMs = resolveRelativeDateTargetMs(data, context);
+      if (targetMs == null) {
+        // Missing follow-up date — continue immediately; condition nodes should gate earlier.
+        return 0;
+      }
+      return Math.max(0, targetMs - Date.now());
+    }
+
+    if (nodeType === "cronSchedule" || waitType === "cron") {
       // Stub: next run in 1 hour for dev; Laravel cron handles real scheduling
       return 60 * 60 * 1000;
     }
 
-    if (nodeType === "recurring" || data.waitType === "recurring") {
+    if (nodeType === "recurring" || waitType === "recurring") {
       const map = { daily: 86400000, weekly: 604800000, monthly: 2592000000 };
       return map[data.recurringInterval] ?? 86400000;
     }
@@ -49,17 +62,18 @@ export class DelayScheduler {
   /**
    * Schedule a delayed continuation.
    * @param {object} params
-   * @param {string} params.jobId
-   * @param {string} params.nodeId
-   * @param {number} params.delayMs
-   * @param {() => void|Promise<void>} params.onResume
    */
-  schedule({ jobId, nodeId, delayMs, onResume }) {
+  schedule({ jobId, nodeId, executionId = null, delayMs, onResume }) {
     const resumeAt = new Date(Date.now() + delayMs).toISOString();
 
     if (typeof window === "undefined" && delayMs > 0) {
-      // Server-side: store job for external worker pickup
-      this.jobs.set(jobId, { timeoutId: null, resumeAt, nodeId, delayMs });
+      this.jobs.set(jobId, {
+        timeoutId: null,
+        resumeAt,
+        nodeId,
+        executionId,
+        delayMs,
+      });
       return { jobId, resumeAt, delayMs, deferred: true };
     }
 
@@ -68,7 +82,13 @@ export class DelayScheduler {
       await onResume();
     }, delayMs);
 
-    this.jobs.set(jobId, { timeoutId, resumeAt, nodeId, delayMs });
+    this.jobs.set(jobId, {
+      timeoutId,
+      resumeAt,
+      nodeId,
+      executionId,
+      delayMs,
+    });
     return { jobId, resumeAt, delayMs, deferred: false };
   }
 
@@ -76,6 +96,19 @@ export class DelayScheduler {
     const job = this.jobs.get(jobId);
     if (job?.timeoutId) clearTimeout(job.timeoutId);
     this.jobs.delete(jobId);
+  }
+
+  /**
+   * Cancel all pending delay jobs for an execution.
+   * @param {string} executionId
+   */
+  cancelByExecutionId(executionId) {
+    if (!executionId) return;
+    for (const [jobId, job] of this.jobs.entries()) {
+      if (String(job.executionId) === String(executionId)) {
+        this.cancel(jobId);
+      }
+    }
   }
 
   listPending() {

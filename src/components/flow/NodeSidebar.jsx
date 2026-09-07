@@ -52,7 +52,11 @@ export default function NodeSidebar({ open, onClose, onAddNode, onAddTrigger }) 
   );
 
   const catalogCount = useMemo(
-    () => grouped.reduce((sum, group) => sum + group.nodes.length, 0),
+    () =>
+      grouped.reduce(
+        (sum, group) => sum + group.nodes.length + group.triggers.length,
+        0
+      ),
     [grouped]
   );
 

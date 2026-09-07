@@ -16,6 +16,33 @@ export {
 
 const MESSAGING_VARS = WORKFLOW_VARIABLE_GROUPS;
 
+/** Shared fields for campaign-aware messaging nodes. */
+const RECIPIENT_FIELD = {
+  key: "recipient",
+  type: "select",
+  label: "Recipient",
+  options: RECIPIENT_OPTIONS,
+  required: true,
+};
+
+const CAMPAIGN_STEP_FIELD = {
+  key: "campaignStep",
+  type: "text",
+  label: "Campaign Step",
+  placeholder: "e.g. nurture_1",
+  required: false,
+  hint: "Stable step id for idempotency (not the message body).",
+};
+
+const CUSTOM_RECIPIENT_FIELD = {
+  key: "customRecipient",
+  type: "text",
+  label: "Custom Recipient",
+  placeholder: "Phone, email, or expression",
+  required: false,
+  showWhen: { recipient: "custom" },
+};
+
 export const MESSAGING_SCHEMAS = {
   sendWhatsApp: {
     description:
@@ -30,6 +57,8 @@ export const MESSAGING_SCHEMAS = {
         label: "Template",
         required: false,
       },
+      RECIPIENT_FIELD,
+      CUSTOM_RECIPIENT_FIELD,
       {
         key: "message",
         type: "textarea",
@@ -44,12 +73,14 @@ export const MESSAGING_SCHEMAS = {
         placeholder: "Optional WhatsApp quick-reply / CTA buttons",
         hint: "Leave blank if the template has no buttons.",
       },
+      CAMPAIGN_STEP_FIELD,
     ],
     defaults: createMessagingDefaults({
       label: "Send WhatsApp",
       message: "",
       buttons: "",
       fallbackChannel: "sms",
+      campaignStep: "",
     }),
   },
 
@@ -66,6 +97,8 @@ export const MESSAGING_SCHEMAS = {
         label: "Template",
         required: false,
       },
+      RECIPIENT_FIELD,
+      CUSTOM_RECIPIENT_FIELD,
       {
         key: "message",
         type: "textarea",
@@ -73,8 +106,13 @@ export const MESSAGING_SCHEMAS = {
         placeholder: "SMS message body",
         required: false,
       },
+      CAMPAIGN_STEP_FIELD,
     ],
-    defaults: createMessagingDefaults({ label: "Send SMS", message: "" }),
+    defaults: createMessagingDefaults({
+      label: "Send SMS",
+      message: "",
+      campaignStep: "",
+    }),
   },
 
   sendEmail: {
@@ -90,6 +128,8 @@ export const MESSAGING_SCHEMAS = {
         label: "Template",
         required: false,
       },
+      RECIPIENT_FIELD,
+      CUSTOM_RECIPIENT_FIELD,
       { key: "subject", type: "text", label: "Subject", required: false },
       {
         key: "body",
@@ -98,11 +138,13 @@ export const MESSAGING_SCHEMAS = {
         placeholder: "Email body",
         required: false,
       },
+      CAMPAIGN_STEP_FIELD,
     ],
     defaults: createMessagingDefaults({
       label: "Send Email",
       subject: "",
       body: "",
+      campaignStep: "",
     }),
   },
 
@@ -119,6 +161,8 @@ export const MESSAGING_SCHEMAS = {
         label: "Template",
         required: false,
       },
+      RECIPIENT_FIELD,
+      CUSTOM_RECIPIENT_FIELD,
       { key: "title", type: "text", label: "Title", required: false },
       { key: "body", type: "textarea", label: "Body", required: false },
       {
@@ -127,12 +171,14 @@ export const MESSAGING_SCHEMAS = {
         label: "Priority",
         options: PUSH_PRIORITY_OPTIONS,
       },
+      CAMPAIGN_STEP_FIELD,
     ],
     defaults: createMessagingDefaults({
       label: "Send Push Notification",
       title: "",
       body: "",
       priority: "normal",
+      campaignStep: "",
     }),
   },
 

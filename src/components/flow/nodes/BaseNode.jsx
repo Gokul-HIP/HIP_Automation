@@ -29,6 +29,28 @@ function resolveBodySummary(data, def) {
     return expr || "Add a JEXL expression…";
   }
 
+  if (data?.nodeType === "wait" || data?.nodeType === "delay") {
+    const waitType = data?.waitType || "duration";
+    if (waitType === "duration") {
+      const amount = data?.amount;
+      const unit = data?.unit;
+      if (amount != null && unit) return `Wait ${amount} ${unit}`;
+    }
+    if (waitType === "relative_date") {
+      const field = data?.relativeDateField || "date";
+      const dir = data?.relativeOffsetDirection || "on";
+      return `Relative: ${dir} ${field}`;
+    }
+    return `Wait (${waitType})`;
+  }
+
+  if (String(data?.nodeType || "").startsWith("send")) {
+    const parts = [];
+    if (data?.recipient) parts.push(`To: ${data.recipient}`);
+    if (data?.campaignStep) parts.push(`Step: ${data.campaignStep}`);
+    if (parts.length) return parts.join(" · ");
+  }
+
   const parts = [];
   if (Array.isArray(data?.source) && data.source.length) {
     parts.push(`Source: ${data.source.join(", ")}`);
@@ -42,6 +64,7 @@ function resolveBodySummary(data, def) {
   if (data?.triggerTiming) parts.push(`Timing: ${data.triggerTiming}`);
   if (data?.reminderTiming) parts.push(`Timing: ${data.reminderTiming}`);
   if (data?.scheduleType) parts.push(`Schedule: ${data.scheduleType}`);
+  if (data?.anniversaryType) parts.push(`Type: ${data.anniversaryType}`);
   if (data?.patientType && data.patientType !== "any") {
     parts.push(`Patient: ${data.patientType}`);
   }

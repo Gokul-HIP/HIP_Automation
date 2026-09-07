@@ -106,6 +106,7 @@ export const ANNIVERSARY_TYPE_OPTIONS = [
   { value: "wedding", label: "Wedding" },
   { value: "registration", label: "Registration" },
   { value: "membership", label: "Membership" },
+  { value: "womens_day", label: "Women's Day" },
   { value: "custom", label: "Custom" },
 ];
 

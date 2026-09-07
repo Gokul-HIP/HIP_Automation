@@ -1,0 +1,62 @@
+{
+  "meta": {
+    "name": "Birthday Wish",
+    "focusNodeType": "birthday",
+    "campaignKey": "birthday_wish"
+  },
+  "workflow": {
+    "name": "Birthday Wish",
+    "organization_id": 2,
+    "hospital_id": 12,
+    "status": "inactive",
+    "trigger": "birthday",
+    "module": "engagement",
+    "configuration": {
+      "builderVersion": "1",
+      "reactFlowVersion": "12.x",
+      "campaignKey": "birthday_wish",
+      "viewport": { "x": 0, "y": 0, "zoom": 1 },
+      "nodes": [
+        {
+          "id": "n_trigger",
+          "type": "workflow",
+          "position": { "x": 40, "y": 160 },
+          "data": {
+            "nodeType": "birthday",
+            "category": "triggers",
+            "label": "Birthday",
+            "triggerTiming": "on_birthday",
+            "daysBefore": 1,
+            "executionTime": "09:00",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_msg",
+          "type": "workflow",
+          "position": { "x": 320, "y": 160 },
+          "data": {
+            "nodeType": "sendWhatsApp",
+            "category": "messaging",
+            "label": "Birthday wish",
+            "templateId": "",
+            "recipient": "patient",
+            "message": "Happy Birthday {{patient_name}}! Wishing you good health from {{hospital_name}}.",
+            "campaignStep": "birthday_1",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_end",
+          "type": "workflow",
+          "position": { "x": 600, "y": 160 },
+          "data": { "nodeType": "end", "category": "flow", "label": "End", "status": "draft" }
+        }
+      ],
+      "edges": [
+        { "id": "e1", "source": "n_trigger", "target": "n_msg" },
+        { "id": "e2", "source": "n_msg", "target": "n_end" }
+      ]
+    }
+  }
+}

@@ -101,6 +101,7 @@ function FlowCanvasInner({
   onNodesChange,
   onEdgesChange,
   onConnect,
+  isValidConnection,
   onSelectionChange,
   onMoveEnd,
   onToggleLock,
@@ -161,6 +162,7 @@ function FlowCanvasInner({
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        isValidConnection={isValidConnection}
         onSelectionChange={onSelectionChange}
         onMoveEnd={handleMoveEnd}
         fitView

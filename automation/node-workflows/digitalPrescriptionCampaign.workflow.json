@@ -1,0 +1,69 @@
+{
+  "meta": {
+    "name": "Digital Prescription Share",
+    "focusNodeType": "prescriptionAdded",
+    "campaignKey": "digital_prescription",
+    "notes": [
+      "Manager ‘digital prescription’ maps to prescriptionAdded (alias digitalPrescription).",
+      "No separate digitalPrescription node type."
+    ]
+  },
+  "workflow": {
+    "name": "Digital Prescription Share",
+    "organization_id": 2,
+    "hospital_id": 12,
+    "status": "inactive",
+    "trigger": "prescriptionAdded",
+    "module": "prescriptions",
+    "configuration": {
+      "builderVersion": "1",
+      "reactFlowVersion": "12.x",
+      "campaignKey": "digital_prescription",
+      "viewport": { "x": 0, "y": 0, "zoom": 1 },
+      "nodes": [
+        {
+          "id": "n_trigger",
+          "type": "workflow",
+          "position": { "x": 40, "y": 160 },
+          "data": {
+            "nodeType": "prescriptionAdded",
+            "category": "triggers",
+            "label": "Prescription Added",
+            "source": ["any"],
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_msg",
+          "type": "workflow",
+          "position": { "x": 320, "y": 160 },
+          "data": {
+            "nodeType": "sendWhatsApp",
+            "category": "messaging",
+            "label": "Share digital prescription",
+            "templateId": "",
+            "recipient": "patient",
+            "message": "Hi {{patient_name}}, your digital prescription from {{doctor_name}} is ready. View/order: {{pharmacy_link}}",
+            "campaignStep": "digital_rx_1",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_end",
+          "type": "workflow",
+          "position": { "x": 600, "y": 160 },
+          "data": {
+            "nodeType": "end",
+            "category": "flow",
+            "label": "End",
+            "status": "draft"
+          }
+        }
+      ],
+      "edges": [
+        { "id": "e1", "source": "n_trigger", "target": "n_msg" },
+        { "id": "e2", "source": "n_msg", "target": "n_end" }
+      ]
+    }
+  }
+}

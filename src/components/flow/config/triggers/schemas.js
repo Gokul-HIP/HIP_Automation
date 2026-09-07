@@ -213,6 +213,7 @@ export const TRIGGER_SCHEMAS = {
     laravelContext: [
       "context.patient",
       "context.appointment",
+      "context.followup",
       "context.doctor",
       "context.hospital",
     ],
@@ -224,6 +225,7 @@ export const TRIGGER_SCHEMAS = {
         { label: "Doctor", key: "doctor_name" },
         { label: "Date", key: "appointment_date" },
         { label: "Time", key: "appointment_time" },
+        { label: "Follow-up date", key: "followup_date" },
       ],
     },
     fields: [
@@ -236,10 +238,22 @@ export const TRIGGER_SCHEMAS = {
         required: true,
         hint: "Which booking sources should start this workflow.",
       },
+      {
+        key: "requireFollowUp",
+        type: "select",
+        label: "Require Follow-up",
+        options: [
+          { value: "any", label: "Any completed visit" },
+          { value: "yes", label: "Only when follow-up is set" },
+        ],
+        required: true,
+        hint: "Use “Only when follow-up is set” for post-visit follow-up campaigns.",
+      },
     ],
     defaults: createBaseTriggerDefaults({
       label: "Appointment Completed",
       source: ["any"],
+      requireFollowUp: "any",
     }),
   },
 
@@ -312,10 +326,10 @@ export const TRIGGER_SCHEMAS = {
     defaults: createBaseTriggerDefaults({ label: "Appointment Missed" }),
   },
 
-  /* ── 6. Prescription Added ── */
+  /* ── 6. Prescription Added (alias: digitalPrescription) ── */
   prescriptionAdded: {
     description:
-      "Triggers the workflow whenever a new prescription is added to a patient's medical record.",
+      "Triggers when a prescription is added (including digital prescription share). Alias: digitalPrescription.",
     laravelContext: [
       "context.patient",
       "context.prescription",
@@ -329,6 +343,8 @@ export const TRIGGER_SCHEMAS = {
         { label: "Patient", key: "patient_name" },
         { label: "Doctor", key: "doctor_name" },
         { label: "Medicine", key: "medicine_name" },
+        { label: "Prescription ID", key: "prescription_id" },
+        { label: "Pharmacy link", key: "pharmacy_link" },
       ],
     },
     fields: [
@@ -500,7 +516,7 @@ export const TRIGGER_SCHEMAS = {
   /* ── 12. Anniversary ── */
   anniversary: {
     description:
-      "Triggers the workflow based on a configured anniversary date associated with the patient.",
+      "Triggers on an anniversary or calendar occasion (registration, membership, Women's Day, custom).",
     laravelContext: ["context.patient", "context.hospital"],
     fields: [
       nameField(),
@@ -918,7 +934,12 @@ const TRIGGER_TYPE_ALIASES = {
   appointment_cancelled: "appointmentCancelled",
   appointment_missed: "appointmentMissed",
   appointment_reminder: "appointmentReminder",
+  // Manager / meeting alias — digital prescription shares prescriptionAdded event.
+  digitalPrescription: "prescriptionAdded",
+  digital_prescription: "prescriptionAdded",
 };
+
+export { TRIGGER_TYPE_ALIASES };
 
 function resolveTriggerType(type) {
   const raw = String(type || "").trim();

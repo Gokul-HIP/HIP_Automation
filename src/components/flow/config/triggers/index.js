@@ -30,6 +30,7 @@ export {
 
 export {
   TRIGGER_SCHEMAS,
+  TRIGGER_TYPE_ALIASES,
   getTriggerSchema,
   buildTriggerDefaults,
 } from "./schemas";

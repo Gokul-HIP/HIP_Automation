@@ -1,0 +1,163 @@
+{
+  "meta": {
+    "name": "Post-Visit Follow-up",
+    "focusNodeType": "appointmentCompleted",
+    "campaignKey": "post_visit_followup",
+    "notes": [
+      "Uses followup.exists condition and wait relative_date (day-4 before + on follow-up date).",
+      "Doctor notified when follow-up is set; patient reminded on day-4 and last day."
+    ]
+  },
+  "workflow": {
+    "name": "Post-Visit Follow-up",
+    "organization_id": 2,
+    "hospital_id": 12,
+    "status": "inactive",
+    "trigger": "appointmentCompleted",
+    "module": "appointments",
+    "configuration": {
+      "builderVersion": "1",
+      "reactFlowVersion": "12.x",
+      "campaignKey": "post_visit_followup",
+      "suppressOnAppointment": false,
+      "viewport": { "x": 0, "y": 0, "zoom": 1 },
+      "nodes": [
+        {
+          "id": "n_trigger",
+          "type": "workflow",
+          "position": { "x": 40, "y": 200 },
+          "data": {
+            "nodeType": "appointmentCompleted",
+            "category": "triggers",
+            "label": "Appointment Completed",
+            "source": ["any"],
+            "requireFollowUp": "yes",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_cond_fu",
+          "type": "workflow",
+          "position": { "x": 280, "y": 200 },
+          "data": {
+            "nodeType": "condition",
+            "category": "conditions",
+            "label": "Follow-up set?",
+            "name": "Follow-up set?",
+            "expression": "followup.exists == true",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_msg_doctor",
+          "type": "workflow",
+          "position": { "x": 520, "y": 80 },
+          "data": {
+            "nodeType": "sendWhatsApp",
+            "category": "messaging",
+            "label": "Notify doctor",
+            "templateId": "",
+            "recipient": "doctor",
+            "message": "Dr {{doctor_name}}: follow-up for {{patient_name}} is set for {{followup_date}}.",
+            "campaignStep": "followup_doctor_notice",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_wait_day4",
+          "type": "workflow",
+          "position": { "x": 760, "y": 80 },
+          "data": {
+            "nodeType": "wait",
+            "category": "wait",
+            "label": "Wait until 4 days before follow-up",
+            "waitType": "relative_date",
+            "relativeDateField": "followup.date",
+            "relativeOffsetDirection": "before",
+            "relativeOffsetAmount": 4,
+            "relativeOffsetUnit": "days",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_msg_day4",
+          "type": "workflow",
+          "position": { "x": 1000, "y": 80 },
+          "data": {
+            "nodeType": "sendWhatsApp",
+            "category": "messaging",
+            "label": "Day-4 patient reminder",
+            "templateId": "",
+            "recipient": "patient",
+            "message": "Hi {{patient_name}}, your follow-up with {{doctor_name}} is on {{followup_date}}. Please confirm your visit.",
+            "campaignStep": "followup_day4",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_wait_lastday",
+          "type": "workflow",
+          "position": { "x": 1240, "y": 80 },
+          "data": {
+            "nodeType": "wait",
+            "category": "wait",
+            "label": "Wait until follow-up day",
+            "waitType": "relative_date",
+            "relativeDateField": "followup.date",
+            "relativeOffsetDirection": "on",
+            "relativeOffsetAmount": 0,
+            "relativeOffsetUnit": "days",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_msg_lastday",
+          "type": "workflow",
+          "position": { "x": 1480, "y": 80 },
+          "data": {
+            "nodeType": "sendSms",
+            "category": "messaging",
+            "label": "Follow-up day reminder",
+            "templateId": "",
+            "recipient": "patient",
+            "message": "Hi {{patient_name}}, today is your follow-up at {{hospital_name}} ({{followup_date}}).",
+            "campaignStep": "followup_lastday",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_end_ok",
+          "type": "workflow",
+          "position": { "x": 1720, "y": 80 },
+          "data": {
+            "nodeType": "end",
+            "category": "flow",
+            "label": "End",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_end_nofu",
+          "type": "workflow",
+          "position": { "x": 520, "y": 320 },
+          "data": {
+            "nodeType": "end",
+            "category": "flow",
+            "label": "End (no follow-up)",
+            "status": "draft"
+          }
+        }
+      ],
+      "edges": [
+        { "id": "e1", "source": "n_trigger", "target": "n_cond_fu" },
+        { "id": "e2", "source": "n_cond_fu", "target": "n_msg_doctor", "sourceHandle": "true" },
+        { "id": "e3", "source": "n_cond_fu", "target": "n_end_nofu", "sourceHandle": "false" },
+        { "id": "e4", "source": "n_msg_doctor", "target": "n_wait_day4" },
+        { "id": "e5", "source": "n_wait_day4", "target": "n_msg_day4" },
+        { "id": "e6", "source": "n_msg_day4", "target": "n_wait_lastday" },
+        { "id": "e7", "source": "n_wait_lastday", "target": "n_msg_lastday" },
+        { "id": "e8", "source": "n_msg_lastday", "target": "n_end_ok" }
+      ]
+    }
+  }
+}

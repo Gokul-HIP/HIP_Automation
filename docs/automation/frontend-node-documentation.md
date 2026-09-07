@@ -6,7 +6,57 @@ This document defines the **frontend automation node contract** used when buildi
 
 It is intended for backend/frontend automation integration. Fields and behaviors not present in the inspected source files are **not** invented.
 
-Generated: 2026-08-28T05:48:26.582Z
+Generated: 2026-08-28T05:48:26.582Z  
+**Synced with:** `docs/automation/node-system-readiness.md` (2026-09-05 browser verification)
+
+### 1.1 Required generic nodes (canonical)
+
+Aligned with `node-system-readiness.md`. Specialty segment needs use `condition` + messaging `recipient` — do **not** invent specialty node types.
+
+| Canonical `nodeType` | Category | Notes |
+|----------------------|----------|--------|
+| `patientRegistered` | triggers | |
+| `appointmentBooked` | triggers | alias `appointment_booked` |
+| `appointmentCompleted` | triggers | alias `appointment_completed` |
+| `appointmentMissed` | triggers | alias `appointment_missed` |
+| `prescriptionAdded` | triggers | aliases `digitalPrescription`, `digital_prescription` |
+| `medicineReminder` | triggers | |
+| `birthday` | triggers | |
+| `anniversary` | triggers | `anniversaryType` includes `womens_day` (**not** a separate node type) |
+| `scheduledEvent` | triggers | |
+| `condition` | conditions | Freeform JEXL (`expression`); true/false outgoing handles required |
+| `wait` | wait | `duration` / `until` / `relative_date` / `cron` / `recurring`; units include **weeks** |
+| `sendWhatsApp` | messaging | |
+| `sendSms` | messaging | |
+| `sendPush` | messaging | |
+| `sendEmail` | messaging | |
+| `end` | flow | no outgoing handle |
+
+### 1.2 Wait units
+
+`minutes` | `hours` | `days` | `weeks` (duration and relative offset).
+
+### 1.3 Messaging fields (WA / SMS / Push / Email)
+
+- `recipient` (patient | doctor | caregiver | custom)
+- `customRecipient` (when recipient = custom)
+- `templateId` (optional when manual content is valid)
+- `message` / `title`+`body` / `subject`+`body` as applicable
+- `campaignStep` (optional; required by campaign fixtures)
+
+### 1.4 Connection rules
+
+Implemented in `src/components/flow/validation/connectionRules.js` (`isValidWorkflowConnection`):
+
+- No edges out of `end`
+- No edges into trigger nodes (or UI `start`)
+- Condition edges require `sourceHandle` `true` or `false`
+- Non-condition nodes: at most one outgoing edge
+
+### 1.5 Validation source of truth
+
+`src/components/flow/validation/workflowGraphValidation.js`  
+(`useFlowBuilder` re-exports this — do not duplicate.)
 
 ## 2. Source of Truth
 
@@ -21,10 +71,13 @@ Generated: 2026-08-28T05:48:26.582Z
 | Database schemas | `database/schemas.js`, `database/shared.js` |
 | Variables | `src/components/flow/config/variables.js`, `src/utils/workflowVariableTokens.js` |
 | Property panels | `panels/PropertyPanel.jsx`, `triggers/*`, `messaging/*`, `conditions/*`, `wait/*`, `database/*`, `flow/EndProperties.jsx` |
-| Validation | `useFlowBuilder.js` → `validateWorkflowGraph`; `triggerValidation.js`; `messagingUx.js`; `conditionValidation.js`; `dbDeleteValidation.js` |
+| Graph validation | `validation/workflowGraphValidation.js` (re-exported by `useFlowBuilder.js`) |
+| Connection rules | `validation/connectionRules.js` |
+| Node validation helpers | `triggerValidation.js`; `messagingUx.js`; `conditionValidation.js`; `dbDeleteValidation.js` |
 | Generated contracts | `automation/node-contracts.json` |
 | Backend contracts file | `docs/automation/backend-node-contracts.json` — **not present** in this repository |
 | Laravel mapping | `NodeTypeNormalizer` / executors are **not in this repo**; mapping below uses contracts + frontend aliases only |
+| Readiness inventory | `docs/automation/node-system-readiness.md` |
 
 ## 3. Node Summary
 
@@ -91,6 +144,8 @@ Every messaging schema default is built with `createMessagingDefaults`, which al
   "status": "draft",
   "templateId": "",
   "recipient": "patient",
+  "customRecipient": "",
+  "campaignStep": "",
   "repeatReminder": false,
   "retryInterval": 15,
   "maxRetryCount": 2,
@@ -100,6 +155,8 @@ Every messaging schema default is built with `createMessagingDefaults`, which al
 ```
 
 Recipient options: `patient`, `doctor`, `caregiver`, `custom`  
+When `recipient` is `custom`, the `customRecipient` field is shown.  
+`campaignStep` is an optional stable step id for campaign idempotency.  
 Retry interval options: `5`, `10`, `15`, `30`, `60`  
 Notification channel options: `whatsapp`, `sms`, `email`, `push`  
 Push priority options: `normal`, `high`
@@ -114,6 +171,11 @@ Push priority options: `normal`, `high`
 | `appointment_cancelled` | `appointmentCancelled` |
 | `appointment_missed` | `appointmentMissed` |
 | `appointment_reminder` | `appointmentReminder` |
+| `digitalPrescription` / `digital_prescription` | `prescriptionAdded` |
+
+## 3.3 Campaign fixtures
+
+See `automation/node-workflows/CAMPAIGNS.md` and `docs/automation/campaign-gap-notes.md` for medicine reminder, digital prescription, post-visit follow-up (`relative_date` wait), missed restart, birthday / Women's Day, inactive 30/90, and segment variants.
 
 ## 4. Detailed Node Documentation
 
@@ -5797,9 +5859,19 @@ Complete saved node object as produced for workflow configuration persistence (`
 
 These appear in schemas or `runtime/types.js` but are **not** in `WORKFLOW_NODES` and therefore have no catalog documentation section:
 
+### Deprecated / unused orphan schemas (intentionally retained)
+
+Do **not** remove unless confirmed unused across contracts, fixtures, and runtime. They are **not** in the node palette.
+
+| Schema key | File | Status |
+|---|---|---|
+| `delay` | `src/components/flow/config/wait/schemas.js` | **Deprecated / unused** — superseded by catalog `wait` (`waitType: duration`). No weeks unit; not in palette. |
+| `switch` | `src/components/flow/config/conditions/schemas.js` | **Deprecated / unused** — superseded by catalog `condition` (JEXL + true/false handles). Not in palette. |
+| `waitUntil` / `cronSchedule` / `recurring` (legacy keys) | `wait/schemas.js` | Covered by unified `wait` node's `waitType` values; orphan schema entries retained. |
+
+### Other schema-only / runtime types
+
 - `sendInApp`
-- `switch`
-- `delay`
 - `waitUntil`
 - `cronSchedule`
 - `recurring`

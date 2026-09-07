@@ -30,6 +30,10 @@ export class CommunicationLogStore {
       return true;
     });
   }
+
+  clear() {
+    this.logs = [];
+  }
 }
 
 export const communicationLogStore = new CommunicationLogStore();

@@ -4,7 +4,7 @@ import {
   extractWorkflowGraph,
   graphNodeEdgeCounts,
 } from "@/utils/extractWorkflowGraph";
-import { ensureUiStartNode } from "@/utils/flowEditorLifecycle";
+import { stripUiStartFromGraph } from "@/utils/flowEditorLifecycle";
 import { normalizeWorkflowStatus } from "@/utils/workflowStatus";
 import {
   buildWorkflowPayload,
@@ -180,7 +180,7 @@ export async function loadTemplateForBuilder(id, { admin = false } = {}) {
   }
 
   const { nodes, edges, viewport } = deserializeWorkflow(graph);
-  const hydrated = ensureUiStartNode(nodes, edges);
+  const normalized = stripUiStartFromGraph(nodes, edges);
 
   return {
     id: data?.id ?? null,
@@ -191,10 +191,10 @@ export async function loadTemplateForBuilder(id, { admin = false } = {}) {
     triggerType: data?.trigger_type ?? null,
     triggerLabel: data?.trigger_label ?? null,
     organizationId: data?.organization_id ?? null,
-    nodeCount: data?.node_count ?? hydrated.nodes.length,
-    edgeCount: data?.edge_count ?? hydrated.edges.length,
-    nodes: hydrated.nodes,
-    edges: hydrated.edges,
+    nodeCount: data?.node_count ?? normalized.nodes.length,
+    edgeCount: data?.edge_count ?? normalized.edges.length,
+    nodes: normalized.nodes,
+    edges: normalized.edges,
     viewport,
     definitionField: field,
   };
@@ -203,7 +203,7 @@ export async function loadTemplateForBuilder(id, { admin = false } = {}) {
 export async function loadTemplatePreviewForBuilder(id) {
   const preview = await previewWorkflowTemplate(id);
   const { nodes, edges, viewport } = deserializeWorkflow(preview?.definition);
-  const hydrated = ensureUiStartNode(nodes, edges);
+  const normalized = stripUiStartFromGraph(nodes, edges);
 
   return {
     id,
@@ -213,10 +213,10 @@ export async function loadTemplatePreviewForBuilder(id) {
     module: preview?.module ?? null,
     triggerType: preview?.trigger?.type ?? null,
     triggerLabel: preview?.trigger?.label ?? null,
-    nodeCount: preview?.node_count ?? hydrated.nodes.length,
-    edgeCount: preview?.edge_count ?? hydrated.edges.length,
-    nodes: hydrated.nodes,
-    edges: hydrated.edges,
+    nodeCount: preview?.node_count ?? normalized.nodes.length,
+    edgeCount: preview?.edge_count ?? normalized.edges.length,
+    nodes: normalized.nodes,
+    edges: normalized.edges,
     viewport,
   };
 }

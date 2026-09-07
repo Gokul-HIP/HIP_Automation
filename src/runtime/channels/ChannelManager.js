@@ -87,6 +87,7 @@ export class ChannelManager {
     retryInterval = 15,
     maxRetryCount = 2,
     fallbackChannel = "",
+    idempotencyKey = null,
   }) {
     const logId = createExecutionId("clog");
     const baseLog = {
@@ -103,7 +104,7 @@ export class ChannelManager {
       readAt: null,
       retryCount: 0,
       error: null,
-      meta: { recipient, subject },
+      meta: { recipient, subject, idempotencyKey },
     };
 
     this.communicationLogStore?.create({ ...baseLog });

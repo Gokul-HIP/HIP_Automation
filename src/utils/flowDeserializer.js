@@ -3,9 +3,29 @@
  */
 
 import { normalizeWorkflowStatus } from "./workflowStatus";
-import { ensureUiStartNode } from "./flowEditorLifecycle";
+import { stripUiStartFromGraph } from "./flowEditorLifecycle";
 import { hydrateConditionNodeForEditor } from "./conditionNodeSerialization";
 import { normalizeMedicineReminderData } from "@/components/flow/config/triggers";
+
+/**
+ * @param {Record<string, unknown> | null | undefined} configuration
+ */
+export function readCampaignFields(configuration) {
+  if (!configuration || typeof configuration !== "object") {
+    return { campaignKey: "", suppressOnAppointment: false };
+  }
+  const keyRaw =
+    configuration.campaignKey ?? configuration.campaign_key ?? "";
+  const campaignKey = keyRaw != null ? String(keyRaw).trim() : "";
+  const suppressRaw =
+    configuration.suppressOnAppointment ??
+    configuration.suppress_on_appointment;
+  return {
+    campaignKey,
+    suppressOnAppointment:
+      suppressRaw == null ? false : Boolean(suppressRaw),
+  };
+}
 
 /**
  * @param {import('../types/workflow').SerializedWorkflowNode} node
@@ -58,8 +78,12 @@ export function deserializeWorkflow(configuration) {
       nodes: [],
       edges: [],
       viewport: { x: 0, y: 0, zoom: 1 },
+      campaignKey: "",
+      suppressOnAppointment: false,
     };
   }
+
+  const campaign = readCampaignFields(configuration);
 
   return {
     nodes: (configuration.nodes || []).map(deserializeNode),
@@ -69,6 +93,8 @@ export function deserializeWorkflow(configuration) {
       y: Number(configuration.viewport?.y ?? 0),
       zoom: Number(configuration.viewport?.zoom ?? 1),
     },
+    campaignKey: campaign.campaignKey,
+    suppressOnAppointment: campaign.suppressOnAppointment,
   };
 }
 
@@ -79,8 +105,9 @@ export function extractWorkflowState(response) {
   const data = response?.data ?? response;
   const configuration = data?.configuration;
 
-  const { nodes, edges, viewport } = deserializeWorkflow(configuration);
-  const hydrated = ensureUiStartNode(nodes, edges);
+  const { nodes, edges, viewport, campaignKey, suppressOnAppointment } =
+    deserializeWorkflow(configuration);
+  const normalized = stripUiStartFromGraph(nodes, edges);
 
   return {
     id: data?.id ?? null,
@@ -89,8 +116,10 @@ export function extractWorkflowState(response) {
     organizationId: data?.organization_id ?? null,
     hospitalId: data?.hospital_id ?? null,
     createdBy: data?.created_by ?? null,
-    nodes: hydrated.nodes,
-    edges: hydrated.edges,
+    campaignKey: campaignKey || "",
+    suppressOnAppointment: Boolean(suppressOnAppointment),
+    nodes: normalized.nodes,
+    edges: normalized.edges,
     viewport,
   };
 }

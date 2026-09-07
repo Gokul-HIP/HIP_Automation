@@ -1,4 +1,11 @@
 import { MESSAGING_NODE_TYPES, DATABASE_NODE_TYPES, INTEGRATION_NODE_TYPES, AI_NODE_TYPES } from "../types";
+import { enrichAppointmentExists } from "../services/AppointmentLookup";
+import {
+  buildMessageIdempotencyKey,
+  hasSentMessage,
+  markMessageSent,
+} from "../services/MessageIdempotency";
+import { logRuntime } from "../logging/StructuredLogger";
 
 /**
  * Routes action nodes to the correct handler category.
@@ -51,6 +58,61 @@ export class ActionDispatcher {
     };
 
     const channel = channelMap[nodeType] || "whatsapp";
+    const patientId = context.patient?.id ? String(context.patient.id) : null;
+    const campaignStep = data.campaignStep || data.campaign_step || step.id;
+
+    // Re-evaluate appointment.exists before every message (nurturing safety).
+    const appointmentExists = await enrichAppointmentExists(context);
+    const suppressOnBooking = Boolean(context.campaign?.suppressOnAppointment);
+    if (suppressOnBooking && appointmentExists) {
+      logRuntime("message.skipped", {
+        workflowId: context.workflowId,
+        executionId: context.executionId,
+        patientId,
+        nodeId: step.id,
+        nodeType,
+        skipReason: "appointment.exists",
+      });
+      return {
+        success: true,
+        output: {
+          skipped: true,
+          skipReason: "appointment.exists",
+          appointmentExists: true,
+        },
+        error: null,
+      };
+    }
+
+    const idempotencyKey = buildMessageIdempotencyKey({
+      workflowId: context.workflowId,
+      executionId: context.executionId,
+      patientId,
+      nodeId: step.id,
+      campaignStep,
+      scheduledPeriod: context.system?.triggered_at ?? null,
+    });
+
+    if (hasSentMessage(idempotencyKey)) {
+      logRuntime("message.skipped", {
+        workflowId: context.workflowId,
+        executionId: context.executionId,
+        patientId,
+        nodeId: step.id,
+        nodeType,
+        skipReason: "idempotent_duplicate",
+      });
+      return {
+        success: true,
+        output: {
+          skipped: true,
+          skipReason: "idempotent_duplicate",
+          idempotencyKey,
+        },
+        error: null,
+      };
+    }
+
     const templateId = String(
       data.templateId || data.template_id || data.messageBody || ""
     ).trim();
@@ -76,7 +138,7 @@ export class ActionDispatcher {
       executionId: context.executionId,
       workflowId: context.workflowId,
       nodeId: step.id,
-      patientId: context.patient?.id ? String(context.patient.id) : null,
+      patientId,
       recipient,
       body: this.variableResolver.resolve(bodyRaw, context),
       subject: this.variableResolver.resolve(subjectRaw, context),
@@ -84,11 +146,26 @@ export class ActionDispatcher {
       retryInterval: Number(data.retryInterval ?? 15),
       maxRetryCount: Number(data.maxRetryCount ?? 2),
       fallbackChannel: String(data.fallbackChannel || ""),
+      idempotencyKey,
+    });
+
+    if (result.success) {
+      markMessageSent(idempotencyKey);
+    }
+
+    logRuntime("message.dispatch", {
+      workflowId: context.workflowId,
+      executionId: context.executionId,
+      patientId,
+      nodeId: step.id,
+      nodeType,
+      messageDispatchResult: result.success ? "sent" : "failed",
+      failureReason: result.error ?? undefined,
     });
 
     return {
       success: result.success,
-      output: result,
+      output: { ...result, idempotencyKey },
       error: result.error ?? null,
     };
   }

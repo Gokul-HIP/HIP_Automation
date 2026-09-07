@@ -213,6 +213,8 @@ export async function publishWorkflow({
   organizationId,
   hospitalId,
   createdBy,
+  campaignKey = null,
+  suppressOnAppointment = null,
 }) {
   const payload = serializeWorkflow({
     nodes,
@@ -223,6 +225,8 @@ export async function publishWorkflow({
     organizationId,
     hospitalId,
     createdBy,
+    campaignKey,
+    suppressOnAppointment,
   });
 
   if (id) {

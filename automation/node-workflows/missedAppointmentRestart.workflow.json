@@ -1,0 +1,115 @@
+{
+  "meta": {
+    "name": "Missed Appointment Restart",
+    "focusNodeType": "appointmentMissed",
+    "campaignKey": "missed_appointment_restart",
+    "notes": [
+      "On missed/no-show, restart recovery messaging with a dedicated campaignKey.",
+      "Laravel should cancel conflicting scheduled first-appointment / follow-up steps then start this graph when product policy requires it."
+    ]
+  },
+  "workflow": {
+    "name": "Missed Appointment Restart",
+    "organization_id": 2,
+    "hospital_id": 12,
+    "status": "inactive",
+    "trigger": "appointmentMissed",
+    "module": "appointments",
+    "configuration": {
+      "builderVersion": "1",
+      "reactFlowVersion": "12.x",
+      "campaignKey": "missed_appointment_restart",
+      "viewport": { "x": 0, "y": 0, "zoom": 1 },
+      "nodes": [
+        {
+          "id": "n_trigger",
+          "type": "workflow",
+          "position": { "x": 40, "y": 160 },
+          "data": {
+            "nodeType": "appointmentMissed",
+            "category": "triggers",
+            "label": "Appointment Missed",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_msg_1",
+          "type": "workflow",
+          "position": { "x": 320, "y": 160 },
+          "data": {
+            "nodeType": "sendWhatsApp",
+            "category": "messaging",
+            "label": "Restart step 1",
+            "templateId": "",
+            "recipient": "patient",
+            "message": "Hi {{patient_name}}, we missed you at {{hospital_name}}. Please rebook: {{booking_link}}",
+            "campaignStep": "missed_restart_1",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_wait",
+          "type": "workflow",
+          "position": { "x": 560, "y": 160 },
+          "data": {
+            "nodeType": "wait",
+            "category": "wait",
+            "label": "Wait 2 days",
+            "waitType": "duration",
+            "amount": 2,
+            "unit": "days",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_cond",
+          "type": "workflow",
+          "position": { "x": 800, "y": 160 },
+          "data": {
+            "nodeType": "condition",
+            "category": "conditions",
+            "label": "Still no appointment?",
+            "name": "Still no appointment?",
+            "expression": "appointment.exists == false",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_msg_2",
+          "type": "workflow",
+          "position": { "x": 1040, "y": 80 },
+          "data": {
+            "nodeType": "sendSms",
+            "category": "messaging",
+            "label": "Restart step 2",
+            "templateId": "",
+            "recipient": "patient",
+            "message": "{{patient_name}}, please book again with {{hospital_name}}: {{booking_link}}",
+            "campaignStep": "missed_restart_2",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_end_ok",
+          "type": "workflow",
+          "position": { "x": 1280, "y": 80 },
+          "data": { "nodeType": "end", "category": "flow", "label": "End", "status": "draft" }
+        },
+        {
+          "id": "n_end_booked",
+          "type": "workflow",
+          "position": { "x": 1040, "y": 280 },
+          "data": { "nodeType": "end", "category": "flow", "label": "End (rebooked)", "status": "draft" }
+        }
+      ],
+      "edges": [
+        { "id": "e1", "source": "n_trigger", "target": "n_msg_1" },
+        { "id": "e2", "source": "n_msg_1", "target": "n_wait" },
+        { "id": "e3", "source": "n_wait", "target": "n_cond" },
+        { "id": "e4", "source": "n_cond", "target": "n_msg_2", "sourceHandle": "true" },
+        { "id": "e5", "source": "n_cond", "target": "n_end_booked", "sourceHandle": "false" },
+        { "id": "e6", "source": "n_msg_2", "target": "n_end_ok" }
+      ]
+    }
+  }
+}

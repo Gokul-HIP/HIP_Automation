@@ -6,34 +6,18 @@ import {
   normalizeWorkflowList,
   normalizeWorkflowRow,
 } from "@/utils/workflowList";
+import { stripUiStartFromGraph } from "@/utils/flowEditorLifecycle";
 
 const BUILDER_VERSION = "1";
 const REACT_FLOW_VERSION = "12.x";
 
 /**
- * Workflow Start is frontend-only decoration.
- * Strip start nodes and any edges connected to them before Laravel save/publish.
+ * Strip synthetic Workflow Start before Laravel save/publish.
  * @param {import('reactflow').Node[]} nodes
  * @param {import('reactflow').Edge[]} edges
  */
 export function stripFrontendStartNodes(nodes = [], edges = []) {
-  const startIds = new Set(
-    (nodes || [])
-      .filter((node) => node?.data?.nodeType === "start")
-      .map((node) => String(node.id))
-  );
-
-  if (!startIds.size) {
-    return { nodes: nodes || [], edges: edges || [] };
-  }
-
-  return {
-    nodes: (nodes || []).filter((node) => !startIds.has(String(node.id))),
-    edges: (edges || []).filter(
-      (edge) =>
-        !startIds.has(String(edge.source)) && !startIds.has(String(edge.target))
-    ),
-  };
+  return stripUiStartFromGraph(nodes, edges);
 }
 
 /**
@@ -52,6 +36,8 @@ export function buildWorkflowPayload({
   organizationId,
   hospitalId,
   createdBy,
+  campaignKey = null,
+  suppressOnAppointment = null,
   ...rest
 }) {
   const { nodes: serializedNodes, edges: serializedEdges } =
@@ -69,6 +55,12 @@ export function buildWorkflowPayload({
       builderVersion: BUILDER_VERSION,
       reactFlowVersion: REACT_FLOW_VERSION,
       viewport: viewport ?? { x: 0, y: 0, zoom: 1 },
+      ...(campaignKey != null && String(campaignKey).trim() !== ""
+        ? { campaignKey: String(campaignKey).trim() }
+        : {}),
+      ...(suppressOnAppointment != null
+        ? { suppressOnAppointment: Boolean(suppressOnAppointment) }
+        : {}),
       nodes: serializedNodes.map((node) => {
         let data = normalizeConditionNodeData(node.data ?? {});
         if (data?.nodeType === "medicineReminder") {

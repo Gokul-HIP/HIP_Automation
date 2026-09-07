@@ -2,6 +2,10 @@ import { compileWorkflow } from "../compiler/WorkflowCompiler";
 import { createNodeExecutorRegistry } from "./NodeExecutorRegistry";
 import { delayScheduler } from "../engines/DelayScheduler";
 import { createExecutionId, nowIso } from "../types";
+import { enrichAppointmentExists } from "../services/AppointmentLookup";
+import { resolveCampaignFromConfig } from "../services/CampaignSuppression";
+import { deriveFollowupObject } from "../services/FollowupContext";
+import { logRuntime } from "../logging/StructuredLogger";
 
 /**
  * Generic workflow executor — traverses compiled graph, no business logic.
@@ -27,16 +31,6 @@ export class WorkflowExecutor {
   /**
    * Compile and execute a workflow.
    * @param {object} params
-   * @param {import('@/types/workflow').WorkflowConfiguration} params.configuration
-   * @param {string|number} params.workflowId
-   * @param {string} params.workflowName
-   * @param {Record<string, unknown>} [params.triggerPayload]
-   * @param {Record<string, unknown>} [params.patient]
-   * @param {Record<string, unknown>} [params.doctor]
-   * @param {Record<string, unknown>} [params.appointment]
-   * @param {Record<string, unknown>} [params.prescription]
-   * @param {Record<string, unknown>} [params.medicine]
-   * @param {Record<string, unknown>} [params.hospital]
    */
   async run({
     configuration,
@@ -46,9 +40,16 @@ export class WorkflowExecutor {
     patient = {},
     doctor = {},
     appointment = {},
+    appointments = undefined,
     prescription = {},
     medicine = {},
     hospital = {},
+    payment = {},
+    invoice = {},
+    organization = {},
+    followup = {},
+    /** When true, duration waits of 0 (or test override) resume immediately. */
+    waitOverrideMs = null,
   }) {
     const graph = compileWorkflow({ workflowId, workflowName, configuration });
 
@@ -56,7 +57,19 @@ export class WorkflowExecutor {
       throw new Error("WorkflowExecutor: no entry node in compiled graph.");
     }
 
-    const execution = this.executionStore.create({ workflowId, workflowName });
+    const campaign = resolveCampaignFromConfig(configuration, triggerPayload);
+    const triggeredAt = nowIso();
+    const appointmentObj =
+      appointment && typeof appointment === "object" ? { ...appointment } : {};
+    const followupObj = deriveFollowupObject(appointmentObj, followup);
+
+    const execution = this.executionStore.create({
+      workflowId,
+      workflowName,
+      patientId: patient?.id ?? null,
+      hospitalId: hospital?.id ?? hospital?.hospital_id ?? null,
+      campaignKey: campaign?.key ?? null,
+    });
     const executionId = execution.id;
 
     /** @type {import('../types').ExecutionContext} */
@@ -67,13 +80,58 @@ export class WorkflowExecutor {
       triggerPayload,
       patient,
       doctor,
-      appointment,
+      appointment: appointmentObj,
+      followup: followupObj,
+      appointments,
       prescription,
       medicine,
       hospital,
-      variables: {},
-      system: { triggered_at: nowIso(), workflow_id: workflowId },
+      payment,
+      invoice,
+      organization,
+      variables: {
+        booking_link:
+          hospital?.booking_link ||
+          hospital?.booking_url ||
+          triggerPayload?.booking_link ||
+          "",
+        hospital_phone: hospital?.phone || hospital?.hospital_phone || "",
+        hospital_name: hospital?.name || hospital?.hospital_name || "",
+        patient_name: patient?.name || patient?.patient_name || "",
+        followup_date: followupObj.date || "",
+        pharmacy_link:
+          prescription?.pharmacy_link ||
+          triggerPayload?.pharmacy_link ||
+          "",
+        prescription_id:
+          prescription?.id || prescription?.prescription_id || "",
+      },
+      system: {
+        triggered_at: triggeredAt,
+        workflow_id: workflowId,
+      },
+      trigger: {
+        type:
+          triggerPayload?.trigger_type ||
+          triggerPayload?.type ||
+          graph.trigger?.nodeType ||
+          null,
+        triggered_at: triggeredAt,
+      },
+      campaign: campaign || undefined,
+      waitOverrideMs,
     };
+
+    await enrichAppointmentExists(context);
+
+    logRuntime("execution.started", {
+      workflowId,
+      executionId,
+      patientId: patient?.id ?? null,
+      campaignKey: campaign?.key ?? null,
+      triggerType: context.trigger?.type,
+      appointmentExists: context.appointment?.exists,
+    });
 
     this.executionStore.update(executionId, {
       status: "running",
@@ -83,24 +141,61 @@ export class WorkflowExecutor {
     try {
       await this.#traverse(graph, graph.entryNodeId, context, executionId);
     } catch (err) {
+      const current = this.executionStore.get(executionId);
+      if (current?.status === "cancelled") {
+        return this.#finalize(executionId);
+      }
       this.executionStore.update(executionId, {
         status: "failed",
         error: err?.message || "Execution failed",
         completedAt: nowIso(),
         durationMs: Date.now() - new Date(execution.startedAt).getTime(),
       });
+      logRuntime("execution.failed", {
+        workflowId,
+        executionId,
+        patientId: patient?.id ?? null,
+        failureReason: err?.message || "Execution failed",
+      });
       throw err;
     }
 
+    return this.#finalize(executionId);
+  }
+
+  #finalize(executionId) {
     const final = this.executionStore.get(executionId);
-    final.trace = this.tracer.getTrace(executionId);
+    if (final) {
+      final.trace = this.tracer.getTrace(executionId);
+    }
     return final;
   }
 
+  #isCancelled(executionId) {
+    const record = this.executionStore.get(executionId);
+    return record?.status === "cancelled";
+  }
+
   async #traverse(graph, nodeId, context, executionId) {
+    if (this.#isCancelled(executionId)) {
+      logRuntime("execution.skipped", {
+        workflowId: context.workflowId,
+        executionId,
+        patientId: context.patient?.id ?? null,
+        nodeId,
+        skipReason: "execution_cancelled",
+      });
+      return;
+    }
+
     const step = graph.steps[nodeId];
     if (!step) {
       throw new Error(`WorkflowExecutor: unknown node "${nodeId}".`);
+    }
+
+    // Re-check appointment before conditions and messaging (nurturing safety).
+    if (step.isCondition || step.isAction) {
+      await enrichAppointmentExists(context);
     }
 
     const label = String(step.data.label || step.nodeType);
@@ -112,6 +207,19 @@ export class WorkflowExecutor {
       action: result.action,
       output: result.output,
       error: result.error,
+    });
+
+    logRuntime("node.completed", {
+      workflowId: context.workflowId,
+      executionId,
+      patientId: context.patient?.id ?? null,
+      nodeId,
+      nodeType: step.nodeType,
+      action: result.action,
+      conditionResult:
+        result.action === "branch" ? result.branchHandle : undefined,
+      skipReason: result.output?.skipReason,
+      failureReason: result.error,
     });
 
     if (result.action === "end") {
@@ -132,9 +240,13 @@ export class WorkflowExecutor {
 
     if (result.action === "delay") {
       const nextNodeId = this.#resolveNextNode(step, result);
-      const delayMs = result.delayMs ?? 0;
+      let delayMs = result.delayMs ?? 0;
+      if (context.waitOverrideMs != null) {
+        delayMs = Number(context.waitOverrideMs);
+      }
 
       if (delayMs <= 0) {
+        if (this.#isCancelled(executionId)) return;
         if (nextNodeId) {
           await this.#traverse(graph, nextNodeId, context, executionId);
         } else {
@@ -148,16 +260,48 @@ export class WorkflowExecutor {
       }
 
       const jobId = createExecutionId("delay");
-      this.executionStore.update(executionId, { status: "scheduled" });
+      const resumeAt = new Date(Date.now() + delayMs).toISOString();
+      this.executionStore.update(executionId, {
+        status: "scheduled",
+        delayJobId: jobId,
+        resumeAt,
+      });
+
+      logRuntime("wait.scheduled", {
+        workflowId: context.workflowId,
+        executionId,
+        patientId: context.patient?.id ?? null,
+        nodeId,
+        nodeType: step.nodeType,
+        scheduledTime: resumeAt,
+      });
 
       return new Promise((resolve, reject) => {
         this.delayScheduler.schedule({
           jobId,
           nodeId,
+          executionId,
           delayMs,
           onResume: async () => {
             try {
-              this.executionStore.update(executionId, { status: "running" });
+              if (this.#isCancelled(executionId)) {
+                logRuntime("wait.skipped", {
+                  workflowId: context.workflowId,
+                  executionId,
+                  patientId: context.patient?.id ?? null,
+                  nodeId,
+                  skipReason: "execution_cancelled",
+                });
+                resolve(undefined);
+                return;
+              }
+
+              this.executionStore.update(executionId, {
+                status: "running",
+                delayJobId: null,
+              });
+              await enrichAppointmentExists(context);
+
               if (nextNodeId) {
                 await this.#traverse(graph, nextNodeId, context, executionId);
               } else {
@@ -169,6 +313,10 @@ export class WorkflowExecutor {
               }
               resolve(undefined);
             } catch (e) {
+              if (this.#isCancelled(executionId)) {
+                resolve(undefined);
+                return;
+              }
               this.executionStore.update(executionId, {
                 status: "failed",
                 error: e?.message,
@@ -183,7 +331,6 @@ export class WorkflowExecutor {
 
     const nextNodeId = this.#resolveNextNode(step, result);
     if (!nextNodeId) {
-      // No outgoing edge — treat as implicit end if not error
       if (step.isEnd) {
         this.executionStore.update(executionId, {
           status: "completed",
@@ -209,12 +356,10 @@ export class WorkflowExecutor {
         outgoing.find((e) => e.sourceHandle === result.branchHandle) ||
         outgoing.find((e) => e.label === result.branchHandle);
       if (match) return match.targetId;
-      // Fallback: first edge for true, none for false
       if (result.branchHandle === "true") return outgoing[0]?.targetId ?? null;
       return outgoing[1]?.targetId ?? null;
     }
 
-    // Parallel-ready: return first; future executor can fan-out all targets
     return outgoing[0]?.targetId ?? null;
   }
 }

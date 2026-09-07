@@ -9,19 +9,19 @@ import {
 } from "reactflow";
 import { createNodeDefaults, getWorkflowNode } from "../config/workflowNodes";
 import {
-  getMessagingFieldErrors,
-} from "../panels/messaging/messagingUx";
-import { validateTriggerNodeFields } from "../panels/triggers/triggerValidation";
-import { validateConditionNodeFields } from "../panels/conditions/conditionValidation";
-import { validateDbDeleteNodeFields } from "../panels/database/dbDeleteValidation";
-import {
   createWorkflow,
   updateWorkflow,
+  fetchWorkflows,
+  fetchWorkflow,
   loadWorkflowForBuilder,
   extractWorkflowId,
   buildWorkflowPayload as buildApiWorkflowPayload,
   publishWorkflow as publishWorkflowApi,
 } from "@/services/api/workflows";
+import {
+  findExistingCampaignWorkflow,
+  FIRST_APPOINTMENT_NURTURING_CAMPAIGN_KEY,
+} from "@/utils/workflowCampaignLookup";
 import {
   createWorkflowTemplate,
   updateWorkflowTemplate,
@@ -38,8 +38,10 @@ import { useAuth } from "@/context/AuthContext";
 import useFlowToast from "./useFlowToast";
 import { useWorkflowBuilderStore } from "@/stores/workflowBuilderStore";
 import { useTriggers } from "@/hooks/useWorkflowApi";
-import { ensureUiStartNode } from "@/utils/flowEditorLifecycle";
-import { deserializeWorkflow } from "@/utils/flowDeserializer";
+import {
+  stripUiStartFromGraph,
+} from "@/utils/flowEditorLifecycle";
+import { deserializeWorkflow, readCampaignFields } from "@/utils/flowDeserializer";
 import {
   extractWorkflowGraph,
   graphNodeEdgeCounts,
@@ -49,6 +51,12 @@ import {
   isEmbedMode,
   postToParent,
 } from "@/utils/embedMode";
+import { validateWorkflowGraph as validateWorkflowGraphImpl } from "../validation/workflowGraphValidation";
+import { isValidWorkflowConnection } from "../validation/connectionRules";
+
+export function validateWorkflowGraph(nodes, edges, options = {}) {
+  return validateWorkflowGraphImpl(nodes, edges, options);
+}
 
 function buildBlankCanvas() {
   return { nodes: [], edges: [] };
@@ -64,17 +72,16 @@ function createId(prefix = "node") {
   return `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
-function buildInitialNodes() {
-  const defaults = createNodeDefaults("start");
-  return [
-    {
-      id: "start",
-      type: "workflow",
-      position: { x: 80, y: 180 },
-      data: { ...defaults, uiOnly: true },
-      dragHandle: ".nodeDragHandle",
-    },
-  ];
+/** Default placement for the first canvas node (no reserved Start slot). */
+function nextNodePosition(existingCount) {
+  if (existingCount === 0) {
+    return { x: 80, y: 180 };
+  }
+  const offset = existingCount * 28;
+  return {
+    x: 80 + (offset % 220),
+    y: 120 + (offset % 260),
+  };
 }
 
 /** Positive numeric / non-empty string ids only — null, "", 0 are create-mode. */
@@ -88,12 +95,6 @@ function hasPresentId(value) {
   return true;
 }
 
-function isEmpty(value) {
-  if (typeof value === "boolean") return false;
-  if (typeof value === "number") return Number.isNaN(value);
-  if (Array.isArray(value)) return value.length === 0;
-  return value == null || String(value).trim() === "";
-}
 
 /** Simple left-to-right auto layout from graph roots. */
 export function computeAutoLayout(nodes, edges) {
@@ -157,236 +158,6 @@ export function computeAutoLayout(nodes, edges) {
   }));
 }
 
-export function validateWorkflowGraph(nodes, edges, options = {}) {
-  const { triggerCatalog = null } = options;
-  const issues = [];
-
-  if (!nodes.length) {
-    issues.push({ level: "error", message: "Workflow has no nodes." });
-    return { valid: false, issues };
-  }
-
-  const startNodes = nodes.filter((n) => n.data?.nodeType === "start");
-  // Workflow Start is UI-only decoration (auto-injected on load, stripped on save).
-  if (startNodes.length > 1) {
-    issues.push({ level: "warning", message: "Multiple start nodes detected." });
-  }
-
-  const eventTriggers = nodes.filter((n) => {
-    const def = getWorkflowNode(n.data?.nodeType);
-    return (def?.isTrigger || n.data?.triggerKey) && n.data?.nodeType !== "start";
-  });
-  if (eventTriggers.length === 0) {
-    issues.push({
-      level: "error",
-      message: "Add exactly one event trigger (e.g. Medicine Reminder Due).",
-    });
-  } else if (eventTriggers.length > 1) {
-    issues.push({
-      level: "error",
-      message: "Only one event trigger is allowed per workflow.",
-    });
-  }
-
-  const endNodes = nodes.filter((n) => n.data?.nodeType === "end");
-  if (endNodes.length === 0) {
-    issues.push({ level: "error", message: "Add at least one End node." });
-  }
-
-  const connected = new Set();
-  edges.forEach((e) => {
-    connected.add(e.source);
-    connected.add(e.target);
-  });
-
-  const hasLoopNode = nodes.some((n) => n.data?.nodeType === "loop");
-  if (!hasLoopNode && nodes.length > 1 && edges.length > 0) {
-    const adj = new Map();
-    nodes.forEach((n) => adj.set(n.id, []));
-    edges.forEach((e) => {
-      if (adj.has(e.source)) adj.get(e.source).push(e.target);
-    });
-
-    const visiting = new Set();
-    const visited = new Set();
-    let hasCycle = false;
-
-    function dfs(id) {
-      if (visiting.has(id)) {
-        hasCycle = true;
-        return;
-      }
-      if (visited.has(id)) return;
-      visiting.add(id);
-      for (const next of adj.get(id) || []) dfs(next);
-      visiting.delete(id);
-      visited.add(id);
-    }
-
-    nodes.forEach((n) => {
-      if (!hasCycle) dfs(n.id);
-    });
-
-    if (hasCycle) {
-      issues.push({
-        level: "error",
-        message: "Circular flow detected. Use a Loop node for repeated paths.",
-      });
-    }
-  }
-
-  nodes.forEach((node) => {
-    const def = getWorkflowNode(node.data?.nodeType);
-    const isApiTrigger = Boolean(node.data?.triggerKey);
-    if (!def && !isApiTrigger && node.data?.nodeType !== "start") {
-      issues.push({
-        level: "error",
-        message: `Unknown node type on "${node.data?.label || node.id}".`,
-        nodeId: node.id,
-      });
-      return;
-    }
-
-    const effectiveDef = def ?? (isApiTrigger ? { title: node.data?.label, fields: [] } : null);
-    if (!effectiveDef) return;
-
-    const isTriggerNode =
-      isApiTrigger || def?.customPanel === "trigger" || def?.isTrigger;
-
-    if (node.id !== "start" && !connected.has(node.id) && nodes.length > 1) {
-      issues.push({
-        level: "error",
-        message: `"${node.data?.label || effectiveDef.title}" is disconnected.`,
-        nodeId: node.id,
-      });
-    }
-
-    if (isTriggerNode && node.data?.nodeType !== "start") {
-      validateTriggerNodeFields(node, triggerCatalog).forEach((issue) =>
-        issues.push(issue)
-      );
-    } else {
-      (effectiveDef.fields || []).forEach((field) => {
-        if (!field.required) return;
-        const value = node.data?.[field.key];
-        if (isEmpty(value)) {
-          issues.push({
-            level: "error",
-            message: `"${node.data?.label || effectiveDef.title}" → ${field.label} is required.`,
-            nodeId: node.id,
-            field: field.key,
-          });
-        }
-      });
-    }
-
-    if (def?.customPanel === "messaging") {
-      const fieldErrors = getMessagingFieldErrors(
-        node.data || {},
-        node.data?.nodeType
-      );
-      Object.entries(fieldErrors).forEach(([key, message]) => {
-        const already = issues.some(
-          (issue) => issue.nodeId === node.id && issue.field === key
-        );
-        if (!already) {
-          issues.push({
-            level: "error",
-            message: `"${node.data?.label || def.title}" → ${message}`,
-            nodeId: node.id,
-            field: key,
-          });
-        }
-      });
-
-      if (isEmpty(node.data?.recipient)) {
-        const already = issues.some(
-          (issue) => issue.nodeId === node.id && issue.field === "recipient"
-        );
-        if (!already) {
-          issues.push({
-            level: "error",
-            message: `"${node.data?.label || def.title}" → Recipient is required.`,
-            nodeId: node.id,
-            field: "recipient",
-          });
-        }
-      }
-    }
-
-    if (def?.customPanel === "messaging" && node.data?.repeatReminder) {
-      if (isEmpty(node.data?.retryInterval)) {
-        issues.push({
-          level: "error",
-          message: `"${node.data?.label || def.title}" → Retry Interval is required when retry is enabled.`,
-          nodeId: node.id,
-          field: "retryInterval",
-        });
-      }
-      if (
-        isEmpty(node.data?.maxRetryCount) ||
-        Number(node.data.maxRetryCount) < 1
-      ) {
-        issues.push({
-          level: "error",
-          message: `"${node.data?.label || def.title}" → Maximum Retry Count must be at least 1.`,
-          nodeId: node.id,
-          field: "maxRetryCount",
-        });
-      }
-    }
-
-    if (def?.customPanel === "condition" && node.data?.nodeType === "condition") {
-      const conditionIssues = validateConditionNodeFields(node.data, def);
-      for (const issue of conditionIssues) {
-        issues.push({
-          ...issue,
-          nodeId: node.id,
-        });
-      }
-    } else if (def?.customPanel === "condition") {
-      // Specialty condition nodes (e.g. Switch) — keep outgoing edge check only.
-    }
-
-    if (def?.customPanel === "database" && node.data?.nodeType === "dbDelete") {
-      validateDbDeleteNodeFields(node.data, def).forEach((issue) => {
-        issues.push({
-          ...issue,
-          nodeId: node.id,
-        });
-      });
-    }
-
-    if (
-      def?.customPanel === "wait" ||
-      node.data?.nodeType === "delay" ||
-      node.data?.nodeType === "wait"
-    ) {
-      const hasOutgoing = edges.some((e) => e.source === node.id);
-      if (!hasOutgoing) {
-        issues.push({
-          level: "error",
-          message: `"${node.data?.label || def?.title || "Delay"}" has no outgoing connection.`,
-          nodeId: node.id,
-        });
-      }
-    }
-  });
-
-  const hasOutgoingFromStart = edges.some((e) =>
-    startNodes.some((s) => s.id === e.source)
-  );
-  if (startNodes.length && nodes.length > 1 && !hasOutgoingFromStart) {
-    issues.push({
-      level: "error",
-      message: "Start node has no outgoing connection.",
-    });
-  }
-
-  const valid = !issues.some((i) => i.level === "error");
-  return { valid, issues };
-}
-
 /**
  * @param {object} options
  * @param {string|number|null} [options.initialWorkflowId]
@@ -414,8 +185,7 @@ export default function useFlowBuilder({
     : hasPresentId(initialWorkflowId)
       ? initialWorkflowId
       : null;
-  // Edit / seed-from-template: do NOT mount the default Start-only canvas.
-  // Create (no id): Start node only until the user adds a trigger.
+  // Edit / seed-from-template: show loading until the saved graph hydrates.
   const isExistingLoad = Boolean(entityId || hasPresentId(fromTemplateId));
 
   const router = useRouter();
@@ -430,9 +200,7 @@ export default function useFlowBuilder({
   const viewportApiRef = useRef(null);
   const lastEmbedInitKeyRef = useRef(null);
 
-  const [nodes, setNodes] = useState(() =>
-    isExistingLoad ? buildBlankCanvas().nodes : buildInitialNodes()
-  );
+  const [nodes, setNodes] = useState(() => buildBlankCanvas().nodes);
   const [edges, setEdges] = useState([]);
   const [selectedNodeIds, setSelectedNodeIds] = useState([]);
   const [workflowName, setWorkflowName] = useState(
@@ -449,6 +217,8 @@ export default function useFlowBuilder({
   const [hospitalId, setHospitalId] = useState(
     normalizeOrganizationId(initialHospitalId)
   );
+  const [campaignKey, setCampaignKey] = useState("");
+  const [suppressOnAppointment, setSuppressOnAppointment] = useState(false);
   const [templateMeta, setTemplateMeta] = useState({
     module: null,
     triggerType: null,
@@ -548,6 +318,8 @@ export default function useFlowBuilder({
         module: triggerNode?.data?.module ?? null,
         triggerKey:
           triggerNode?.data?.triggerKey ?? triggerNode?.data?.nodeType ?? null,
+        campaignKey: campaignKey.trim() ? campaignKey.trim() : null,
+        suppressOnAppointment,
       });
     },
     [
@@ -560,6 +332,8 @@ export default function useFlowBuilder({
       workflowName,
       description,
       workflowStatus,
+      campaignKey,
+      suppressOnAppointment,
       getViewport,
       isTemplateMode,
     ]
@@ -618,8 +392,8 @@ export default function useFlowBuilder({
           setBusy(null);
           return;
         }
-        // Brand-new template/workflow in embed: Start node only.
-        setNodes(buildInitialNodes());
+        // Brand-new template/workflow in embed: empty canvas.
+        setNodes(buildBlankCanvas().nodes);
         setEdges([]);
         setBusy(null);
         return;
@@ -627,9 +401,12 @@ export default function useFlowBuilder({
 
       const { nodes: savedNodes, edges: savedEdges, viewport } =
         deserializeWorkflow(graph);
-      const hydrated = ensureUiStartNode(savedNodes, savedEdges);
-      setNodes(hydrated.nodes);
-      setEdges(hydrated.edges);
+      const normalized = stripUiStartFromGraph(savedNodes, savedEdges);
+      const campaign = readCampaignFields(graph);
+      setCampaignKey(campaign.campaignKey);
+      setSuppressOnAppointment(campaign.suppressOnAppointment);
+      setNodes(normalized.nodes);
+      setEdges(normalized.edges);
       setPast([]);
       setFuture([]);
       setBusy(null);
@@ -733,7 +510,7 @@ export default function useFlowBuilder({
         setBusy("load");
         return;
       }
-      setNodes(buildInitialNodes());
+      setNodes(buildBlankCanvas().nodes);
       setEdges([]);
       setBusy(null);
       return;
@@ -741,9 +518,12 @@ export default function useFlowBuilder({
 
     const { nodes: savedNodes, edges: savedEdges, viewport } =
       deserializeWorkflow(graph);
-    const hydrated = ensureUiStartNode(savedNodes, savedEdges);
-    setNodes(hydrated.nodes);
-    setEdges(hydrated.edges);
+    const normalized = stripUiStartFromGraph(savedNodes, savedEdges);
+    const campaign = readCampaignFields(graph);
+    setCampaignKey(campaign.campaignKey);
+    setSuppressOnAppointment(campaign.suppressOnAppointment);
+    setNodes(normalized.nodes);
+    setEdges(normalized.edges);
     setPast([]);
     setFuture([]);
     setBusy(null);
@@ -796,6 +576,8 @@ export default function useFlowBuilder({
         setWorkflowName(state.name);
         setDescription(state.description ?? "");
         setWorkflowStatus(state.status ?? WORKFLOW_STATUS.INACTIVE);
+        setCampaignKey(state.campaignKey ?? "");
+        setSuppressOnAppointment(Boolean(state.suppressOnAppointment));
         if (!(fromTemplateId && !isTemplateMode)) {
           const loadedHospitalId = normalizeOrganizationId(state.hospitalId);
           if (loadedHospitalId != null) setHospitalId(loadedHospitalId);
@@ -809,7 +591,7 @@ export default function useFlowBuilder({
           nodeCount: state.nodeCount ?? state.nodes?.length ?? 0,
           edgeCount: state.edgeCount ?? state.edges?.length ?? 0,
         });
-        const hydrated = ensureUiStartNode(
+        const normalized = stripUiStartFromGraph(
           state.nodes?.length ? state.nodes : [],
           state.edges ?? []
         );
@@ -825,8 +607,8 @@ export default function useFlowBuilder({
           );
         }
 
-        setNodes(hydrated.nodes);
-        setEdges(hydrated.edges);
+        setNodes(normalized.nodes);
+        setEdges(normalized.edges);
         setPast([]);
         setFuture([]);
 
@@ -943,6 +725,17 @@ export default function useFlowBuilder({
   const onConnect = useCallback(
     (connection) => {
       if (isLocked) return;
+      if (
+        !isValidWorkflowConnection({
+          source: connection.source,
+          target: connection.target,
+          sourceHandle: connection.sourceHandle,
+          nodes,
+          edges,
+        })
+      ) {
+        return;
+      }
       setPast((prev) => [
         ...prev,
         { nodes: structuredClone(nodes), edges: structuredClone(edges) },
@@ -962,6 +755,18 @@ export default function useFlowBuilder({
     [isLocked, nodes, edges]
   );
 
+  const isValidConnection = useCallback(
+    (connection) =>
+      isValidWorkflowConnection({
+        source: connection.source,
+        target: connection.target,
+        sourceHandle: connection.sourceHandle,
+        nodes,
+        edges,
+      }),
+    [nodes, edges]
+  );
+
   const onSelectionChange = useCallback(({ nodes: selected }) => {
     const ids = (selected || []).map((n) => n.id);
     setSelectedNodeIds(ids);
@@ -974,14 +779,10 @@ export default function useFlowBuilder({
 
       const localDefaults = createNodeDefaults(trigger.key) || {};
       const id = createId(trigger.key);
-      const offset = nodes.length * 28;
       const nextNode = {
         id,
         type: "workflow",
-        position: {
-          x: 360 + (offset % 220),
-          y: 120 + (offset % 260),
-        },
+        position: nextNodePosition(nodes.length),
         data: {
           ...localDefaults,
           nodeType: trigger.key,
@@ -1015,20 +816,17 @@ export default function useFlowBuilder({
       if (!defaults) return;
 
       const id = createId(type);
-      const offset = nodes.length * 28;
       const nextNode = {
         id,
         type: "workflow",
-        position: {
-          x: 360 + (offset % 220),
-          y: 120 + (offset % 260),
-        },
+        position: nextNodePosition(nodes.length),
         data: defaults,
         dragHandle: ".nodeDragHandle",
         selected: true,
       };
 
       const cleared = nodes.map((n) => ({ ...n, selected: false }));
+
       pushHistory([...cleared, nextNode], edges);
       setSelectedNodeIds([id]);
       setPropertiesOpen(true);
@@ -1049,12 +847,7 @@ export default function useFlowBuilder({
   const deleteNodes = useCallback(
     (ids) => {
       if (isLocked) return;
-      const remove = new Set(
-        (ids || []).filter((id) => {
-          const node = nodes.find((n) => n.id === id);
-          return node && node.data?.nodeType !== "start";
-        })
-      );
+      const remove = new Set(ids || []);
       if (!remove.size) return;
 
       const nextNodes = nodes.filter((n) => !remove.has(n.id));
@@ -1130,15 +923,23 @@ export default function useFlowBuilder({
   }, [isLocked, nodes, edges, pushHistory]);
 
   const validate = useCallback(() => {
-    const result = validateWorkflowGraph(nodes, edges, { triggerCatalog });
+    const result = validateWorkflowGraph(nodes, edges, {
+      triggerCatalog,
+      campaignKey,
+      suppressOnAppointment,
+    });
     setValidation(result);
     return result;
-  }, [nodes, edges, triggerCatalog]);
+  }, [nodes, edges, triggerCatalog, campaignKey, suppressOnAppointment]);
 
   const handleSave = useCallback(async () => {
     if (busy || readOnly) return;
 
-    const result = validateWorkflowGraph(nodes, edges, { triggerCatalog });
+    const result = validateWorkflowGraph(nodes, edges, {
+      triggerCatalog,
+      campaignKey,
+      suppressOnAppointment,
+    });
     setValidation(result);
     if (!result.valid) {
       showToast("error", "Fix validation errors before saving.");
@@ -1185,12 +986,59 @@ export default function useFlowBuilder({
       }
 
       let response;
-      if (workflowId) {
-        response = await updateWorkflow(workflowId, payload);
+      let activeId = workflowId;
+      if (!activeId) {
+        // Prevent duplicate campaign records when stable campaignKey/name already exists.
+        try {
+          const listed = await fetchWorkflows({
+            search: payload.name,
+            perPage: 50,
+          });
+          const candidates = [];
+          for (const row of listed.items || []) {
+            if (!row?.id) continue;
+            try {
+              const detail = await fetchWorkflow(row.id);
+              const body = detail?.data ?? detail;
+              candidates.push({
+                id: body?.id ?? row.id,
+                name: body?.name ?? row.name,
+                configuration: body?.configuration ?? body?.config,
+              });
+            } catch {
+              candidates.push(row);
+            }
+          }
+          const existing = findExistingCampaignWorkflow(candidates, {
+            campaignKey:
+              payload.configuration?.campaignKey ||
+              campaignKey ||
+              FIRST_APPOINTMENT_NURTURING_CAMPAIGN_KEY,
+            name: payload.name,
+          });
+          if (existing?.id != null) {
+            activeId = existing.id;
+            setWorkflowId(activeId);
+            router.replace(`/workflows/${activeId}`);
+            showToast(
+              "success",
+              "Existing campaign workflow found — updating instead of creating a duplicate."
+            );
+          }
+        } catch {
+          // List lookup is best-effort; fall through to create if search fails.
+        }
+      }
+
+      if (activeId) {
+        response = await updateWorkflow(activeId, payload);
       } else {
         response = await createWorkflow(payload);
         const newId = extractWorkflowId(response);
-        if (newId != null) setWorkflowId(newId);
+        if (newId != null) {
+          setWorkflowId(newId);
+          router.replace(`/workflows/${newId}`);
+        }
       }
 
       setWorkflowStatus(WORKFLOW_STATUS.INACTIVE);
@@ -1219,13 +1067,19 @@ export default function useFlowBuilder({
     nodes,
     edges,
     triggerCatalog,
+    campaignKey,
+    suppressOnAppointment,
     router,
   ]);
 
   const handlePublish = useCallback(async () => {
     if (busy || isTemplateMode || readOnly) return;
 
-    const result = validateWorkflowGraph(nodes, edges, { triggerCatalog });
+    const result = validateWorkflowGraph(nodes, edges, {
+      triggerCatalog,
+      campaignKey,
+      suppressOnAppointment,
+    });
     setValidation(result);
     if (!result.valid) return result;
 
@@ -1307,11 +1161,18 @@ export default function useFlowBuilder({
     workflowId,
     showToast,
     triggerCatalog,
+    campaignKey,
+    suppressOnAppointment,
   ]);
 
   const liveValidation = useMemo(
-    () => validateWorkflowGraph(nodes, edges, { triggerCatalog }),
-    [nodes, edges, triggerCatalog]
+    () =>
+      validateWorkflowGraph(nodes, edges, {
+        triggerCatalog,
+        campaignKey,
+        suppressOnAppointment,
+      }),
+    [nodes, edges, triggerCatalog, campaignKey, suppressOnAppointment]
   );
 
   const status = useMemo(() => {
@@ -1363,6 +1224,10 @@ export default function useFlowBuilder({
     workflowStatus,
     setWorkflowStatus,
     hospitalId,
+    campaignKey,
+    setCampaignKey,
+    suppressOnAppointment,
+    setSuppressOnAppointment,
     templateMeta,
     mode,
     isTemplateMode,
@@ -1390,6 +1255,7 @@ export default function useFlowBuilder({
     onNodesChange,
     onEdgesChange,
     onConnect,
+    isValidConnection,
     onSelectionChange,
     addNodeFromCatalog,
     addNodeFromTrigger,

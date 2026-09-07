@@ -30,6 +30,8 @@ function normalizeTriggerLabel(value) {
  * Build sidebar groups from the local catalog plus optional API trigger catalog.
  * Local trigger cards win when the API exposes the same trigger under another
  * key or group (e.g. API "chat" vs local Triggers → On Message Received).
+ * API-only triggers (e.g. Campaign Triggered) are folded into the single
+ * "Triggers" category — never rendered as separate top-level sections.
  * @param {{ search?: string, apiTriggerCatalog?: { triggers?: { key: string }[], groups?: { group: string, triggers: unknown[] }[] } | null }} options
  */
 export function getSidebarCatalogGroups({ search = "", apiTriggerCatalog = null } = {}) {
@@ -49,40 +51,46 @@ export function getSidebarCatalogGroups({ search = "", apiTriggerCatalog = null 
   const localTriggerTitles = new Set(
     localTriggers.map((node) => normalizeTriggerLabel(node.title))
   );
-  const groups = [];
 
-  for (const { group, triggers } of apiTriggerCatalog?.groups ?? []) {
-    // Prefer the local catalog entry when the API exposes the same trigger
-    // under a different key/group (e.g. "chat" vs Triggers → On Message Received).
-    const filteredTriggers = (triggers ?? []).filter((trigger) => {
-      if (localTriggerTypes.has(trigger.key)) return false;
-      if (localTriggerTitles.has(normalizeTriggerLabel(trigger.name))) return false;
-      return matchesText(trigger.name, trigger.description, trigger.key);
-    });
+  /** API-only triggers to show inside the local Triggers accordion. */
+  const apiOnlyTriggers = [];
+  const seenApiKeys = new Set();
 
-    if (filteredTriggers.length) {
-      groups.push({
-        category: {
-          id: `api-trigger-${group}`,
-          label: group,
-          description: "Event triggers",
-        },
-        nodes: [],
-        triggers: filteredTriggers,
-      });
+  for (const { triggers } of apiTriggerCatalog?.groups ?? []) {
+    for (const trigger of triggers ?? []) {
+      if (!trigger?.key || seenApiKeys.has(trigger.key)) continue;
+      if (localTriggerTypes.has(trigger.key)) continue;
+      if (localTriggerTitles.has(normalizeTriggerLabel(trigger.name))) continue;
+      if (!matchesText(trigger.name, trigger.description, trigger.key)) continue;
+      seenApiKeys.add(trigger.key);
+      apiOnlyTriggers.push(trigger);
     }
   }
+
+  // Flat API list (no groups) — same dedupe rules as above.
+  for (const trigger of apiTriggerCatalog?.triggers ?? []) {
+    if (!trigger?.key || seenApiKeys.has(trigger.key)) continue;
+    if (localTriggerTypes.has(trigger.key)) continue;
+    if (localTriggerTitles.has(normalizeTriggerLabel(trigger.name))) continue;
+    if (!matchesText(trigger.name, trigger.description, trigger.key)) continue;
+    seenApiKeys.add(trigger.key);
+    apiOnlyTriggers.push(trigger);
+  }
+
+  const groups = [];
 
   for (const category of WORKFLOW_CATEGORIES) {
     const nodes = WORKFLOW_NODES.filter((node) => {
       if (node.isStart) return false;
       if (node.category !== category.id) return false;
-      // Prefer local trigger cards; matching API entries are filtered out above. 
       return matchesText(node.title, node.description, node.type);
     });
 
-    if (nodes.length) {
-      groups.push({ category, nodes, triggers: [] });
+    const triggers =
+      category.id === "triggers" ? apiOnlyTriggers : [];
+
+    if (nodes.length || triggers.length) {
+      groups.push({ category, nodes, triggers });
     }
   }
 

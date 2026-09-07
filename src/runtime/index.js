@@ -20,6 +20,29 @@ import {
   validateJexlSyntax,
   buildJexlContext,
 } from "./engines/jexlCondition";
+import {
+  setAppointmentLookup,
+  clearAppointmentLookup,
+  resolveAppointmentExists,
+  enrichAppointmentExists,
+  isActivePatientAppointment,
+} from "./services/AppointmentLookup";
+import {
+  cancelCampaignExecutions,
+  FIRST_APPOINTMENT_NURTURING_CAMPAIGN,
+  resolveCampaignFromConfig,
+} from "./services/CampaignSuppression";
+import {
+  deriveFollowupObject,
+  resolveRelativeDateTargetMs,
+} from "./services/FollowupContext";
+import {
+  clearMessageIdempotency,
+  buildMessageIdempotencyKey,
+  hasSentMessage,
+  markMessageSent,
+} from "./services/MessageIdempotency";
+import { logRuntime } from "./logging/StructuredLogger";
 
 const channelManager = createChannelManager({ communicationLogStore });
 
@@ -52,6 +75,21 @@ export {
   buildJexlContext,
   delayScheduler,
   analyticsEngine,
+  setAppointmentLookup,
+  clearAppointmentLookup,
+  resolveAppointmentExists,
+  enrichAppointmentExists,
+  isActivePatientAppointment,
+  cancelCampaignExecutions,
+  FIRST_APPOINTMENT_NURTURING_CAMPAIGN,
+  resolveCampaignFromConfig,
+  deriveFollowupObject,
+  resolveRelativeDateTargetMs,
+  clearMessageIdempotency,
+  buildMessageIdempotencyKey,
+  hasSentMessage,
+  markMessageSent,
+  logRuntime,
 };
 
 /**
@@ -81,4 +119,29 @@ export function getExecutionTrace(executionId) {
  */
 export function getWorkflowAnalytics(workflowId = null) {
   return analyticsEngine.getWorkflowMetrics(workflowId);
+}
+
+/**
+ * When appointmentBooked fires, cancel pending first-appointment nurturing
+ * (or any campaignKey) for this patient — reusable, not workflow-id hardcoded.
+ */
+export function onAppointmentBooked({
+  patientId,
+  hospitalId = null,
+  campaignKey = FIRST_APPOINTMENT_NURTURING_CAMPAIGN,
+}) {
+  const result = cancelCampaignExecutions({
+    executionStore: workflowExecutionStore,
+    patientId,
+    hospitalId,
+    campaignKey,
+    reason: "appointment_booked",
+  });
+  logRuntime("campaign.cancelled", {
+    patientId,
+    hospitalId,
+    campaignKey,
+    cancelledExecutions: result.cancelled,
+  });
+  return result;
 }

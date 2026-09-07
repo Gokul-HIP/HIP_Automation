@@ -1,0 +1,70 @@
+{
+  "meta": {
+    "name": "Medicine Reminder Campaign",
+    "focusNodeType": "medicineReminder",
+    "campaignKey": "medicine_reminder",
+    "notes": [
+      "Reuses existing medicineReminder trigger — no new node.",
+      "Laravel must schedule due times and inject medicine context."
+    ]
+  },
+  "workflow": {
+    "name": "Medicine Reminder",
+    "organization_id": 2,
+    "hospital_id": 12,
+    "status": "inactive",
+    "trigger": "medicineReminder",
+    "module": "prescriptions",
+    "configuration": {
+      "builderVersion": "1",
+      "reactFlowVersion": "12.x",
+      "campaignKey": "medicine_reminder",
+      "viewport": { "x": 0, "y": 0, "zoom": 1 },
+      "nodes": [
+        {
+          "id": "n_trigger",
+          "type": "workflow",
+          "position": { "x": 40, "y": 160 },
+          "data": {
+            "nodeType": "medicineReminder",
+            "category": "triggers",
+            "label": "Medicine Reminder Due",
+            "reminderTiming": "at_due",
+            "minutesBefore": 30,
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_msg",
+          "type": "workflow",
+          "position": { "x": 320, "y": 160 },
+          "data": {
+            "nodeType": "sendWhatsApp",
+            "category": "messaging",
+            "label": "Send medicine reminder",
+            "templateId": "",
+            "recipient": "patient",
+            "message": "Hi {{patient_name}}, reminder to take {{medicine_name}} ({{dosage}}, {{frequency}}).",
+            "campaignStep": "medicine_reminder_1",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_end",
+          "type": "workflow",
+          "position": { "x": 600, "y": 160 },
+          "data": {
+            "nodeType": "end",
+            "category": "flow",
+            "label": "End",
+            "status": "draft"
+          }
+        }
+      ],
+      "edges": [
+        { "id": "e1", "source": "n_trigger", "target": "n_msg" },
+        { "id": "e2", "source": "n_msg", "target": "n_end" }
+      ]
+    }
+  }
+}

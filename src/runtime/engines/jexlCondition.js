@@ -1,4 +1,5 @@
 import jexl from "jexl";
+import { deriveFollowupObject } from "../services/FollowupContext";
 
 /**
  * JEXL expression helpers for Condition nodes.
@@ -6,6 +7,19 @@ import jexl from "jexl";
  */
 
 export const JEXL_CONDITION_EXAMPLES = [
+  "appointment.exists == false",
+  "appointment.exists == true",
+  "!appointment.exists",
+  "followup.exists == true",
+  "followup.exists == false",
+  "patient.age >= 60",
+  "patient.age < 18",
+  'patient.gender == "female"',
+  'patient.relationship == "parent"',
+  'patient.relationship == "child"',
+  'appointment.department == "Dentistry"',
+  "last_visit >= 30",
+  "last_visit >= 90",
   'customer.age >= 18',
   'customer.country == "India"',
   "payment.amount >= 1000",
@@ -13,7 +27,6 @@ export const JEXL_CONDITION_EXAMPLES = [
   "!payment.success",
   "patient.phone != null",
   'customer.country == "India" && payment.success',
-  "patient.age >= 60",
   'doctor.specialization == "Cardiology"',
   'invoice.status == "Paid"',
   "workflow.ai_summary != null",
@@ -38,6 +51,7 @@ export function tokenToJexlPath(token) {
     "doctor",
     "hospital",
     "appointment",
+    "followup",
     "payment",
     "invoice",
     "prescription",
@@ -82,24 +96,56 @@ export function validateJexlSyntax(expression) {
  * @param {import('../types').ExecutionContext | Record<string, unknown>} context
  */
 export function buildJexlContext(context = {}) {
-  const patient = context.patient && typeof context.patient === "object" ? context.patient : {};
+  const patient =
+    context.patient && typeof context.patient === "object"
+      ? { ...context.patient }
+      : {};
+  if (patient.is_minor == null && patient.age != null) {
+    patient.is_minor = Number(patient.age) < 18;
+  }
+
   const variables =
-    context.variables && typeof context.variables === "object" ? context.variables : {};
+    context.variables && typeof context.variables === "object"
+      ? context.variables
+      : {};
   const workflow = {
     ...variables,
     ai_summary: variables.ai_summary ?? context.ai_summary ?? null,
   };
 
+  const appointment = (() => {
+    const appt =
+      context.appointment && typeof context.appointment === "object"
+        ? { ...context.appointment }
+        : {};
+    if (typeof appt.exists !== "boolean") {
+      appt.exists = Boolean(appt.exists);
+    }
+    return appt;
+  })();
+
+  const followup = deriveFollowupObject(appointment, context.followup);
+
+  const lastVisit =
+    patient.last_visit_days ??
+    patient.last_visit ??
+    variables.last_visit ??
+    context.last_visit ??
+    null;
+
   return {
     patient,
     // Spec examples use `customer.*` — alias to patient.
     customer: patient,
-    doctor: context.doctor && typeof context.doctor === "object" ? context.doctor : {},
-    hospital: context.hospital && typeof context.hospital === "object" ? context.hospital : {},
-    appointment:
-      context.appointment && typeof context.appointment === "object"
-        ? context.appointment
+    doctor:
+      context.doctor && typeof context.doctor === "object" ? context.doctor : {},
+    hospital:
+      context.hospital && typeof context.hospital === "object"
+        ? context.hospital
         : {},
+    appointment,
+    followup,
+    last_visit: lastVisit != null ? Number(lastVisit) : null,
     payment:
       context.payment && typeof context.payment === "object"
         ? context.payment
@@ -120,11 +166,16 @@ export function buildJexlContext(context = {}) {
       context.organization && typeof context.organization === "object"
         ? context.organization
         : {},
-    medicine: context.medicine && typeof context.medicine === "object" ? context.medicine : {},
+    medicine:
+      context.medicine && typeof context.medicine === "object"
+        ? context.medicine
+        : {},
     workflow,
     variables,
     outputs:
-      context.outputs && typeof context.outputs === "object" ? context.outputs : {},
+      context.outputs && typeof context.outputs === "object"
+        ? context.outputs
+        : {},
   };
 }
 

@@ -7,6 +7,7 @@ import { normalizeWorkflowStatus } from "./workflowStatus";
 import { normalizeOrganizationId, normalizeUserId } from "./organization";
 import { normalizeConditionNodeData } from "./conditionNodeSerialization";
 import { normalizeMedicineReminderData } from "@/components/flow/config/triggers";
+import { stripUiStartFromGraph } from "./flowEditorLifecycle";
 
 const BUILDER_VERSION = "1";
 const REACT_FLOW_VERSION = "12.x";
@@ -80,23 +81,17 @@ export function serializeWorkflow({
   organizationId = null,
   hospitalId = null,
   createdBy = null,
+  campaignKey = null,
+  suppressOnAppointment = null,
 }) {
   const vp = viewport ?? { x: 0, y: 0, zoom: 1 };
   const orgId = normalizeOrganizationId(organizationId);
   const hospId = normalizeOrganizationId(hospitalId);
   const createdById = normalizeUserId(createdBy);
 
-  const startIds = new Set(
-    (nodes || [])
-      .filter((node) => node?.data?.nodeType === "start")
-      .map((node) => String(node.id))
-  );
-  const payloadNodes = (nodes || []).filter(
-    (node) => !startIds.has(String(node.id))
-  );
-  const payloadEdges = (edges || []).filter(
-    (edge) =>
-      !startIds.has(String(edge.source)) && !startIds.has(String(edge.target))
+  const { nodes: payloadNodes, edges: payloadEdges } = stripUiStartFromGraph(
+    nodes,
+    edges
   );
 
   /** @type {import('../types/workflow').MedicineWorkflowPayload} */
@@ -114,6 +109,12 @@ export function serializeWorkflow({
         y: Number(vp.y ?? 0),
         zoom: Number(vp.zoom ?? 1),
       },
+      ...(campaignKey != null && String(campaignKey).trim() !== ""
+        ? { campaignKey: String(campaignKey).trim() }
+        : {}),
+      ...(suppressOnAppointment != null
+        ? { suppressOnAppointment: Boolean(suppressOnAppointment) }
+        : {}),
       nodes: payloadNodes.map(serializeNode),
       edges: payloadEdges.map(serializeEdge),
     },

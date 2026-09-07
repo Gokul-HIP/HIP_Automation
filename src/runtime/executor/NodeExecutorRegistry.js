@@ -81,13 +81,18 @@ export class NodeExecutorRegistry {
   }
 
   async #executeWait(step, context) {
-    const delayMs = delayScheduler.calculateDelayMs(step.data);
+    const delayMs = delayScheduler.calculateDelayMs(step.data, context);
     const jobId = createExecutionId("delay");
 
     return {
       action: "delay",
       delayMs,
-      output: { jobId, delayMs, resumeNodeId: step.id },
+      output: {
+        jobId,
+        delayMs,
+        resumeNodeId: step.id,
+        waitType: step.data?.waitType ?? "duration",
+      },
     };
   }
 

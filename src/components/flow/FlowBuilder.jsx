@@ -128,6 +128,7 @@ export default function FlowBuilder({
           onNodesChange={flow.onNodesChange}
           onEdgesChange={flow.onEdgesChange}
           onConnect={flow.onConnect}
+          isValidConnection={flow.isValidConnection}
           onSelectionChange={flow.onSelectionChange}
           onMoveEnd={flow.setZoom}
           onToggleLock={
@@ -150,6 +151,15 @@ export default function FlowBuilder({
           open={flow.propertiesOpen}
           node={flow.selectedNode}
           workflowTriggerKey={flow.workflowTriggerKey}
+          campaignKey={flow.campaignKey}
+          suppressOnAppointment={flow.suppressOnAppointment}
+          onCampaignKeyChange={
+            readOnly ? undefined : flow.setCampaignKey
+          }
+          onSuppressOnAppointmentChange={
+            readOnly ? undefined : flow.setSuppressOnAppointment
+          }
+          showCampaignSettings={!flow.isTemplateMode}
           onClose={() => flow.setPropertiesOpen(false)}
           onChange={readOnly ? noop : flow.updateNodeData}
           onDuplicate={

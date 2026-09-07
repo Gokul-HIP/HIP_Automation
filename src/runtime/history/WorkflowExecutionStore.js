@@ -9,7 +9,13 @@ export class WorkflowExecutionStore {
     this.executions = new Map();
   }
 
-  create({ workflowId, workflowName }) {
+  create({
+    workflowId,
+    workflowName,
+    patientId = null,
+    hospitalId = null,
+    campaignKey = null,
+  }) {
     const id = createExecutionId("exec");
     const record = {
       id,
@@ -21,6 +27,12 @@ export class WorkflowExecutionStore {
       completedAt: null,
       durationMs: null,
       error: null,
+      cancelReason: null,
+      patientId: patientId != null ? String(patientId) : null,
+      hospitalId: hospitalId != null ? String(hospitalId) : null,
+      campaignKey: campaignKey != null ? String(campaignKey) : null,
+      delayJobId: null,
+      resumeAt: null,
       trace: [],
     };
     this.executions.set(id, record);
@@ -39,12 +51,18 @@ export class WorkflowExecutionStore {
     return this.executions.get(id) ?? null;
   }
 
-  list({ workflowId = null, status = null } = {}) {
+  list({ workflowId = null, status = null, patientId = null, campaignKey = null } = {}) {
     return [...this.executions.values()].filter((e) => {
       if (workflowId && String(e.workflowId) !== String(workflowId)) return false;
       if (status && e.status !== status) return false;
+      if (patientId && String(e.patientId ?? "") !== String(patientId)) return false;
+      if (campaignKey && String(e.campaignKey ?? "") !== String(campaignKey)) return false;
       return true;
     });
+  }
+
+  clear() {
+    this.executions.clear();
   }
 }
 

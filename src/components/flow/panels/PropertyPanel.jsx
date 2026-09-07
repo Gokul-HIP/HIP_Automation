@@ -12,6 +12,7 @@ import ConditionProperties from "./conditions/ConditionProperties";
 import WaitProperties from "./wait/WaitProperties";
 import DatabaseProperties from "./database/DatabaseProperties";
 import EndProperties from "./flow/EndProperties";
+import WorkflowCampaignSettings from "./WorkflowCampaignSettings";
 import styles from "../styles/flow.module.css";
 
 function PropertyField({ field, value, onChange }) {
@@ -132,6 +133,11 @@ export default function PropertyPanel({
   open,
   node,
   workflowTriggerKey = null,
+  campaignKey = "",
+  suppressOnAppointment = false,
+  onCampaignKeyChange,
+  onSuppressOnAppointmentChange,
+  showCampaignSettings = true,
   onClose,
   onChange,
   onDuplicate,
@@ -180,10 +186,14 @@ export default function PropertyPanel({
               <h2 className={styles.panelTitle}>
                 {node
                   ? node.data?.label || def?.title || "Node"
-                  : "No selection"}
+                  : showCampaignSettings
+                    ? "Workflow"
+                    : "No selection"}
               </h2>
               {category ? (
                 <p className={styles.panelSubtitle}>{category.label}</p>
+              ) : !node && showCampaignSettings ? (
+                <p className={styles.panelSubtitle}>Campaign settings</p>
               ) : null}
             </div>
             <button
@@ -197,9 +207,26 @@ export default function PropertyPanel({
           </div>
 
           {!node || (!def && !isApiTrigger) ? (
-            <p className={styles.emptyHint}>
-              Select a node on the canvas to edit its configuration.
-            </p>
+            showCampaignSettings ? (
+              <div className={styles.panelBodyStack}>
+                <div className={styles.panelScrollRegion}>
+                  <WorkflowCampaignSettings
+                    campaignKey={campaignKey}
+                    suppressOnAppointment={suppressOnAppointment}
+                    onCampaignKeyChange={onCampaignKeyChange}
+                    onSuppressOnAppointmentChange={onSuppressOnAppointmentChange}
+                    readOnly={readOnly}
+                  />
+                  <p className={styles.emptyHint}>
+                    Select a node on the canvas to edit its configuration.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className={styles.emptyHint}>
+                Select a node on the canvas to edit its configuration.
+              </p>
+            )
           ) : (
             <div className={styles.panelBodyStack}>
               {!readOnly ? (

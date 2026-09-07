@@ -22,6 +22,7 @@ export const WORKFLOW_VARIABLE_GROUPS = [
       entry("patient_email", "Patient Email"),
       entry("patient_age", "Patient Age"),
       entry("patient_gender", "Patient Gender"),
+      entry("patient_relationship", "Relationship (parent/child)"),
     ],
   },
   {
@@ -38,6 +39,9 @@ export const WORKFLOW_VARIABLE_GROUPS = [
       entry("appointment_time", "Appointment Time"),
       entry("appointment_id", "Appointment ID"),
       entry("branch_name", "Branch"),
+      entry("booking_link", "Booking Link"),
+      entry("followup_date", "Follow-up Date"),
+      entry("department", "Department"),
     ],
   },
   {
@@ -95,12 +99,17 @@ export const CONDITION_FIELD_GROUPS = [
       { value: "state", label: "State" },
       { value: "disease", label: "Disease" },
       { value: "patient_segment", label: "Patient Segment" },
-      { value: "last_visit", label: "Last Visit" },
+      { value: "patient.relationship", label: "Relationship (parent/child)" },
+      { value: "patient.is_minor", label: "Is Minor" },
+      { value: "last_visit", label: "Last Visit (days)" },
     ],
   },
   {
     label: "Appointment",
     options: [
+      { value: "appointment.exists", label: "Has Appointment (exists)" },
+      { value: "followup.exists", label: "Follow-up set (exists)" },
+      { value: "followup.date", label: "Follow-up Date" },
       { value: "appointment_status", label: "Status" },
       { value: "appointment_date", label: "Date" },
       { value: "appointment_time", label: "Time" },

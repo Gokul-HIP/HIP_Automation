@@ -54,6 +54,28 @@ export class VariableResolver {
       }
     }
 
+    // Reusable booking link aliases (hospital or variables).
+    const bookingLink =
+      flat.booking_link ??
+      flat.hospital_booking_link ??
+      flat["hospital.booking_link"] ??
+      flat.booking_url ??
+      flat["hospital.booking_url"] ??
+      null;
+    if (bookingLink != null && bookingLink !== "") {
+      flat.booking_link = bookingLink;
+      flat.BookingLink = bookingLink;
+    }
+
+    const hospitalPhone =
+      flat.hospital_phone ??
+      flat["hospital.phone"] ??
+      flat.phone ??
+      null;
+    if (hospitalPhone != null && hospitalPhone !== "") {
+      flat.hospital_phone = hospitalPhone;
+    }
+
     return flat;
   }
 

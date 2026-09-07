@@ -1,0 +1,282 @@
+{
+  "meta": {
+    "name": "First Appointment Nurturing",
+    "focusNodeType": "patientRegistered",
+    "campaignKey": "first_appointment_nurturing",
+    "hospitalIsolation": {
+      "hospital_id": 12,
+      "rule": "Production workflow lookup MUST filter trigger_type + status(published/active) + hospital_id. No global/null hospital fallback."
+    },
+    "notes": [
+      "Reusable patientRegistered → wait → appointment.exists condition → message campaign.",
+      "configuration.campaignKey enables cancel-on-appointmentBooked without hardcoding workflow id.",
+      "Each messaging step re-evaluates appointment.exists before send.",
+      "Waits use existing duration mode (7 days, 2 days, 24 hours, 2 hours)."
+    ]
+  },
+  "workflow": {
+    "name": "First Appointment Nurturing",
+    "organization_id": 2,
+    "hospital_id": 12,
+    "status": "inactive",
+    "trigger": "patientRegistered",
+    "module": "patients",
+    "configuration": {
+      "builderVersion": "1",
+      "reactFlowVersion": "12.x",
+      "campaignKey": "first_appointment_nurturing",
+      "suppressOnAppointment": true,
+      "viewport": { "x": 0, "y": 0, "zoom": 1 },
+      "nodes": [
+        {
+          "id": "n_patientRegistered",
+          "type": "workflow",
+          "position": { "x": 40, "y": 200 },
+          "data": {
+            "nodeType": "patientRegistered",
+            "category": "triggers",
+            "label": "Patient Registered",
+            "status": "draft",
+            "registrationSource": ["any"],
+            "patientType": "any"
+          }
+        },
+        {
+          "id": "n_wait_7d",
+          "type": "workflow",
+          "position": { "x": 280, "y": 200 },
+          "data": {
+            "nodeType": "wait",
+            "category": "wait",
+            "label": "Wait 7 days",
+            "waitType": "duration",
+            "amount": 7,
+            "unit": "days",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_cond_1",
+          "type": "workflow",
+          "position": { "x": 520, "y": 200 },
+          "data": {
+            "nodeType": "condition",
+            "category": "conditions",
+            "label": "No appointment yet",
+            "name": "No appointment yet",
+            "expression": "appointment.exists == false",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_msg_1",
+          "type": "workflow",
+          "position": { "x": 760, "y": 120 },
+          "data": {
+            "nodeType": "sendWhatsApp",
+            "category": "messaging",
+            "label": "Nurture step 1",
+            "templateId": "",
+            "recipient": "patient",
+            "message": "Hello {{patient_name}},\n\nYou have not booked your first appointment with {{hospital_name}} yet.\n\nPlease book here:\n{{booking_link}}\n\nFor assistance, contact {{hospital_phone}}.",
+            "campaignStep": "nurture_1",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_wait_2d",
+          "type": "workflow",
+          "position": { "x": 1000, "y": 120 },
+          "data": {
+            "nodeType": "wait",
+            "category": "wait",
+            "label": "Wait 2 days",
+            "waitType": "duration",
+            "amount": 2,
+            "unit": "days",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_cond_2",
+          "type": "workflow",
+          "position": { "x": 1240, "y": 120 },
+          "data": {
+            "nodeType": "condition",
+            "category": "conditions",
+            "label": "Still no appointment",
+            "name": "Still no appointment",
+            "expression": "appointment.exists == false",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_msg_2",
+          "type": "workflow",
+          "position": { "x": 1480, "y": 40 },
+          "data": {
+            "nodeType": "sendSms",
+            "category": "messaging",
+            "label": "Nurture step 2",
+            "templateId": "",
+            "recipient": "patient",
+            "message": "Hi {{patient_name}}, reminder to book your first visit at {{hospital_name}}: {{booking_link}}",
+            "campaignStep": "nurture_2",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_wait_24h",
+          "type": "workflow",
+          "position": { "x": 1720, "y": 40 },
+          "data": {
+            "nodeType": "wait",
+            "category": "wait",
+            "label": "Wait 24 hours",
+            "waitType": "duration",
+            "amount": 24,
+            "unit": "hours",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_cond_3",
+          "type": "workflow",
+          "position": { "x": 1960, "y": 40 },
+          "data": {
+            "nodeType": "condition",
+            "category": "conditions",
+            "label": "Appointment still missing",
+            "name": "Appointment still missing",
+            "expression": "appointment.exists == false",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_msg_3",
+          "type": "workflow",
+          "position": { "x": 2200, "y": 0 },
+          "data": {
+            "nodeType": "sendPush",
+            "category": "messaging",
+            "label": "Nurture step 3",
+            "templateId": "",
+            "recipient": "patient",
+            "title": "Book your first appointment",
+            "body": "{{patient_name}}, book with {{hospital_name}}: {{booking_link}}",
+            "priority": "normal",
+            "campaignStep": "nurture_3",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_wait_2h",
+          "type": "workflow",
+          "position": { "x": 2440, "y": 0 },
+          "data": {
+            "nodeType": "wait",
+            "category": "wait",
+            "label": "Wait 2 hours",
+            "waitType": "duration",
+            "amount": 2,
+            "unit": "hours",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_cond_4",
+          "type": "workflow",
+          "position": { "x": 2680, "y": 0 },
+          "data": {
+            "nodeType": "condition",
+            "category": "conditions",
+            "label": "Final appointment check",
+            "name": "Final appointment check",
+            "expression": "appointment.exists == false",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_msg_4",
+          "type": "workflow",
+          "position": { "x": 2920, "y": 0 },
+          "data": {
+            "nodeType": "sendWhatsApp",
+            "category": "messaging",
+            "label": "Nurture step 4",
+            "templateId": "",
+            "recipient": "patient",
+            "message": "Final reminder from {{hospital_name}}. Book now: {{booking_link}} ({{hospital_phone}})",
+            "campaignStep": "nurture_4",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_end_success",
+          "type": "workflow",
+          "position": { "x": 3160, "y": 0 },
+          "data": {
+            "nodeType": "end",
+            "category": "flow",
+            "label": "End",
+            "status": "draft"
+          }
+        },
+        {
+          "id": "n_end_booked",
+          "type": "workflow",
+          "position": { "x": 760, "y": 320 },
+          "data": {
+            "nodeType": "end",
+            "category": "flow",
+            "label": "End (booked)",
+            "status": "draft"
+          }
+        }
+      ],
+      "edges": [
+        { "id": "e1", "source": "n_patientRegistered", "target": "n_wait_7d" },
+        { "id": "e2", "source": "n_wait_7d", "target": "n_cond_1" },
+        { "id": "e3", "source": "n_cond_1", "target": "n_msg_1", "sourceHandle": "true" },
+        { "id": "e4", "source": "n_cond_1", "target": "n_end_booked", "sourceHandle": "false" },
+        { "id": "e5", "source": "n_msg_1", "target": "n_wait_2d" },
+        { "id": "e6", "source": "n_wait_2d", "target": "n_cond_2" },
+        { "id": "e7", "source": "n_cond_2", "target": "n_msg_2", "sourceHandle": "true" },
+        { "id": "e8", "source": "n_cond_2", "target": "n_end_booked", "sourceHandle": "false" },
+        { "id": "e9", "source": "n_msg_2", "target": "n_wait_24h" },
+        { "id": "e10", "source": "n_wait_24h", "target": "n_cond_3" },
+        { "id": "e11", "source": "n_cond_3", "target": "n_msg_3", "sourceHandle": "true" },
+        { "id": "e12", "source": "n_cond_3", "target": "n_end_booked", "sourceHandle": "false" },
+        { "id": "e13", "source": "n_msg_3", "target": "n_wait_2h" },
+        { "id": "e14", "source": "n_wait_2h", "target": "n_cond_4" },
+        { "id": "e15", "source": "n_cond_4", "target": "n_msg_4", "sourceHandle": "true" },
+        { "id": "e16", "source": "n_cond_4", "target": "n_end_booked", "sourceHandle": "false" },
+        { "id": "e17", "source": "n_msg_4", "target": "n_end_success" }
+      ]
+    }
+  },
+  "test": {
+    "context": {
+      "patient": {
+        "id": "p_1001",
+        "name": "Asha Verma",
+        "mobile": "+919876543210",
+        "email": "asha@example.com"
+      },
+      "hospital": {
+        "id": 12,
+        "name": "Sunrise Hospital",
+        "phone": "+911123456789",
+        "booking_link": "https://book.sunrise.example/first"
+      },
+      "appointment": {},
+      "trigger": {
+        "type": "patientRegistered",
+        "triggered_at": "2026-09-05T10:00:00+05:30"
+      },
+      "triggerPayload": {
+        "trigger_type": "patientRegistered"
+      }
+    }
+  }
+}
