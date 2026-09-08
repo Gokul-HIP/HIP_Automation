@@ -23,10 +23,7 @@ import {
   useDuplicateWorkflow,
 } from "@/hooks/useWorkflowApi";
 import { extractWorkflowId } from "@/services/api/workflows";
-import {
-  filterWorkflowItems,
-  paginateWorkflowItems,
-} from "@/utils/workflowList";
+import { resolveWorkflowListPagination } from "@/utils/workflowList";
 import styles from "./Workflows.module.css";
 
 const PER_PAGE = 10;
@@ -49,6 +46,10 @@ export default function WorkflowsView() {
     return () => window.clearTimeout(handle);
   }, [search]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, status, sort]);
+
   const { data, isLoading, error, refetch, isFetching } = useWorkflows({
     search: debouncedSearch,
     status,
@@ -61,26 +62,28 @@ export default function WorkflowsView() {
   const publishMutation = usePublishWorkflow();
   const duplicateMutation = useDuplicateWorkflow();
 
-  const workflows = data?.items ?? [];
+  const paginated = useMemo(
+    () =>
+      resolveWorkflowListPagination(data, page, PER_PAGE, {
+        search: debouncedSearch,
+        status,
+        sort,
+      }),
+    [data, page, debouncedSearch, status, sort]
+  );
+
+  // If delete/filter shrinks lastPage below current page, step back safely.
+  useEffect(() => {
+    if (!data) return;
+    if (paginated.lastPage >= 1 && page > paginated.lastPage) {
+      setPage(paginated.lastPage);
+    }
+  }, [data, page, paginated.lastPage]);
 
   const showToast = useCallback((type, message) => {
     setToast({ type, message });
     window.setTimeout(() => setToast(null), 4200);
   }, []);
-
-  const filtered = useMemo(
-    () => filterWorkflowItems(workflows, { search, status, sort }),
-    [workflows, search, status, sort]
-  );
-
-  const paginated = useMemo(
-    () => paginateWorkflowItems(filtered, page, PER_PAGE),
-    [filtered, page]
-  );
-
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, status, sort]);
 
   const handleCreate = () => setCreateOpen(true);
 
@@ -133,7 +136,7 @@ export default function WorkflowsView() {
     } catch (err) {
       showToast("error", err?.message || "Failed to duplicate workflow.");
     } finally {
-      setBusyAction(null); 
+      setBusyAction(null);
     }
   };
 
@@ -143,15 +146,26 @@ export default function WorkflowsView() {
       await deleteMutation.mutateAsync(deleteTarget.id);
       setDeleteTarget(null);
       showToast("success", "Workflow deleted successfully.");
-      await refetch();
+      const result = await refetch();
+      const next = resolveWorkflowListPagination(
+        result?.data,
+        page,
+        PER_PAGE,
+        { search: debouncedSearch, status, sort }
+      );
+      if (page > next.lastPage) {
+        setPage(Math.max(1, next.lastPage));
+      }
     } catch (err) {
       showToast("error", err?.message || "Failed to delete workflow.");
     }
   };
 
   const loading = isLoading || isFetching;
-  const showEmpty = !loading && !error && paginated.items.length === 0;
-  const showTable = !loading && !error && paginated.items.length > 0;
+  const hasRows = paginated.items.length > 0;
+  const showEmpty = !loading && !error && !hasRows;
+  const showTable = !error && hasRows;
+  const showInitialLoading = loading && !hasRows && !error;
 
   return (
     <div className={styles.page}>
@@ -178,7 +192,7 @@ export default function WorkflowsView() {
         }
       />
 
-      {loading && workflows.length === 0 ? (
+      {showInitialLoading ? (
         <div className={styles.stateCard}>
           <span className={styles.loadingSpinner} aria-hidden="true" />
           <p className={styles.stateText}>Loading workflows…</p>
@@ -226,8 +240,12 @@ export default function WorkflowsView() {
           <div className={styles.pagination}>
             <p className={styles.paginationText}>
               Showing{" "}
-              <span className={styles.paginationStrong}>{paginated.items.length}</span> of{" "}
-              <span className={styles.paginationStrong}>{paginated.total}</span> workflows
+              <span className={styles.paginationStrong}>
+                {paginated.items.length}
+              </span>{" "}
+              of{" "}
+              <span className={styles.paginationStrong}>{paginated.total}</span>{" "}
+              workflows
             </p>
             <div className={styles.paginationControls}>
               <button
@@ -245,7 +263,9 @@ export default function WorkflowsView() {
               <button
                 type="button"
                 onClick={() =>
-                  setPage((current) => Math.min(paginated.totalPages, current + 1))
+                  setPage((current) =>
+                    Math.min(paginated.totalPages, current + 1)
+                  )
                 }
                 disabled={loading || paginated.page >= paginated.totalPages}
                 className={styles.pageBtn}

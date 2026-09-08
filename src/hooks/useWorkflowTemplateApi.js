@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import {
   fetchWorkflowTemplates,
   fetchAdminWorkflowTemplates,
@@ -32,6 +32,7 @@ export function useAdminWorkflowTemplates(params = {}) {
   return useQuery({
     queryKey: templateQueryKeys.templates({ ...params, scope: "admin" }),
     queryFn: () => fetchAdminWorkflowTemplates(params),
+    placeholderData: keepPreviousData,
   });
 }
 

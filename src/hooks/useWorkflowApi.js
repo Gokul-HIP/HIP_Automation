@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import {
   fetchWorkflows,
   fetchWorkflow,
@@ -30,6 +30,7 @@ export function useWorkflows(params = {}) {
   return useQuery({
     queryKey: queryKeys.workflows(params),
     queryFn: () => fetchWorkflows(params),
+    placeholderData: keepPreviousData,
   });
 }
 

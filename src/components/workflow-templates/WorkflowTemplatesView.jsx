@@ -20,8 +20,7 @@ import {
   useDuplicateWorkflowTemplate,
 } from "@/hooks/useWorkflowTemplateApi";
 import {
-  filterWorkflowItems,
-  paginateWorkflowItems,
+  resolveWorkflowListPagination,
 } from "@/utils/workflowList";
 import styles from "@/components/workflow/Workflows.module.css";
 
@@ -58,27 +57,27 @@ export default function WorkflowTemplatesView() {
   const deleteMutation = useDeleteWorkflowTemplate();
   const duplicateMutation = useDuplicateWorkflowTemplate();
 
-  const templates = useMemo(() => data?.items ?? [], [data?.items]);
+  const paginated = useMemo(
+    () =>
+      resolveWorkflowListPagination(data, page, PER_PAGE, {
+        search: debouncedSearch,
+        status,
+        sort: "newest",
+      }),
+    [data, page, debouncedSearch, status]
+  );
+
+  useEffect(() => {
+    if (!data) return;
+    if (paginated.lastPage >= 1 && page > paginated.lastPage) {
+      setPage(paginated.lastPage);
+    }
+  }, [data, page, paginated.lastPage]);
 
   const showToast = useCallback((type, message) => {
     setToast({ type, message });
     window.setTimeout(() => setToast(null), 4200);
   }, []);
-
-  const filtered = useMemo(
-    () =>
-      filterWorkflowItems(templates, {
-        search,
-        status,
-        sort: "newest",
-      }),
-    [templates, search, status]
-  );
-
-  const paginated = useMemo(
-    () => paginateWorkflowItems(filtered, page, PER_PAGE),
-    [filtered, page]
-  );
 
   const handleStatusChange = (value) => {
     setStatus(value);
@@ -116,8 +115,9 @@ export default function WorkflowTemplatesView() {
   };
 
   const loading = isLoading || isFetching;
-  const showEmpty = !loading && !error && paginated.items.length === 0;
-  const showTable = !loading && !error && paginated.items.length > 0;
+  const hasRows = paginated.items.length > 0;
+  const showEmpty = !loading && !error && !hasRows;
+  const showTable = !error && hasRows;
 
   return (
     <div className={styles.page}>
@@ -139,7 +139,7 @@ export default function WorkflowTemplatesView() {
         disabled={loading || deleteMutation.isPending}
       />
 
-      {loading && templates.length === 0 ? (
+      {loading && !hasRows ? (
         <div className={styles.stateCard}>
           <span className={styles.loadingSpinner} aria-hidden="true" />
           <p className={styles.stateText}>Loading templates…</p>
