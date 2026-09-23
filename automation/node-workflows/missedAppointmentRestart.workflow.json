@@ -70,7 +70,7 @@
             "category": "conditions",
             "label": "Still no appointment?",
             "name": "Still no appointment?",
-            "expression": "appointment.exists == false",
+            "expression": "appointment.status == \"confirmed\"",
             "status": "draft"
           }
         },

@@ -13,6 +13,7 @@ export const VARIABLE_DISPLAY_LABELS = {
   appointment_date: "Appointment Date",
   appointment_time: "Appointment Time",
   appointment_id: "Appointment ID",
+  appointment_status: "Appointment Status",
   reminder_time: "Reminder Time",
   old_date: "Old Date",
   new_date: "New Date",
@@ -72,6 +73,11 @@ export const VARIABLE_INSERT_ALIASES = {
   AppointmentId: "appointment_id",
   AppointmentID: "appointment_id",
   appointment_id: "appointment_id",
+
+  "appointment status": "appointment_status",
+  AppointmentStatus: "appointment_status",
+  appointment_status: "appointment_status",
+  "appointment.status": "appointment_status",
 
   // Bare {{appointment}} expands to date/time/id in normalizeVariableEntries.
   appointment: null,
@@ -181,6 +187,7 @@ export const CORE_VARIABLE_GROUPS = [
       "appointment_date",
       "appointment_time",
       "appointment_id",
+      "appointment_status",
       "booking_link",
       "followup_date",
     ],

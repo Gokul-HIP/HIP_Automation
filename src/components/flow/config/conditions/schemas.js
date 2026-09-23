@@ -44,14 +44,14 @@ export const CONDITION_SCHEMAS = {
         type: "textarea",
         label: "Cases (comma separated)",
         required: true,
-        placeholder: "Confirmed, Cancelled",
+        placeholder: "confirmed, cancelled",
       },
     ],
     defaults: {
       label: "Switch",
       status: "draft",
       switchField: "appointment.status",
-      cases: "Confirmed, Cancelled",
+      cases: "confirmed, cancelled",
     },
   },
 };

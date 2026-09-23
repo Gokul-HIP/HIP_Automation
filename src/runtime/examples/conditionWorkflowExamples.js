@@ -40,7 +40,7 @@ export const EXAMPLE_APPOINTMENT_AND_PAYMENT = {
     category: "conditions",
     name: "Confirmed And Paid",
     label: "Confirmed And Paid",
-    expression: 'appointment.status == "Confirmed" && payment.success',
+    expression: 'appointment.status == "confirmed" && payment.success',
     status: "draft",
   },
 };

@@ -187,8 +187,15 @@ describe("Node system — messaging / wait schemas", () => {
     assert.ok(relativeUnit.options.some((o) => o.value === "weeks"));
   });
 
-  it("condition examples include appointment.exists == false", () => {
+  it("condition examples include appointment.exists and appointment.status == confirmed", () => {
     assert.ok(JEXL_CONDITION_EXAMPLES.includes("appointment.exists == false"));
+    assert.ok(
+      JEXL_CONDITION_EXAMPLES.includes('appointment.status == "confirmed"')
+    );
+    assert.equal(
+      JEXL_CONDITION_EXAMPLES.some((ex) => ex.includes('"Confirmed"')),
+      false
+    );
   });
 });
 

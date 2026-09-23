@@ -5,6 +5,7 @@ import TextField from "../fields/TextField";
 import SchemaFieldRenderer from "../shared/SchemaFieldRenderer";
 import ApiVariablePicker from "@/components/variable-picker/ApiVariablePicker";
 import { getConditionSchema } from "../../config/conditions/schemas";
+import { CONDITION_FIELD_GROUPS } from "../../config/variables";
 import {
   JEXL_CONDITION_EXAMPLES,
   tokenToJexlPath,
@@ -143,8 +144,25 @@ export default function ConditionProperties({ data, onChange }) {
       <div className={styles.section}>
         <h3 className={styles.sectionTitle}>Variables</h3>
         <p className={styles.sectionHint}>
-          Click a variable to insert it into the expression (e.g. patient.age).
+          Click a field to insert its JEXL path (e.g. appointment.status).
         </p>
+        {CONDITION_FIELD_GROUPS.map((group) => (
+          <div key={group.label}>
+            <p className={styles.sectionHint}>{group.label}</p>
+            <div className={styles.exampleList}>
+              {group.options.map((opt) => (
+                <button
+                  key={`${group.label}:${opt.value}`}
+                  type="button"
+                  className={styles.exampleChip}
+                  onClick={() => insertAtCursor(opt.value)}
+                >
+                  <code>{opt.value}</code>
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
         <ApiVariablePicker
           triggerKey={triggerKey}
           onInsert={(token) => {

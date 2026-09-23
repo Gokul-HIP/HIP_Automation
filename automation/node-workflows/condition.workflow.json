@@ -57,7 +57,7 @@
             "category": "conditions",
             "name": "Confirmed Appointment",
             "label": "Confirmed Appointment",
-            "expression": "appointment.status == \"Confirmed\"",
+            "expression": "appointment.status == \"confirmed\"",
             "status": "draft"
           }
         },
@@ -149,7 +149,7 @@
         "appointment_id": 9001,
         "appointment_date": "2026-08-27",
         "appointment_time": "10:30",
-        "status": "Confirmed",
+        "status": "confirmed",
         "branch_name": "Main Campus"
       },
       "hospital": {
@@ -189,7 +189,7 @@
           "output": {
             "passed": true,
             "branch": "true",
-            "expression": "appointment.status == \"Confirmed\""
+            "expression": "appointment.status == \"confirmed\""
           }
         }
       }

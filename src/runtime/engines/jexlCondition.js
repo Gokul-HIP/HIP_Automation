@@ -23,14 +23,14 @@ export const JEXL_CONDITION_EXAMPLES = [
   'customer.age >= 18',
   'customer.country == "India"',
   "payment.amount >= 1000",
-  'appointment.status == "Confirmed"',
+  'appointment.status == "confirmed"',
   "!payment.success",
   "patient.phone != null",
   'customer.country == "India" && payment.success',
   'doctor.specialization == "Cardiology"',
   'invoice.status == "Paid"',
   "workflow.ai_summary != null",
-  'appointment.status == "Confirmed" && payment.success',
+  'appointment.status == "confirmed" && payment.success',
 ];
 
 /**
