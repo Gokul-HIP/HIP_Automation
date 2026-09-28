@@ -1,5 +1,6 @@
 import jexl from "jexl";
 import { deriveFollowupObject } from "../services/FollowupContext";
+import { normalizeInvoiceFacts } from "../variables/VariableResolver";
 
 /**
  * JEXL expression helpers for Condition nodes.
@@ -28,7 +29,7 @@ export const JEXL_CONDITION_EXAMPLES = [
   "patient.phone != null",
   'customer.country == "India" && payment.success',
   'doctor.specialization == "Cardiology"',
-  'invoice.status == "Paid"',
+  'invoice.status == "pending"',
   "workflow.ai_summary != null",
   'appointment.status == "confirmed" && payment.success',
 ];
@@ -152,12 +153,13 @@ export function buildJexlContext(context = {}) {
         : variables.payment && typeof variables.payment === "object"
           ? variables.payment
           : {},
-    invoice:
+    invoice: normalizeInvoiceFacts(
       context.invoice && typeof context.invoice === "object"
         ? context.invoice
         : variables.invoice && typeof variables.invoice === "object"
           ? variables.invoice
-          : {},
+          : {}
+    ),
     prescription:
       context.prescription && typeof context.prescription === "object"
         ? context.prescription

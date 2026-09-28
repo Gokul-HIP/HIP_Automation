@@ -192,8 +192,11 @@ describe("Node system — messaging / wait schemas", () => {
     assert.ok(
       JEXL_CONDITION_EXAMPLES.includes('appointment.status == "confirmed"')
     );
+    assert.ok(
+      JEXL_CONDITION_EXAMPLES.includes('invoice.status == "pending"')
+    );
     assert.equal(
-      JEXL_CONDITION_EXAMPLES.some((ex) => ex.includes('"Confirmed"')),
+      JEXL_CONDITION_EXAMPLES.includes('invoice.status == "Paid"'),
       false
     );
   });

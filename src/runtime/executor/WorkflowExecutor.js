@@ -6,6 +6,10 @@ import { enrichAppointmentExists } from "../services/AppointmentLookup";
 import { resolveCampaignFromConfig } from "../services/CampaignSuppression";
 import { deriveFollowupObject } from "../services/FollowupContext";
 import { logRuntime } from "../logging/StructuredLogger";
+import {
+  normalizeInvoiceFacts,
+  resolveInvoiceAmount,
+} from "../variables/VariableResolver";
 
 /**
  * Generic workflow executor — traverses compiled graph, no business logic.
@@ -62,6 +66,8 @@ export class WorkflowExecutor {
     const appointmentObj =
       appointment && typeof appointment === "object" ? { ...appointment } : {};
     const followupObj = deriveFollowupObject(appointmentObj, followup);
+    const invoiceFacts = normalizeInvoiceFacts(invoice);
+    const invoiceAmount = resolveInvoiceAmount(invoiceFacts);
 
     const execution = this.executionStore.create({
       workflowId,
@@ -87,7 +93,7 @@ export class WorkflowExecutor {
       medicine,
       hospital,
       payment,
-      invoice,
+      invoice: invoiceFacts,
       organization,
       variables: {
         booking_link:
@@ -105,6 +111,9 @@ export class WorkflowExecutor {
           "",
         prescription_id:
           prescription?.id || prescription?.prescription_id || "",
+        invoice_id: invoiceFacts.id ?? invoiceFacts.invoice_id ?? "",
+        invoice_amount: invoiceAmount ?? "",
+        invoice_status: invoiceFacts.status ?? "",
       },
       system: {
         triggered_at: triggeredAt,

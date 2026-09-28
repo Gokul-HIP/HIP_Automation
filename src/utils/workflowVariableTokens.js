@@ -21,6 +21,8 @@ export const VARIABLE_DISPLAY_LABELS = {
   new_time: "New Time",
   patient_mobile: "Patient Mobile",
   invoice_amount: "Invoice Amount",
+  invoice_id: "Invoice ID",
+  invoice_status: "Invoice Status",
   payment_status: "Payment Status",
   patient_email: "Patient Email",
   patient_age: "Patient Age",
@@ -101,6 +103,19 @@ export const VARIABLE_INSERT_ALIASES = {
   "invoice amount": "invoice_amount",
   InvoiceAmount: "invoice_amount",
   invoice_amount: "invoice_amount",
+  "invoice.amount": "invoice_amount",
+  "invoice.total_amount": "invoice_amount",
+
+  "invoice id": "invoice_id",
+  InvoiceId: "invoice_id",
+  InvoiceID: "invoice_id",
+  invoice_id: "invoice_id",
+  "invoice.id": "invoice_id",
+
+  "invoice status": "invoice_status",
+  InvoiceStatus: "invoice_status",
+  invoice_status: "invoice_status",
+  "invoice.status": "invoice_status",
 
   "payment status": "payment_status",
   PaymentStatus: "payment_status",
@@ -190,6 +205,15 @@ export const CORE_VARIABLE_GROUPS = [
       "appointment_status",
       "booking_link",
       "followup_date",
+    ],
+  },
+  {
+    label: "Invoice",
+    keys: [
+      "invoice_id",
+      "invoice_amount",
+      "invoice_status",
+      "payment_status",
     ],
   },
   {

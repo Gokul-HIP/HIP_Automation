@@ -110,13 +110,23 @@
       "type": "string",
       "uiPicker": true
     },
+    "invoice_id": {
+      "source": "context.invoice.id | invoice_id",
+      "type": "string|number",
+      "uiPicker": true
+    },
     "invoice_amount": {
-      "source": "context.invoice.amount",
+      "source": "context.invoice.total_amount | context.invoice.amount",
       "type": "number",
       "uiPicker": true
     },
+    "invoice_status": {
+      "source": "context.invoice.status",
+      "type": "string",
+      "uiPicker": true
+    },
     "payment_status": {
-      "source": "context.payment.status | patient.payment_status",
+      "source": "context.invoice.payment_status | context.payment.status | patient.payment_status",
       "type": "string",
       "uiPicker": true
     },

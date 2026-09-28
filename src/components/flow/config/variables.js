@@ -48,7 +48,9 @@ export const WORKFLOW_VARIABLE_GROUPS = [
   {
     label: "Invoice",
     variables: [
+      entry("invoice_id", "Invoice ID"),
       entry("invoice_amount", "Invoice Amount"),
+      entry("invoice_status", "Invoice Status"),
       entry("payment_status", "Payment Status"),
     ],
   },
@@ -117,6 +119,15 @@ export const CONDITION_FIELD_GROUPS = [
       { value: "appointment_doctor", label: "Doctor" },
       { value: "appointment_department", label: "Department" },
       { value: "appointment_type", label: "Type" },
+    ],
+  },
+  {
+    label: "Invoice",
+    options: [
+      { value: "invoice.status", label: "Status" },
+      { value: "invoice.payment_status", label: "Payment Status" },
+      { value: "invoice.id", label: "ID" },
+      { value: "invoice.amount", label: "Amount" },
     ],
   },
   {

@@ -10,7 +10,11 @@ import { executionTracer } from "./logging/ExecutionTracer";
 import { workflowExecutionStore } from "./history/WorkflowExecutionStore";
 import { createChannelManager } from "./channels/ChannelManager";
 import { templateManager } from "./templates/TemplateManager";
-import { variableResolver } from "./variables/VariableResolver";
+import {
+  variableResolver,
+  normalizeInvoiceFacts,
+  resolveInvoiceAmount,
+} from "./variables/VariableResolver";
 import { createAnalyticsEngine } from "./analytics/AnalyticsEngine";
 import { conditionEngine } from "./engines/ConditionEngine";
 import { conditionExecutor } from "./executor/ConditionExecutor";
@@ -68,6 +72,8 @@ export {
   channelManager,
   templateManager,
   variableResolver,
+  normalizeInvoiceFacts,
+  resolveInvoiceAmount,
   conditionEngine,
   conditionExecutor,
   evaluateJexlCondition,

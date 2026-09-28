@@ -15,7 +15,59 @@ const FIELD_PATH_MAP = {
   payment_status: "patient.payment_status",
   last_visit: "patient.last_visit_days",
   patient_segment: "patient.segment",
+  "invoice.status": "invoice.status",
+  "invoice.payment_status": "invoice.payment_status",
+  "invoice.id": "invoice.id",
+  "invoice.amount": "invoice.amount",
+  invoice_status: "invoice.status",
+  invoice_id: "invoice.id",
+  invoice_amount: "invoice.amount",
 };
+
+/**
+ * Payment Pending amount rule: total_amount first, amount as fallback.
+ * @param {Record<string, unknown> | null | undefined} invoice
+ */
+export function resolveInvoiceAmount(invoice) {
+  if (!invoice || typeof invoice !== "object") return null;
+  const total = invoice.total_amount ?? invoice.totalAmount;
+  if (total != null && total !== "") return total;
+  const amount = invoice.amount ?? invoice.invoice_amount;
+  return amount == null || amount === "" ? null : amount;
+}
+
+/**
+ * Normalize invoice facts for templates and JEXL. Does not invent fields
+ * or rewrite stored status casing.
+ * @param {Record<string, unknown> | null | undefined} invoice
+ */
+export function normalizeInvoiceFacts(invoice) {
+  const src = invoice && typeof invoice === "object" ? { ...invoice } : {};
+  const id = src.id ?? src.invoice_id ?? null;
+  const status = src.status ?? src.invoice_status ?? null;
+  const amount = resolveInvoiceAmount(src);
+  const paymentStatus = src.payment_status ?? src.paymentStatus ?? null;
+
+  if (id != null && id !== "") {
+    src.id = id;
+    src.invoice_id = src.invoice_id ?? id;
+  }
+  if (status != null && status !== "") {
+    src.status = status;
+  }
+  if (amount != null) {
+    if (src.total_amount == null && src.totalAmount == null) {
+      src.total_amount = amount;
+    }
+    if (src.amount == null) {
+      src.amount = amount;
+    }
+  }
+  if (paymentStatus != null && paymentStatus !== "") {
+    src.payment_status = paymentStatus;
+  }
+  return src;
+}
 
 export class VariableResolver {
   /**
@@ -74,6 +126,30 @@ export class VariableResolver {
       null;
     if (hospitalPhone != null && hospitalPhone !== "") {
       flat.hospital_phone = hospitalPhone;
+    }
+
+    const invoiceFacts = normalizeInvoiceFacts(context.invoice);
+    if (invoiceFacts.id != null && invoiceFacts.id !== "") {
+      flat.invoice_id = invoiceFacts.id;
+      flat["invoice.id"] = invoiceFacts.id;
+    }
+    const invoiceAmount = resolveInvoiceAmount(invoiceFacts);
+    if (invoiceAmount != null) {
+      flat.invoice_amount = invoiceAmount;
+      flat["invoice.amount"] = invoiceFacts.amount ?? invoiceAmount;
+      if (invoiceFacts.total_amount != null) {
+        flat["invoice.total_amount"] = invoiceFacts.total_amount;
+      }
+    }
+    if (invoiceFacts.status != null && invoiceFacts.status !== "") {
+      flat.invoice_status = invoiceFacts.status;
+      flat["invoice.status"] = invoiceFacts.status;
+    }
+    if (
+      invoiceFacts.payment_status != null &&
+      invoiceFacts.payment_status !== ""
+    ) {
+      flat["invoice.payment_status"] = invoiceFacts.payment_status;
     }
 
     return flat;
