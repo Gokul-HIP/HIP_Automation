@@ -70,3 +70,67 @@ export function createMessagingDefaults(overrides = {}) {
     ...overrides,
   };
 }
+
+/** Backend Send Email / Send WhatsApp node key (camelCase). */
+export const ATTACH_INVOICE_PDF_KEY = "attachInvoicePdf";
+
+/**
+ * WhatsAppNotificationService is a provider stub with no document API.
+ * Flip this when the provider supports media/document attachments.
+ */
+export const WHATSAPP_DOCUMENT_ATTACHMENTS_SUPPORTED = false;
+
+/**
+ * Shared Attachments → Attach Invoice PDF field.
+ * @param {"sendEmail" | "sendWhatsApp"} nodeType
+ */
+export function getAttachInvoicePdfField(nodeType) {
+  const whatsappUnsupported =
+    nodeType === "sendWhatsApp" && !WHATSAPP_DOCUMENT_ATTACHMENTS_SUPPORTED;
+  return {
+    key: ATTACH_INVOICE_PDF_KEY,
+    type: "boolean",
+    label: "Attach Invoice PDF",
+    section: "Attachments",
+    disabled: whatsappUnsupported,
+    description: whatsappUnsupported
+      ? "Invoice PDF attachments are not currently supported by the WhatsApp provider."
+      : undefined,
+  };
+}
+
+/**
+ * @param {unknown} value
+ * @returns {boolean}
+ */
+export function isAttachInvoicePdfEnabled(value) {
+  if (value && typeof value === "object") {
+    return Boolean(
+      value.attachInvoicePdf ?? value.attach_invoice_pdf ?? false
+    );
+  }
+  return Boolean(value);
+}
+
+/**
+ * Normalize attachInvoicePdf on messaging node data.
+ * Maps snake_case aliases to the backend camelCase key.
+ * @param {Record<string, unknown> | null | undefined} data
+ */
+export function normalizeAttachInvoicePdfData(data) {
+  if (!data || typeof data !== "object") return data ?? {};
+  const nodeType = data.nodeType;
+  if (nodeType !== "sendEmail" && nodeType !== "sendWhatsApp") {
+    return data;
+  }
+
+  const enabled = isAttachInvoicePdfEnabled(data);
+  const next = { ...data, attachInvoicePdf: enabled };
+  delete next.attach_invoice_pdf;
+
+  if (nodeType === "sendWhatsApp" && !WHATSAPP_DOCUMENT_ATTACHMENTS_SUPPORTED) {
+    next.attachInvoicePdf = false;
+  }
+
+  return next;
+}

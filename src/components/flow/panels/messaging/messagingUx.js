@@ -8,6 +8,11 @@ import {
   isFilled,
   isManualContentValid,
 } from "./messagingTemplateSave";
+import {
+  ATTACH_INVOICE_PDF_KEY,
+  WHATSAPP_DOCUMENT_ATTACHMENTS_SUPPORTED,
+  isAttachInvoicePdfEnabled,
+} from "../../config/messaging/shared";
 
 export { canAddManualContentAsTemplate, hasSelectedTemplate, isManualContentValid };
 
@@ -155,10 +160,18 @@ export function getMessagingFieldErrors(data, nodeType) {
   }
 
   if (nodeType === "sendWhatsApp") {
-    if (isSendWhatsAppContentValid(d)) return errors;
-    errors.templateId = "Select a template or enter a message.";
-    if (!isFilled(d.message)) {
-      errors.message = "Message required when no template is selected";
+    if (
+      isAttachInvoicePdfEnabled(d) &&
+      !WHATSAPP_DOCUMENT_ATTACHMENTS_SUPPORTED
+    ) {
+      errors[ATTACH_INVOICE_PDF_KEY] =
+        "Invoice PDF attachments are currently unavailable for WhatsApp.";
+    }
+    if (!isSendWhatsAppContentValid(d)) {
+      errors.templateId = "Select a template or enter a message.";
+      if (!isFilled(d.message)) {
+        errors.message = "Message required when no template is selected";
+      }
     }
     return errors;
   }

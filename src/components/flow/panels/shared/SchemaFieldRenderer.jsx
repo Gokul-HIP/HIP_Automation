@@ -70,13 +70,24 @@ export default function SchemaFieldRenderer({
 
   if (field.type === "boolean") {
     return (
-      <ToggleField
-        id={id}
-        label={field.label}
-        description={field.description}
-        checked={Boolean(value)}
-        onChange={(next) => onChange?.({ [field.key]: next })}
-      />
+      <div className={styles.field}>
+        {field.section ? (
+          <h3 className={styles.sectionTitle}>{field.section}</h3>
+        ) : null}
+        <ToggleField
+          id={id}
+          label={field.label}
+          description={field.description}
+          checked={Boolean(value)}
+          disabled={Boolean(field.disabled)}
+          onChange={(next) => {
+            if (field.disabled) return;
+            onChange?.({ [field.key]: next });
+          }}
+        />
+        {field.hint && !error ? <p className={styles.hint}>{field.hint}</p> : null}
+        {error ? <p className={styles.fieldError}>{error}</p> : null}
+      </div>
     );
   }
 

@@ -5,6 +5,7 @@ import {
   RETRY_INTERVAL_OPTIONS,
   PUSH_PRIORITY_OPTIONS,
   createMessagingDefaults,
+  getAttachInvoicePdfField,
 } from "./shared";
 
 export {
@@ -12,6 +13,11 @@ export {
   NOTIFICATION_CHANNEL_OPTIONS,
   TEMPLATE_CHANNEL_BY_NODE,
   getTemplateChannelForNode,
+  ATTACH_INVOICE_PDF_KEY,
+  WHATSAPP_DOCUMENT_ATTACHMENTS_SUPPORTED,
+  getAttachInvoicePdfField,
+  isAttachInvoicePdfEnabled,
+  normalizeAttachInvoicePdfData,
 } from "./shared";
 
 const MESSAGING_VARS = WORKFLOW_VARIABLE_GROUPS;
@@ -74,6 +80,7 @@ export const MESSAGING_SCHEMAS = {
         hint: "Leave blank if the template has no buttons.",
       },
       CAMPAIGN_STEP_FIELD,
+      getAttachInvoicePdfField("sendWhatsApp"),
     ],
     defaults: createMessagingDefaults({
       label: "Send WhatsApp",
@@ -81,6 +88,7 @@ export const MESSAGING_SCHEMAS = {
       buttons: "",
       fallbackChannel: "sms",
       campaignStep: "",
+      attachInvoicePdf: false,
     }),
   },
 
@@ -139,12 +147,14 @@ export const MESSAGING_SCHEMAS = {
         required: false,
       },
       CAMPAIGN_STEP_FIELD,
+      getAttachInvoicePdfField("sendEmail"),
     ],
     defaults: createMessagingDefaults({
       label: "Send Email",
       subject: "",
       body: "",
       campaignStep: "",
+      attachInvoicePdf: false,
     }),
   },
 

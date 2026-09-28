@@ -6,6 +6,7 @@ import { normalizeWorkflowStatus } from "./workflowStatus";
 import { stripUiStartFromGraph } from "./flowEditorLifecycle";
 import { hydrateConditionNodeForEditor } from "./conditionNodeSerialization";
 import { normalizeMedicineReminderData } from "@/components/flow/config/triggers";
+import { normalizeAttachInvoicePdfData } from "@/components/flow/config/messaging/shared";
 
 /**
  * @param {Record<string, unknown> | null | undefined} configuration
@@ -44,13 +45,15 @@ export function deserializeNode(node) {
     selected: false,
   };
   const withCondition = hydrateConditionNodeForEditor(restored);
-  if (withCondition.data?.nodeType === "medicineReminder") {
-    return {
-      ...withCondition,
-      data: normalizeMedicineReminderData(withCondition.data),
-    };
+  let data = withCondition.data;
+  if (data?.nodeType === "medicineReminder") {
+    data = normalizeMedicineReminderData(data);
   }
-  return withCondition;
+  data = normalizeAttachInvoicePdfData(data);
+  return {
+    ...withCondition,
+    data,
+  };
 }
 
 /**

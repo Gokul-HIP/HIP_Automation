@@ -7,10 +7,11 @@ export default function ToggleField({
   label,
   description,
   checked = false,
+  disabled = false,
   onChange,
 }) {
   return (
-    <div className={styles.toggleRow}>
+    <div className={styles.toggleRow} data-disabled={disabled ? "true" : "false"}>
       <div className={styles.toggleCopy}>
         <label htmlFor={id} className={styles.toggleTitle}>
           {label}
@@ -24,9 +25,14 @@ export default function ToggleField({
         type="button"
         role="switch"
         aria-checked={checked}
+        aria-disabled={disabled ? "true" : undefined}
+        disabled={disabled}
         className={styles.toggle}
         data-on={checked ? "true" : "false"}
-        onClick={() => onChange?.(!checked)}
+        onClick={() => {
+          if (disabled) return;
+          onChange?.(!checked);
+        }}
       >
         <span className={styles.toggleThumb} />
       </button>
