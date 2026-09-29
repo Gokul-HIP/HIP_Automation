@@ -77,6 +77,7 @@ export default function ApiVariablePicker({ triggerKey, onInsert }) {
       "Hospital",
       "Appointment",
       "Invoice",
+      "Payment",
       "Lab",
       "Membership",
       "Medicine",

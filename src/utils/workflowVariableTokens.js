@@ -14,6 +14,7 @@ export const VARIABLE_DISPLAY_LABELS = {
   appointment_time: "Appointment Time",
   appointment_id: "Appointment ID",
   appointment_status: "Appointment Status",
+  appointment_appointment_status: "Visit Status / Appointment Status",
   reminder_time: "Reminder Time",
   old_date: "Old Date",
   new_date: "New Date",
@@ -24,6 +25,11 @@ export const VARIABLE_DISPLAY_LABELS = {
   invoice_id: "Invoice ID",
   invoice_status: "Invoice Status",
   payment_status: "Payment Status",
+  payment_id: "Payment ID",
+  payment_amount: "Payment Amount",
+  payment_method: "Payment Method",
+  payment_is_pay_by_hospital: "Pay by Hospital",
+  transaction_id: "Transaction ID",
   patient_email: "Patient Email",
   patient_age: "Patient Age",
   patient_gender: "Patient Gender",
@@ -80,6 +86,10 @@ export const VARIABLE_INSERT_ALIASES = {
   AppointmentStatus: "appointment_status",
   appointment_status: "appointment_status",
   "appointment.status": "appointment_status",
+  appointment_appointment_status: "appointment_appointment_status",
+  "appointment.appointment_status": "appointment_appointment_status",
+  "visit status": "appointment_appointment_status",
+  VisitStatus: "appointment_appointment_status",
 
   // Bare {{appointment}} expands to date/time/id in normalizeVariableEntries.
   appointment: null,
@@ -120,6 +130,35 @@ export const VARIABLE_INSERT_ALIASES = {
   "payment status": "payment_status",
   PaymentStatus: "payment_status",
   payment_status: "payment_status",
+  "payment.status": "payment_status",
+
+  "payment id": "payment_id",
+  PaymentId: "payment_id",
+  PaymentID: "payment_id",
+  payment_id: "payment_id",
+  "payment.id": "payment_id",
+
+  "payment amount": "payment_amount",
+  PaymentAmount: "payment_amount",
+  payment_amount: "payment_amount",
+  "payment.amount": "payment_amount",
+
+  "payment method": "payment_method",
+  PaymentMethod: "payment_method",
+  payment_method: "payment_method",
+  "payment.method": "payment_method",
+
+  "pay by hospital": "payment_is_pay_by_hospital",
+  PayByHospital: "payment_is_pay_by_hospital",
+  is_pay_by_hospital: "payment_is_pay_by_hospital",
+  payment_is_pay_by_hospital: "payment_is_pay_by_hospital",
+  "payment.is_pay_by_hospital": "payment_is_pay_by_hospital",
+
+  "transaction id": "transaction_id",
+  TransactionId: "transaction_id",
+  TransactionID: "transaction_id",
+  transaction_id: "transaction_id",
+  "payment.transaction_id": "transaction_id",
 
   // Additional known backend-compatible keys
   patient_email: "patient_email",
@@ -203,6 +242,7 @@ export const CORE_VARIABLE_GROUPS = [
       "appointment_time",
       "appointment_id",
       "appointment_status",
+      "appointment_appointment_status",
       "booking_link",
       "followup_date",
     ],
@@ -214,6 +254,17 @@ export const CORE_VARIABLE_GROUPS = [
       "invoice_amount",
       "invoice_status",
       "payment_status",
+    ],
+  },
+  {
+    label: "Payment",
+    keys: [
+      "payment_id",
+      "payment_status",
+      "payment_amount",
+      "payment_method",
+      "payment_is_pay_by_hospital",
+      "transaction_id",
     ],
   },
   {

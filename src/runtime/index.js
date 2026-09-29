@@ -13,6 +13,7 @@ import { templateManager } from "./templates/TemplateManager";
 import {
   variableResolver,
   normalizeInvoiceFacts,
+  normalizePaymentFacts,
   resolveInvoiceAmount,
 } from "./variables/VariableResolver";
 import { createAnalyticsEngine } from "./analytics/AnalyticsEngine";
@@ -73,6 +74,7 @@ export {
   templateManager,
   variableResolver,
   normalizeInvoiceFacts,
+  normalizePaymentFacts,
   resolveInvoiceAmount,
   conditionEngine,
   conditionExecutor,

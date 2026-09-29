@@ -39,6 +39,7 @@ export const WORKFLOW_VARIABLE_GROUPS = [
       entry("appointment_time", "Appointment Time"),
       entry("appointment_id", "Appointment ID"),
       entry("appointment_status", "Appointment Status"),
+      entry("appointment_appointment_status", "Visit Status / Appointment Status"),
       entry("branch_name", "Branch"),
       entry("booking_link", "Booking Link"),
       entry("followup_date", "Follow-up Date"),
@@ -52,6 +53,17 @@ export const WORKFLOW_VARIABLE_GROUPS = [
       entry("invoice_amount", "Invoice Amount"),
       entry("invoice_status", "Invoice Status"),
       entry("payment_status", "Payment Status"),
+    ],
+  },
+  {
+    label: "Payment",
+    variables: [
+      entry("payment_id", "Payment ID"),
+      entry("payment_status", "Payment Status"),
+      entry("payment_amount", "Payment Amount"),
+      entry("payment_method", "Payment Method"),
+      entry("payment_is_pay_by_hospital", "Pay by Hospital"),
+      entry("transaction_id", "Transaction ID"),
     ],
   },
   {
@@ -113,7 +125,8 @@ export const CONDITION_FIELD_GROUPS = [
       { value: "appointment.exists", label: "Has Appointment (exists)" },
       { value: "followup.exists", label: "Follow-up set (exists)" },
       { value: "followup.date", label: "Follow-up Date" },
-      { value: "appointment.status", label: "Status" },
+      { value: "appointment.status", label: "Appointment Status" },
+      { value: "appointment.appointment_status", label: "Visit Status / Appointment Status" },
       { value: "appointment_date", label: "Date" },
       { value: "appointment_time", label: "Time" },
       { value: "appointment_doctor", label: "Doctor" },
@@ -133,6 +146,15 @@ export const CONDITION_FIELD_GROUPS = [
   {
     label: "Payment",
     options: [
+      {
+        value: "payment.is_pay_by_hospital",
+        label: "Pay by Hospital",
+        valueType: "boolean",
+      },
+      { value: "payment.status", label: "Payment Status" },
+      { value: "payment.amount", label: "Payment Amount" },
+      { value: "payment.method", label: "Payment Method" },
+      { value: "transaction_id", label: "Transaction ID" },
       { value: "payment_status", label: "Status" },
       { value: "payment_method", label: "Method" },
       { value: "payment_amount", label: "Amount" },

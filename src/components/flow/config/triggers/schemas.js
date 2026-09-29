@@ -141,6 +141,7 @@ export const TRIGGER_SCHEMAS = {
       "context.appointment",
       "context.doctor",
       "context.hospital",
+      "context.payment",
     ],
     contextCard: {
       title: "Appointment Context",
@@ -416,7 +417,12 @@ export const TRIGGER_SCHEMAS = {
   labTestOrdered: {
     description:
       "Triggers the workflow whenever a new laboratory test is ordered for a patient.",
-    laravelContext: ["context.patient", "context.lab", "context.hospital"],
+    laravelContext: [
+      "context.patient",
+      "context.lab",
+      "context.hospital",
+      "context.payment",
+    ],
     fields: [
       nameField(),
       {
@@ -934,6 +940,10 @@ const TRIGGER_TYPE_ALIASES = {
   appointment_cancelled: "appointmentCancelled",
   appointment_missed: "appointmentMissed",
   appointment_reminder: "appointmentReminder",
+  LabTestOrdered: "labTestOrdered",
+  lab_test_ordered: "labTestOrdered",
+  PaymentReceived: "paymentReceived",
+  payment_received: "paymentReceived",
   // Manager / meeting alias — digital prescription shares prescriptionAdded event.
   digitalPrescription: "prescriptionAdded",
   digital_prescription: "prescriptionAdded",

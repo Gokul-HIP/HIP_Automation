@@ -22,7 +22,56 @@ const FIELD_PATH_MAP = {
   invoice_status: "invoice.status",
   invoice_id: "invoice.id",
   invoice_amount: "invoice.amount",
+  "payment.status": "payment.status",
+  "payment.amount": "payment.amount",
+  "payment.method": "payment.method",
+  "payment.is_pay_by_hospital": "payment.is_pay_by_hospital",
+  payment_id: "payment.id",
+  payment_amount: "payment.amount",
+  payment_method: "payment.method",
+  payment_is_pay_by_hospital: "payment.is_pay_by_hospital",
+  transaction_id: "payment.transaction_id",
 };
+
+/**
+ * Map backend payment aliases onto automation facts. Does not invent values.
+ * @param {Record<string, unknown> | null | undefined} payment
+ */
+export function normalizePaymentFacts(payment) {
+  const src = payment && typeof payment === "object" ? { ...payment } : {};
+
+  if (src.id == null && src.payment_id != null) {
+    src.id = src.payment_id;
+  }
+  if (src.status == null && src.payment_status != null) {
+    src.status = src.payment_status;
+  }
+  if (src.amount == null && src.payment_amount != null) {
+    src.amount = src.payment_amount;
+  }
+  if (src.method == null) {
+    const method = src.payment_method ?? src.mode ?? src.paymentMode;
+    if (method != null && method !== "") src.method = method;
+  }
+  if (src.transaction_id == null) {
+    const txn = src.transactionId ?? src.txn_id;
+    if (txn != null && txn !== "") src.transaction_id = txn;
+  }
+  if (src.is_pay_by_hospital == null) {
+    const flag =
+      src.pay_by_hospital ?? src.isPayByHospital ?? src.payByHospital;
+    if (typeof flag === "boolean") {
+      src.is_pay_by_hospital = flag;
+    } else if (flag != null && flag !== "") {
+      src.is_pay_by_hospital =
+        flag === true ||
+        flag === 1 ||
+        String(flag).toLowerCase() === "true" ||
+        String(flag).toLowerCase() === "1";
+    }
+  }
+  return src;
+}
 
 /**
  * Payment Pending amount rule: total_amount first, amount as fallback.
@@ -150,6 +199,31 @@ export class VariableResolver {
       invoiceFacts.payment_status !== ""
     ) {
       flat["invoice.payment_status"] = invoiceFacts.payment_status;
+    }
+
+    const paymentFacts = normalizePaymentFacts(context.payment);
+    if (paymentFacts.id != null && paymentFacts.id !== "") {
+      flat.payment_id = paymentFacts.id;
+      flat["payment.id"] = paymentFacts.id;
+    }
+    if (paymentFacts.status != null && paymentFacts.status !== "") {
+      flat["payment.status"] = paymentFacts.status;
+    }
+    if (paymentFacts.amount != null && paymentFacts.amount !== "") {
+      flat.payment_amount = paymentFacts.amount;
+      flat["payment.amount"] = paymentFacts.amount;
+    }
+    if (paymentFacts.method != null && paymentFacts.method !== "") {
+      flat.payment_method = paymentFacts.method;
+      flat["payment.method"] = paymentFacts.method;
+    }
+    if (paymentFacts.transaction_id != null && paymentFacts.transaction_id !== "") {
+      flat.transaction_id = paymentFacts.transaction_id;
+      flat["payment.transaction_id"] = paymentFacts.transaction_id;
+    }
+    if (typeof paymentFacts.is_pay_by_hospital === "boolean") {
+      flat.payment_is_pay_by_hospital = paymentFacts.is_pay_by_hospital;
+      flat["payment.is_pay_by_hospital"] = paymentFacts.is_pay_by_hospital;
     }
 
     return flat;

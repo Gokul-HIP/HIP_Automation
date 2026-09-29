@@ -1,6 +1,9 @@
 import jexl from "jexl";
 import { deriveFollowupObject } from "../services/FollowupContext";
-import { normalizeInvoiceFacts } from "../variables/VariableResolver";
+import {
+  normalizeInvoiceFacts,
+  normalizePaymentFacts,
+} from "../variables/VariableResolver";
 
 /**
  * JEXL expression helpers for Condition nodes.
@@ -24,7 +27,15 @@ export const JEXL_CONDITION_EXAMPLES = [
   'customer.age >= 18',
   'customer.country == "India"',
   "payment.amount >= 1000",
+  "payment.amount > 500",
+  'payment.status == "completed"',
+  "payment.is_pay_by_hospital == true",
+  "payment.is_pay_by_hospital == false",
   'appointment.status == "confirmed"',
+  'appointment.status == "pending"',
+  'payment.is_pay_by_hospital == true && appointment.status == "pending"',
+  'payment.is_pay_by_hospital == true && appointment.status == "confirmed"',
+  'appointment.status == "confirmed" && payment.is_pay_by_hospital == false',
   "!payment.success",
   "patient.phone != null",
   'customer.country == "India" && payment.success',
@@ -147,12 +158,13 @@ export function buildJexlContext(context = {}) {
     appointment,
     followup,
     last_visit: lastVisit != null ? Number(lastVisit) : null,
-    payment:
+    payment: normalizePaymentFacts(
       context.payment && typeof context.payment === "object"
         ? context.payment
         : variables.payment && typeof variables.payment === "object"
           ? variables.payment
-          : {},
+          : {}
+    ),
     invoice: normalizeInvoiceFacts(
       context.invoice && typeof context.invoice === "object"
         ? context.invoice
