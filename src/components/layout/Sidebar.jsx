@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { LayoutGroup, motion } from "framer-motion";
 import {
   HiOutlineHome,
-  HiOutlineInbox,
+  // HiOutlineInbox,
   HiOutlineLightningBolt,
   HiOutlineChatAlt2,
   HiOutlineCog,
@@ -25,7 +25,7 @@ import styles from "./Sidebar.module.css";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: HiOutlineHome },
-  { href: "/inbox", label: "Inbox", icon: HiOutlineInbox, badge: 12 },
+  // { href: "/inbox", label: "Inbox", icon: HiOutlineInbox, badge: 12 },
   {
     id: "automation",
     label: "Automation",

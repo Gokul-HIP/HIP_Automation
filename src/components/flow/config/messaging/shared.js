@@ -75,10 +75,10 @@ export function createMessagingDefaults(overrides = {}) {
 export const ATTACH_INVOICE_PDF_KEY = "attachInvoicePdf";
 
 /**
- * WhatsAppNotificationService is a provider stub with no document API.
- * Flip this when the provider supports media/document attachments.
+ * WhatsJet send-media-message supports document attachments
+ * (media_type=document, media_url=public invoice PDF).
  */
-export const WHATSAPP_DOCUMENT_ATTACHMENTS_SUPPORTED = false;
+export const WHATSAPP_DOCUMENT_ATTACHMENTS_SUPPORTED = true;
 
 /**
  * Shared Attachments → Attach Invoice PDF field.
@@ -127,10 +127,6 @@ export function normalizeAttachInvoicePdfData(data) {
   const enabled = isAttachInvoicePdfEnabled(data);
   const next = { ...data, attachInvoicePdf: enabled };
   delete next.attach_invoice_pdf;
-
-  if (nodeType === "sendWhatsApp" && !WHATSAPP_DOCUMENT_ATTACHMENTS_SUPPORTED) {
-    next.attachInvoicePdf = false;
-  }
 
   return next;
 }

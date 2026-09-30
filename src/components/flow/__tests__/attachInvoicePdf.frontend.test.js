@@ -1,5 +1,5 @@
 /**
- * Attach Invoice PDF — Send Email (enabled) and Send WhatsApp (disabled stub).
+ * Attach Invoice PDF — Send Email and Send WhatsApp (WhatsJet document media).
  */
 
 import { describe, it } from "node:test";
@@ -110,31 +110,68 @@ describe("Attach Invoice PDF — Send Email", () => {
 });
 
 describe("Attach Invoice PDF — Send WhatsApp", () => {
-  it("shows the Attachments section with a disabled control", () => {
+  it("shows an enabled Attach Invoice PDF toggle", () => {
     const schema = getMessagingSchema("sendWhatsApp");
     const field = schema.fields.find((f) => f.key === ATTACH_INVOICE_PDF_KEY);
     assert.ok(field);
     assert.equal(field.section, "Attachments");
     assert.equal(field.label, "Attach Invoice PDF");
-    assert.equal(WHATSAPP_DOCUMENT_ATTACHMENTS_SUPPORTED, false);
-    assert.equal(field.disabled, true);
-    assert.match(
-      String(field.description || ""),
-      /not currently supported by the WhatsApp provider/i
+    assert.equal(WHATSAPP_DOCUMENT_ATTACHMENTS_SUPPORTED, true);
+    assert.equal(field.disabled, false);
+    assert.equal(field.description, undefined);
+    assert.equal(
+      String(field.description || "").includes("not currently supported"),
+      false
     );
-    assert.equal(getAttachInvoicePdfField("sendWhatsApp").disabled, true);
+    assert.equal(getAttachInvoicePdfField("sendWhatsApp").disabled, false);
   });
 
   it("defaults attachInvoicePdf to false", () => {
     assert.equal(createNodeDefaults("sendWhatsApp").attachInvoicePdf, false);
   });
 
-  it("cannot publish with attachInvoicePdf=true while unsupported", () => {
+  it("toggle ON persists attachInvoicePdf=true through serialize/deserialize", () => {
+    const node = whatsappNode({
+      attachInvoicePdf: true,
+      message:
+        "Payment received successfully at {{hospital_name}}.\nInvoice: #{{invoice_id}}\nAmount: ₹{{invoice_amount}}",
+      recipient: "patient",
+      templateId: "wa_invoice_v1",
+    });
+    const serialized = serializeNode(node);
+    assert.equal(serialized.data.attachInvoicePdf, true);
+    assert.equal("attach_invoice_pdf" in serialized.data, false);
+    assert.equal(serialized.data.recipient, "patient");
+    assert.equal(serialized.data.templateId, "wa_invoice_v1");
+    assert.ok(serialized.data.message.includes("{{invoice_id}}"));
+    assert.equal(serialized.data.message.includes("{{invoice_pdf}}"), false);
+
+    const restored = deserializeNode(serialized);
+    assert.equal(restored.data.attachInvoicePdf, true);
+    assert.equal(restored.data.templateId, "wa_invoice_v1");
+    assert.equal(restored.data.recipient, "patient");
+  });
+
+  it("toggle OFF persists attachInvoicePdf=false", () => {
+    const serialized = serializeNode(whatsappNode({ attachInvoicePdf: false }));
+    assert.equal(serialized.data.attachInvoicePdf, false);
+    assert.equal(deserializeNode(serialized).data.attachInvoicePdf, false);
+  });
+
+  it("maps snake_case attach_invoice_pdf onto attachInvoicePdf", () => {
+    const serialized = serializeNode(
+      whatsappNode({ attachInvoicePdf: undefined, attach_invoice_pdf: true })
+    );
+    assert.equal(serialized.data.attachInvoicePdf, true);
+    assert.equal("attach_invoice_pdf" in serialized.data, false);
+  });
+
+  it("publish validation allows attachInvoicePdf=true", () => {
     const errors = getMessagingFieldErrors(
       whatsappNode({ attachInvoicePdf: true }).data,
       "sendWhatsApp"
     );
-    assert.ok(errors.attachInvoicePdf);
+    assert.equal(errors.attachInvoicePdf, undefined);
 
     const [trig, end] = triggerAndEnd();
     const result = validateWorkflowGraph(
@@ -144,19 +181,7 @@ describe("Attach Invoice PDF — Send WhatsApp", () => {
         { id: "e2", source: "n_wa", target: "n_end" },
       ]
     );
-    assert.equal(result.valid, false);
-    assert.ok(
-      result.issues.some((i) => i.field === ATTACH_INVOICE_PDF_KEY)
-    );
-  });
-
-  it("serializes WhatsApp with attachInvoicePdf forced off while unsupported", () => {
-    const serialized = serializeNode(
-      whatsappNode({ attachInvoicePdf: true, attach_invoice_pdf: true })
-    );
-    assert.equal(serialized.data.attachInvoicePdf, false);
-    assert.equal(serialized.data.message, "Hello {{patient_name}}");
-    assert.equal(serialized.data.recipient, "patient");
+    assert.equal(result.valid, true, JSON.stringify(result.issues, null, 2));
   });
 });
 
@@ -183,5 +208,7 @@ describe("Attach Invoice PDF — catalog isolation", () => {
     assert.ok(waKeys.includes("message"));
     assert.ok(emailKeys.includes("recipient"));
     assert.ok(waKeys.includes("recipient"));
+    assert.ok(emailKeys.includes(ATTACH_INVOICE_PDF_KEY));
+    assert.ok(waKeys.includes(ATTACH_INVOICE_PDF_KEY));
   });
 });
