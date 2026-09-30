@@ -6,6 +6,7 @@ import {
   PUSH_PRIORITY_OPTIONS,
   createMessagingDefaults,
   getAttachInvoicePdfField,
+  getAttachPrescriptionPdfField,
 } from "./shared";
 
 export {
@@ -14,9 +15,12 @@ export {
   TEMPLATE_CHANNEL_BY_NODE,
   getTemplateChannelForNode,
   ATTACH_INVOICE_PDF_KEY,
+  ATTACH_PRESCRIPTION_PDF_KEY,
   WHATSAPP_DOCUMENT_ATTACHMENTS_SUPPORTED,
   getAttachInvoicePdfField,
+  getAttachPrescriptionPdfField,
   isAttachInvoicePdfEnabled,
+  isAttachPrescriptionPdfEnabled,
   normalizeAttachInvoicePdfData,
 } from "./shared";
 
@@ -81,6 +85,7 @@ export const MESSAGING_SCHEMAS = {
       },
       CAMPAIGN_STEP_FIELD,
       getAttachInvoicePdfField("sendWhatsApp"),
+      getAttachPrescriptionPdfField("sendWhatsApp"),
     ],
     defaults: createMessagingDefaults({
       label: "Send WhatsApp",
@@ -89,6 +94,7 @@ export const MESSAGING_SCHEMAS = {
       fallbackChannel: "sms",
       campaignStep: "",
       attachInvoicePdf: false,
+      attachPrescriptionPdf: false,
     }),
   },
 
@@ -148,6 +154,7 @@ export const MESSAGING_SCHEMAS = {
       },
       CAMPAIGN_STEP_FIELD,
       getAttachInvoicePdfField("sendEmail"),
+      getAttachPrescriptionPdfField("sendEmail"),
     ],
     defaults: createMessagingDefaults({
       label: "Send Email",
@@ -155,6 +162,7 @@ export const MESSAGING_SCHEMAS = {
       body: "",
       campaignStep: "",
       attachInvoicePdf: false,
+      attachPrescriptionPdf: false,
     }),
   },
 

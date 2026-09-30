@@ -10,6 +10,13 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 import { validateWorkflowGraph } from "../validation/workflowGraphValidation.js";
+import { isValidWorkflowConnection } from "../validation/connectionRules.js";
+import {
+  createNodeDefaults,
+  getWorkflowNode,
+  getSidebarCatalogGroups,
+} from "../config/workflowNodes.js";
+import { getTriggerSchema } from "../config/triggers/index.js";
 import { serializeWorkflow } from "@/utils/flowSerializer.js";
 import {
   deserializeWorkflow,
@@ -87,6 +94,161 @@ describe("medicineReminder — frontend validation", () => {
       campaignKey: configuration.campaignKey,
     });
     assert.equal(result.valid, true, JSON.stringify(result.issues, null, 2));
+  });
+
+  it("is listed under Triggers as a start node, not a mid-graph action", () => {
+    const groups = getSidebarCatalogGroups();
+    const triggerGroup = groups.find((g) => g.category?.id === "triggers");
+    assert.ok(triggerGroup);
+    assert.ok(triggerGroup.nodes.some((n) => n.type === "medicineReminder"));
+    const messaging = groups.find((g) => g.category?.id === "messaging");
+    assert.equal(
+      (messaging?.nodes || []).some((n) => n.type === "medicineReminder"),
+      false
+    );
+
+    const def = getWorkflowNode("medicineReminder");
+    assert.equal(def.isTrigger, true);
+    assert.equal(def.category, "triggers");
+    assert.equal(def.type, "medicineReminder");
+  });
+
+  it("can start a workflow: Medicine Reminder Due → Send Push → End", () => {
+    const nodes = [
+      {
+        id: "n_trigger",
+        type: "workflow",
+        position: { x: 0, y: 0 },
+        data: createNodeDefaults("medicineReminder"),
+      },
+      {
+        id: "n_push",
+        type: "workflow",
+        position: { x: 200, y: 0 },
+        data: {
+          ...createNodeDefaults("sendPush"),
+          title: "Reminder",
+          body: "Time for {{medicine_name}}",
+        },
+      },
+      {
+        id: "n_end",
+        type: "workflow",
+        position: { x: 400, y: 0 },
+        data: createNodeDefaults("end"),
+      },
+    ];
+    const edges = [
+      { id: "e1", source: "n_trigger", target: "n_push" },
+      { id: "e2", source: "n_push", target: "n_end" },
+    ];
+    assert.equal(
+      isValidWorkflowConnection({
+        source: "n_trigger",
+        target: "n_push",
+        nodes,
+        edges: [],
+      }),
+      true
+    );
+    const result = validateWorkflowGraph(nodes, edges);
+    assert.equal(result.valid, true, JSON.stringify(result.issues, null, 2));
+  });
+
+  it("rejects PrescriptionAdded → Medicine Reminder Due", () => {
+    const nodes = [
+      {
+        id: "n_rx",
+        type: "workflow",
+        position: { x: 0, y: 0 },
+        data: createNodeDefaults("prescriptionAdded"),
+      },
+      {
+        id: "n_med",
+        type: "workflow",
+        position: { x: 200, y: 0 },
+        data: createNodeDefaults("medicineReminder"),
+      },
+    ];
+    assert.equal(
+      isValidWorkflowConnection({
+        source: "n_rx",
+        target: "n_med",
+        nodes,
+        edges: [],
+      }),
+      false
+    );
+  });
+
+  it("rejects connections into Medicine Reminder Due from other triggers or actions", () => {
+    const nodes = [
+      {
+        id: "n_pay",
+        type: "workflow",
+        position: { x: 0, y: 0 },
+        data: createNodeDefaults("paymentReceived"),
+      },
+      {
+        id: "n_wa",
+        type: "workflow",
+        position: { x: 0, y: 80 },
+        data: createNodeDefaults("sendWhatsApp"),
+      },
+      {
+        id: "n_med",
+        type: "workflow",
+        position: { x: 200, y: 0 },
+        data: createNodeDefaults("medicineReminder"),
+      },
+    ];
+    assert.equal(
+      isValidWorkflowConnection({
+        source: "n_pay",
+        target: "n_med",
+        nodes,
+        edges: [],
+      }),
+      false
+    );
+    assert.equal(
+      isValidWorkflowConnection({
+        source: "n_wa",
+        target: "n_med",
+        nodes,
+        edges: [],
+      }),
+      false
+    );
+  });
+
+  it("does not expose reminderTiming / minutesBefore in the trigger UI schema or defaults", () => {
+    const schema = getTriggerSchema("medicineReminder");
+    const keys = (schema.fields || []).map((f) => f.key);
+    assert.equal(keys.includes("reminderTiming"), false);
+    assert.equal(keys.includes("minutesBefore"), false);
+    const defaults = createNodeDefaults("medicineReminder");
+    assert.equal("reminderTiming" in defaults, false);
+    assert.equal("minutesBefore" in defaults, false);
+    assert.equal(defaults.reminderTiming, undefined);
+    assert.equal(defaults.minutesBefore, undefined);
+  });
+
+  it("serializes nodeType=medicineReminder as the workflow start trigger", () => {
+    const nodes = toFlowNodes();
+    const edges = toFlowEdges();
+    const payload = serializeWorkflow({
+      name: MEDICINE_REMINDER_NAME,
+      nodes,
+      edges,
+      status: "inactive",
+    });
+    const trigger = payload.configuration.nodes.find(
+      (n) => n.data?.nodeType === "medicineReminder"
+    );
+    assert.ok(trigger);
+    assert.equal(trigger.data.nodeType, "medicineReminder");
+    assert.equal(payload.configuration.nodes[0].data.nodeType, "medicineReminder");
   });
 
   it("serializes and deserializes campaignKey + graph", () => {

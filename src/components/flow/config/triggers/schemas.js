@@ -8,7 +8,6 @@ import {
   MESSAGE_CHANNEL_OPTIONS,
   MESSAGE_TYPE_OPTIONS,
   MESSAGE_MATCH_OPTIONS,
-  MEDICINE_REMINDER_TIMING_OPTIONS,
   APPOINTMENT_REMINDER_TIMING_OPTIONS,
   BIRTHDAY_TIMING_OPTIONS,
   ANNIVERSARY_TYPE_OPTIONS,
@@ -388,28 +387,9 @@ export const TRIGGER_SCHEMAS = {
     },
     fields: [
       nameField(),
-      {
-        key: "reminderTiming",
-        type: "select",
-        label: "Reminder Timing",
-        options: MEDICINE_REMINDER_TIMING_OPTIONS,
-        required: true,
-      },
-      {
-        key: "minutesBefore",
-        type: "number",
-        label: "Minutes Before",
-        min: 1,
-        max: 1440,
-        required: true,
-        hint: "Enter number of minutes before the reminder",
-        showWhen: { reminderTiming: "before_due" },
-      },
     ],
     defaults: createBaseTriggerDefaults({
       label: "Medicine Reminder Due",
-      reminderTiming: "at_due",
-      minutesBefore: 30,
     }),
   },
 

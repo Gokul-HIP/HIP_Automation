@@ -258,11 +258,6 @@ export function normalizeMedicineReminderData(data = {}) {
   if (next.reminderTiming && legacyTiming[next.reminderTiming]) {
     next.reminderTiming = legacyTiming[next.reminderTiming];
   }
-  if (!next.reminderTiming) next.reminderTiming = "at_due";
-
-  if (next.minutesBefore == null || next.minutesBefore === "") {
-    next.minutesBefore = 30;
-  }
 
   if (!next.triggerName && next.label) next.triggerName = String(next.label);
 

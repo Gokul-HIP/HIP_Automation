@@ -73,10 +73,11 @@ export function createMessagingDefaults(overrides = {}) {
 
 /** Backend Send Email / Send WhatsApp node key (camelCase). */
 export const ATTACH_INVOICE_PDF_KEY = "attachInvoicePdf";
+export const ATTACH_PRESCRIPTION_PDF_KEY = "attachPrescriptionPdf";
 
 /**
  * WhatsJet send-media-message supports document attachments
- * (media_type=document, media_url=public invoice PDF).
+ * (media_type=document, media_url=public invoice/prescription PDF).
  */
 export const WHATSAPP_DOCUMENT_ATTACHMENTS_SUPPORTED = true;
 
@@ -100,21 +101,60 @@ export function getAttachInvoicePdfField(nodeType) {
 }
 
 /**
+ * Shared Attachments → Attach Prescription PDF field.
+ * Section title is omitted so it sits under the Invoice PDF heading.
+ * @param {"sendEmail" | "sendWhatsApp"} nodeType
+ */
+export function getAttachPrescriptionPdfField(nodeType) {
+  const whatsappUnsupported =
+    nodeType === "sendWhatsApp" && !WHATSAPP_DOCUMENT_ATTACHMENTS_SUPPORTED;
+  return {
+    key: ATTACH_PRESCRIPTION_PDF_KEY,
+    type: "boolean",
+    label: "Attach Prescription PDF",
+    disabled: whatsappUnsupported,
+    description: whatsappUnsupported
+      ? "Prescription PDF attachments are not currently supported by the WhatsApp provider."
+      : undefined,
+  };
+}
+
+/**
  * @param {unknown} value
+ * @param {string} camel
+ * @param {string} snake
  * @returns {boolean}
  */
-export function isAttachInvoicePdfEnabled(value) {
+function readAttachmentFlag(value, camel, snake) {
   if (value && typeof value === "object") {
-    return Boolean(
-      value.attachInvoicePdf ?? value.attach_invoice_pdf ?? false
-    );
+    return Boolean(value[camel] ?? value[snake] ?? false);
   }
   return Boolean(value);
 }
 
 /**
- * Normalize attachInvoicePdf on messaging node data.
- * Maps snake_case aliases to the backend camelCase key.
+ * @param {unknown} value
+ * @returns {boolean}
+ */
+export function isAttachInvoicePdfEnabled(value) {
+  return readAttachmentFlag(value, ATTACH_INVOICE_PDF_KEY, "attach_invoice_pdf");
+}
+
+/**
+ * @param {unknown} value
+ * @returns {boolean}
+ */
+export function isAttachPrescriptionPdfEnabled(value) {
+  return readAttachmentFlag(
+    value,
+    ATTACH_PRESCRIPTION_PDF_KEY,
+    "attach_prescription_pdf"
+  );
+}
+
+/**
+ * Normalize attachment flags on messaging node data.
+ * Maps snake_case aliases to the backend camelCase keys.
  * @param {Record<string, unknown> | null | undefined} data
  */
 export function normalizeAttachInvoicePdfData(data) {
@@ -124,9 +164,12 @@ export function normalizeAttachInvoicePdfData(data) {
     return data;
   }
 
-  const enabled = isAttachInvoicePdfEnabled(data);
-  const next = { ...data, attachInvoicePdf: enabled };
+  const next = {
+    ...data,
+    attachInvoicePdf: isAttachInvoicePdfEnabled(data),
+    attachPrescriptionPdf: isAttachPrescriptionPdfEnabled(data),
+  };
   delete next.attach_invoice_pdf;
-
+  delete next.attach_prescription_pdf;
   return next;
 }
