@@ -607,6 +607,22 @@
   padding: 0 4px 6px 22px;
 }
 
+.variableTreeSubgroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.variableTreeSubLabel {
+  padding: 4px 8px 2px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
 .variableTreeItem {
   display: block;
   width: 100%;

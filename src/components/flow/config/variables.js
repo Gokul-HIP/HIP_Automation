@@ -2,14 +2,109 @@
  * Workflow variable catalog for template pickers and condition builders.
  * Values resolve from Laravel VariableResolver at runtime.
  *
- * Each entry: { label: display text, token: inserted {{placeholder}} }
+ * Each entry: { key, label, token, valueType?, description? }
  */
 
-import { toInsertToken } from "@/utils/workflowVariableTokens";
+import {
+  makeVariableEntry,
+  REWARD_TIER_VARIABLE_DEFS,
+} from "@/utils/workflowVariableTokens";
 
 /** @param {string} key @param {string} label */
 function entry(key, label) {
-  return { key, label, token: toInsertToken(key) };
+  return makeVariableEntry(key, label);
+}
+
+/**
+ * True when the workflow trigger is the rewards-tier upgrade entry event.
+ * Accepts the catalog key `rewardsTierUpgraded` and the `rewardTierUpgraded` alias.
+ * @param {unknown} triggerKey
+ */
+export function isRewardTierUpgradedTrigger(triggerKey) {
+  const compact = String(triggerKey || "")
+    .trim()
+    .replace(/[_-]/g, "")
+    .toLowerCase();
+  return compact === "rewardtierupgraded" || compact === "rewardstierupgraded";
+}
+
+function buildRewardTierGroup() {
+  /** @type {Map<string, ReturnType<typeof entry>[]>} */
+  const byGroup = new Map();
+  for (const def of REWARD_TIER_VARIABLE_DEFS) {
+    const list = byGroup.get(def.group) || [];
+    list.push(entry(def.key, def.label));
+    byGroup.set(def.group, list);
+  }
+  const subgroups = [...byGroup.entries()].map(([label, variables]) => ({
+    label,
+    variables,
+  }));
+  return {
+    label: "Rewards",
+    subgroups,
+    variables: subgroups.flatMap((subgroup) => subgroup.variables),
+  };
+}
+
+/**
+ * Sections rendered inside one picker category.
+ * Groups with subgroups (Rewards) expose those labels; others stay flat.
+ * @param {{ label?: string, variables?: unknown[], subgroups?: { label?: string, variables?: unknown[] }[] }} group
+ */
+export function variableGroupSections(group) {
+  if (Array.isArray(group?.subgroups) && group.subgroups.length > 0) {
+    return group.subgroups.map((subgroup) => ({
+      label: String(subgroup?.label || ""),
+      variables: subgroup?.variables || [],
+    }));
+  }
+  return [{ label: "", variables: group?.variables || [] }];
+}
+
+/**
+ * Trigger-aware catalog filter. Reward tier placeholders are exposed only for
+ * RewardTierUpgraded. Other groups are left unchanged.
+ * @param {Array<{ label: string, variables?: unknown[], subgroups?: unknown[] }>} groups
+ * @param {unknown} [triggerKey]
+ */
+export function applyRewardTierVariableGroups(groups = [], triggerKey = null) {
+  const rewardKeys = new Set(REWARD_TIER_VARIABLE_DEFS.map((def) => def.key));
+
+  const stripped = groups
+    .map((group) => {
+      const variables = (group.variables || []).filter(
+        (variable) => !rewardKeys.has(variable?.key)
+      );
+      const subgroups = (group.subgroups || [])
+        .map((subgroup) => ({
+          ...subgroup,
+          variables: (subgroup.variables || []).filter(
+            (variable) => !rewardKeys.has(variable?.key)
+          ),
+        }))
+        .filter((subgroup) => subgroup.variables.length > 0);
+      return {
+        ...group,
+        variables,
+        ...(group.subgroups ? { subgroups } : {}),
+      };
+    })
+    .filter((group) => {
+      if (group.subgroups?.length) return true;
+      return group.variables.length > 0;
+    });
+
+  if (!isRewardTierUpgradedTrigger(triggerKey)) return stripped;
+
+  const rewards = structuredClone(buildRewardTierGroup());
+  const systemIndex = stripped.findIndex((group) => group.label === "System");
+  if (systemIndex === -1) return [...stripped, rewards];
+  return [
+    ...stripped.slice(0, systemIndex),
+    rewards,
+    ...stripped.slice(systemIndex),
+  ];
 }
 
 export const WORKFLOW_VARIABLE_GROUPS = [
@@ -84,6 +179,7 @@ export const WORKFLOW_VARIABLE_GROUPS = [
       entry("date", "Date"),
     ],
   },
+  buildRewardTierGroup(),
   {
     label: "Hospital",
     variables: [

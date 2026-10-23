@@ -2,6 +2,7 @@
 
 import { FieldLabel } from "../fields/FieldChrome";
 import { renderTemplate } from "../../config/triggers";
+import { variableGroupSections } from "../../config/variables";
 import { ensureValidPlaceholder } from "@/utils/workflowVariableTokens";
 import styles from "../../styles/medicineReminder.module.css";
 
@@ -37,32 +38,47 @@ export default function TriggerMessageTemplate({
             {variableGroups.map((group) => (
               <div key={group.label} className={styles.variableGroup}>
                 <span className={styles.variableGroupLabel}>{group.label}</span>
-                <div className={styles.variableChips}>
-                  {group.variables.map((variable) => {
-                    const rawToken =
-                      typeof variable === "string"
-                        ? variable
-                        : String(variable?.token || variable?.key || "");
-                    const token = ensureValidPlaceholder(rawToken);
-                    const chipLabel =
-                      typeof variable === "string"
-                        ? variable
-                        : String(variable?.label || token);
-                    return (
-                      <button
-                        key={token || chipLabel}
-                        type="button"
-                        className={styles.token}
-                        title={`Insert ${token}`}
-                        onClick={() =>
-                          token && onChange?.(`${value || ""}${token}`)
-                        }
-                      >
-                        {chipLabel}
-                      </button>
-                    );
-                  })}
-                </div>
+                {variableGroupSections(group).map((section) => (
+                  <div key={section.label || group.label}>
+                    {section.label ? (
+                      <span className={styles.variableGroupLabel}>{section.label}</span>
+                    ) : null}
+                    <div className={styles.variableChips}>
+                      {section.variables.map((variable) => {
+                        const rawToken =
+                          typeof variable === "string"
+                            ? variable
+                            : String(variable?.token || variable?.key || "");
+                        const token = ensureValidPlaceholder(rawToken);
+                        const chipLabel =
+                          typeof variable === "string"
+                            ? variable
+                            : String(variable?.label || token);
+                        const description =
+                          typeof variable === "object"
+                            ? String(variable?.description || "")
+                            : "";
+                        return (
+                          <button
+                            key={token || chipLabel}
+                            type="button"
+                            className={styles.token}
+                            title={
+                              description
+                                ? `${description} Inserts ${token}`
+                                : `Insert ${token}`
+                            }
+                            onClick={() =>
+                              token && onChange?.(`${value || ""}${token}`)
+                            }
+                          >
+                            {chipLabel}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             ))}
           </div>

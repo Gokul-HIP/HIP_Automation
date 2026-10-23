@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { HiOutlineChevronRight } from "react-icons/hi";
 import { useVariables } from "@/hooks/useWorkflowApi";
+import { variableGroupSections } from "@/components/flow/config/variables";
 import { ensureValidPlaceholder } from "@/utils/workflowVariableTokens";
 import styles from "@/components/flow/styles/propertyPanel.module.css";
 
@@ -27,11 +28,21 @@ function VariableSkeleton() {
  */
 function getVariableParts(variable) {
   if (typeof variable === "string") {
-    return { label: variable, token: variable };
+    return {
+      label: variable,
+      token: ensureValidPlaceholder(variable),
+      description: "",
+    };
   }
-  const token = String(variable?.token || "");
+  const token = ensureValidPlaceholder(variable?.token || variable?.key || "");
   const label = String(variable?.label || token);
-  return { label, token };
+  const description = String(variable?.description || "");
+  return { label, token, description };
+}
+
+function variableTitle(description, token) {
+  if (description) return `${description} Inserts ${token}`;
+  return `Insert ${token}`;
 }
 
 function readRecent() {
@@ -78,6 +89,7 @@ export default function ApiVariablePicker({ triggerKey, onInsert }) {
       "Appointment",
       "Invoice",
       "Payment",
+      "Rewards",
       "Lab",
       "Membership",
       "Medicine",
@@ -87,15 +99,31 @@ export default function ApiVariablePicker({ triggerKey, onInsert }) {
 
     return [...groups]
       .map((group) => {
-        const variables = (group.variables || []).filter((variable) => {
-          if (!q) return true;
-          const { label, token } = getVariableParts(variable);
-          return (
-            label.toLowerCase().includes(q) ||
-            token.toLowerCase().includes(q)
-          );
-        });
-        return { ...group, variables };
+        const groupHit = Boolean(q) && group.label.toLowerCase().includes(q);
+        const sections = variableGroupSections(group)
+          .map((section) => {
+            const sectionHit =
+              Boolean(q) && section.label.toLowerCase().includes(q);
+            const variables = (section.variables || []).filter((variable) => {
+              if (!q || groupHit || sectionHit) return true;
+              const { label, token, description } = getVariableParts(variable);
+              return (
+                label.toLowerCase().includes(q) ||
+                token.toLowerCase().includes(q) ||
+                description.toLowerCase().includes(q)
+              );
+            });
+            return { ...section, variables };
+          })
+          .filter((section) => section.variables.length > 0);
+        const variables = sections.flatMap((section) => section.variables);
+        const subgroups = sections.some((section) => section.label)
+          ? sections.map((section) => ({
+              label: section.label,
+              variables: section.variables,
+            }))
+          : undefined;
+        return { ...group, variables, subgroups };
       })
       .filter((group) => group.variables.length > 0)
       .sort((a, b) => {
@@ -252,29 +280,51 @@ export default function ApiVariablePicker({ triggerKey, onInsert }) {
 
               {isOpen ? (
                 <div className={styles.variableTreeChildren} role="group">
-                  {group.variables.map((variable) => {
-                    const { label, token } = getVariableParts(variable);
-                    return (
-                      <div key={token || label} className={styles.variableTreeItemRow}>
-                        <button
-                          type="button"
-                          className={styles.variableTreeItem}
-                          title={`Insert ${token}`}
-                          onClick={() => handleInsert(token, label)}
-                        >
-                          {label}
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.retryBtn}
-                          title={`Copy ${token}`}
-                          onClick={() => handleCopy(token, label)}
-                        >
-                          Copy
-                        </button>
-                      </div>
-                    );
-                  })}
+                  {(group.subgroups?.length
+                    ? group.subgroups
+                    : [{ label: "", variables: group.variables }]
+                  ).map((section) => (
+                    <div
+                      key={section.label || group.label}
+                      className={
+                        section.label ? styles.variableTreeSubgroup : undefined
+                      }
+                    >
+                      {section.label ? (
+                        <span className={styles.variableTreeSubLabel}>
+                          {section.label}
+                        </span>
+                      ) : null}
+                      {section.variables.map((variable) => {
+                        const { label, token, description } =
+                          getVariableParts(variable);
+                        if (!token) return null;
+                        return (
+                          <div
+                            key={token || label}
+                            className={styles.variableTreeItemRow}
+                          >
+                            <button
+                              type="button"
+                              className={styles.variableTreeItem}
+                              title={variableTitle(description, token)}
+                              onClick={() => handleInsert(token, label)}
+                            >
+                              {label}
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.retryBtn}
+                              title={`Copy ${token}`}
+                              onClick={() => handleCopy(token, label)}
+                            >
+                              Copy
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
                 </div>
               ) : null}
             </div>

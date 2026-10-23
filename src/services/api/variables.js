@@ -1,4 +1,5 @@
 import { apiClient, unwrapData } from "./client";
+import { applyRewardTierVariableGroups } from "@/components/flow/config/variables";
 import {
   ensureCoreVariableGroups,
   normalizeVariableEntries,
@@ -74,9 +75,10 @@ function normalizeGroup(group) {
  * Each variable is `{ label, token, key }` — UI shows label, insert uses token.
  * Always restores core groups (including Appointment) on the frontend.
  * @param {unknown} response
+ * @param {string | null | undefined} [triggerKey]
  * @returns {import('@/types/builder-api').ApiVariableGroup[]}
  */
-export function normalizeVariableGroups(response) {
+export function normalizeVariableGroups(response, triggerKey = null) {
   const raw = unwrapData(response);
   let groups = [];
 
@@ -141,7 +143,10 @@ export function normalizeVariableGroups(response) {
     }
   }
 
-  return ensureCoreVariableGroups(groups);
+  return applyRewardTierVariableGroups(
+    ensureCoreVariableGroups(groups),
+    triggerKey
+  );
 }
 
 /**
@@ -151,5 +156,5 @@ export async function fetchVariables(triggerKey = null) {
   const params = {};
   if (triggerKey) params.trigger = triggerKey;
   const response = await apiClient.get("/workflow/variables", { params });
-  return normalizeVariableGroups(response.data);
+  return normalizeVariableGroups(response.data, triggerKey);
 }

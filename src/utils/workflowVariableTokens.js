@@ -48,6 +48,65 @@ export const VARIABLE_DISPLAY_LABELS = {
 };
 
 /**
+ * Canonical RewardTierUpgraded template variables.
+ * Keys stay dotted — do not alias them to snake_case names.
+ * @type {Array<{ key: string, label: string, group: string, valueType: string, description: string }>}
+ */
+export const REWARD_TIER_VARIABLE_DEFS = [
+  {
+    key: "rewards.previous_tier.id",
+    label: "Previous Tier ID",
+    group: "Previous Tier",
+    valueType: "id",
+    description:
+      "Previous Tier is the rewards tier the patient belonged to before this upgrade. This is that tier's ID.",
+  },
+  {
+    key: "rewards.previous_tier.name",
+    label: "Previous Tier Name",
+    group: "Previous Tier",
+    valueType: "string",
+    description:
+      "Previous Tier is the rewards tier the patient belonged to before this upgrade. This is that tier's name.",
+  },
+  {
+    key: "rewards.previous_tier.rank",
+    label: "Previous Tier Rank",
+    group: "Previous Tier",
+    valueType: "number",
+    description:
+      "Previous Tier is the rewards tier the patient belonged to before this upgrade. This is that tier's rank.",
+  },
+  {
+    key: "rewards.current_tier.id",
+    label: "Current Tier ID",
+    group: "Current Tier",
+    valueType: "id",
+    description:
+      "Current Tier is the rewards tier newly assigned by this upgrade. This is that tier's ID.",
+  },
+  {
+    key: "rewards.current_tier.name",
+    label: "Current Tier Name",
+    group: "Current Tier",
+    valueType: "string",
+    description:
+      "Current Tier is the rewards tier newly assigned by this upgrade. This is that tier's name.",
+  },
+  {
+    key: "rewards.current_tier.rank",
+    label: "Current Tier Rank",
+    group: "Current Tier",
+    valueType: "number",
+    description:
+      "Current Tier is the rewards tier newly assigned by this upgrade. This is that tier's rank.",
+  },
+];
+
+/** @type {Record<string, { valueType: string, description: string }>} */
+export const VARIABLE_METADATA = {};
+
+/**
  * Alias / legacy keys → backend VariableResolver key.
  * Bare object names (patient, doctor, hospital) map to *_name fields.
  * @type {Record<string, string | null>}
@@ -273,6 +332,15 @@ export const CORE_VARIABLE_GROUPS = [
   },
 ];
 
+for (const def of REWARD_TIER_VARIABLE_DEFS) {
+  VARIABLE_DISPLAY_LABELS[def.key] = def.label;
+  VARIABLE_INSERT_ALIASES[def.key] = def.key;
+  VARIABLE_METADATA[def.key] = {
+    valueType: def.valueType,
+    description: def.description,
+  };
+}
+
 /** Allowlist of keys the Laravel VariableResolver is expected to resolve. */
 export const BACKEND_VARIABLE_KEYS = new Set(
   Object.values(VARIABLE_INSERT_ALIASES).filter(Boolean)
@@ -422,10 +490,13 @@ export function humanizeVariableKey(key) {
  * @returns {{ label: string, token: string, key: string }}
  */
 export function makeVariableEntry(key, label) {
+  const meta = VARIABLE_METADATA[key] || {};
   return {
     key,
     label: label || VARIABLE_DISPLAY_LABELS[key] || humanizeVariableKey(key),
     token: toInsertToken(key),
+    ...(meta.valueType ? { valueType: meta.valueType } : {}),
+    ...(meta.description ? { description: meta.description } : {}),
   };
 }
 

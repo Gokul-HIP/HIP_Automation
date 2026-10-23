@@ -927,6 +927,10 @@ const TRIGGER_TYPE_ALIASES = {
   // Manager / meeting alias — digital prescription shares prescriptionAdded event.
   digitalPrescription: "prescriptionAdded",
   digital_prescription: "prescriptionAdded",
+  rewardTierUpgraded: "rewardsTierUpgraded",
+  RewardTierUpgraded: "rewardsTierUpgraded",
+  rewards_tier_upgraded: "rewardsTierUpgraded",
+  reward_tier_upgraded: "rewardsTierUpgraded",
 };
 
 export { TRIGGER_TYPE_ALIASES };

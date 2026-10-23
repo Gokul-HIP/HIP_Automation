@@ -1,5 +1,6 @@
 "use client";
 
+import { variableGroupSections } from "../../config/variables";
 import { ensureValidPlaceholder } from "@/utils/workflowVariableTokens";
 import styles from "../../styles/propertyPanel.module.css";
 
@@ -9,11 +10,17 @@ import styles from "../../styles/propertyPanel.module.css";
 function getVariableParts(variable) {
   if (typeof variable === "string") {
     const token = ensureValidPlaceholder(variable);
-    return { label: variable, token };
+    return { label: variable, token, description: "" };
   }
   const token = ensureValidPlaceholder(variable?.token || variable?.key || "");
   const label = String(variable?.label || token);
-  return { label, token };
+  const description = String(variable?.description || "");
+  return { label, token, description };
+}
+
+function variableTitle(description, token) {
+  if (description) return `${description} Inserts ${token}`;
+  return `Insert ${token}`;
 }
 
 export default function VariablePicker({ groups = [], onInsert }) {
@@ -29,22 +36,29 @@ export default function VariablePicker({ groups = [], onInsert }) {
         {groups.map((group) => (
           <div key={group.label} className={styles.variableGroup}>
             <span className={styles.variableGroupLabel}>{group.label}</span>
-            <div className={styles.variableChips}>
-              {group.variables.map((variable) => {
-                const { label, token } = getVariableParts(variable);
-                return (
-                  <button
-                    key={token || label}
-                    type="button"
-                    className={styles.token}
-                    title={`Insert ${token}`}
-                    onClick={() => token && onInsert?.(token)}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
+            {variableGroupSections(group).map((section) => (
+              <div key={section.label || group.label}>
+                {section.label ? (
+                  <span className={styles.variableGroupLabel}>{section.label}</span>
+                ) : null}
+                <div className={styles.variableChips}>
+                  {section.variables.map((variable) => {
+                    const { label, token, description } = getVariableParts(variable);
+                    return (
+                      <button
+                        key={token || label}
+                        type="button"
+                        className={styles.token}
+                        title={variableTitle(description, token)}
+                        onClick={() => token && onInsert?.(token)}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         ))}
       </div>

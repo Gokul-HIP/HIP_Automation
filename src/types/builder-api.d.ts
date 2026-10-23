@@ -50,11 +50,18 @@ export type ApiVariableEntry = {
   label: string;
   /** Inserted placeholder, e.g. "{{patient_name}}" */
   token: string;
+  /** id | string | number | boolean, when the catalog declares one */
+  valueType?: string;
+  description?: string;
 };
 
 export type ApiVariableGroup = {
   label: string;
   variables: ApiVariableEntry[];
+  subgroups?: Array<{
+    label: string;
+    variables: ApiVariableEntry[];
+  }>;
 };
 
 export type ApiTemplate = {
