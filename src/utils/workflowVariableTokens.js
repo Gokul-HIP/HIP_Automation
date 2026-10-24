@@ -103,6 +103,82 @@ export const REWARD_TIER_VARIABLE_DEFS = [
   },
 ];
 
+/**
+ * Canonical RewardPointsUpdated message variables.
+ * Dotted keys stay dotted. PatientName and PatientMobile are exact aliases.
+ * @type {Array<{ key: string, label: string, group: string, valueType: string, description: string }>}
+ */
+export const REWARD_POINTS_VARIABLE_DEFS = [
+  {
+    key: "PatientName",
+    label: "PatientName",
+    group: "Patient",
+    valueType: "string",
+    description:
+      "Same patient name as {{patient_name}}. Laravel normalizes PatientName to patient_name.",
+  },
+  {
+    key: "PatientMobile",
+    label: "PatientMobile",
+    group: "Patient",
+    valueType: "string",
+    description:
+      "Same patient mobile as {{patient_mobile}}. Laravel normalizes PatientMobile to patient_mobile.",
+  },
+  {
+    key: "rewards.previous_balance",
+    label: "Previous Balance",
+    group: "Rewards",
+    valueType: "number",
+    description: "Reward balance before this change.",
+  },
+  {
+    key: "rewards.current_balance",
+    label: "Current Balance",
+    group: "Rewards",
+    valueType: "number",
+    description: "Reward balance after this change.",
+  },
+  {
+    key: "rewards.points_changed",
+    label: "Points Changed",
+    group: "Rewards",
+    valueType: "number",
+    description:
+      "Signed balance delta. A redemption can be negative.",
+  },
+  {
+    key: "rewards.coins_earned",
+    label: "Coins Earned From This Payment",
+    group: "Rewards",
+    valueType: "number",
+    description:
+      "Persisted coin award for the payment that caused this wallet change. Absent when there is no payment award.",
+  },
+  {
+    key: "rewards.change_type",
+    label: "Change Type",
+    group: "Rewards",
+    valueType: "string",
+    description: "How the balance changed: earned, redeemed, or adjusted.",
+  },
+  {
+    key: "rewards.source",
+    label: "Source",
+    group: "Rewards",
+    valueType: "string",
+    description: "Source of the reward change.",
+  },
+];
+
+/**
+ * Placeholders that must be inserted exactly, even when an older alias
+ * would rewrite them (PatientName → patient_name, PatientMobile → patient_mobile).
+ */
+export const EXACT_INSERT_KEYS = new Set(
+  REWARD_POINTS_VARIABLE_DEFS.map((def) => def.key)
+);
+
 /** @type {Record<string, { valueType: string, description: string }>} */
 export const VARIABLE_METADATA = {};
 
@@ -341,6 +417,17 @@ for (const def of REWARD_TIER_VARIABLE_DEFS) {
   };
 }
 
+for (const def of REWARD_POINTS_VARIABLE_DEFS) {
+  VARIABLE_DISPLAY_LABELS[def.key] = def.label;
+  VARIABLE_METADATA[def.key] = {
+    valueType: def.valueType,
+    description: def.description,
+  };
+  if (def.key.includes(".")) {
+    VARIABLE_INSERT_ALIASES[def.key] = def.key;
+  }
+}
+
 /** Allowlist of keys the Laravel VariableResolver is expected to resolve. */
 export const BACKEND_VARIABLE_KEYS = new Set(
   Object.values(VARIABLE_INSERT_ALIASES).filter(Boolean)
@@ -395,6 +482,10 @@ export function toInsertToken(key) {
 export function ensureValidPlaceholder(token) {
   const extracted = extractVariableKey(token);
   if (!extracted) return "";
+
+  if (EXACT_INSERT_KEYS.has(extracted)) {
+    return "{{" + extracted + "}}";
+  }
 
   const aliasHit =
     VARIABLE_INSERT_ALIASES[extracted] !== undefined

@@ -3,6 +3,7 @@ export { WORKFLOW_CATEGORIES, getCategoryById } from "./workflowCategories";
 
 import { WORKFLOW_NODES } from "./nodes/catalog";
 import { WORKFLOW_CATEGORIES } from "./workflowCategories";
+import { TRIGGER_TYPE_ALIASES } from "./triggers";
 
 const byType = Object.fromEntries(WORKFLOW_NODES.map((n) => [n.type, n]));
 
@@ -48,9 +49,18 @@ export function getSidebarCatalogGroups({ search = "", apiTriggerCatalog = null 
 
   const localTriggers = WORKFLOW_NODES.filter((node) => node.isTrigger);
   const localTriggerTypes = new Set(localTriggers.map((node) => node.type));
+  for (const [alias, canonical] of Object.entries(TRIGGER_TYPE_ALIASES)) {
+    if (localTriggerTypes.has(canonical)) localTriggerTypes.add(alias);
+  }
   const localTriggerTitles = new Set(
     localTriggers.map((node) => normalizeTriggerLabel(node.title))
   );
+
+  const matchesLocalTrigger = (key) => {
+    if (!key || localTriggerTypes.has(key)) return true;
+    const camel = String(key).replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+    return localTriggerTypes.has(camel);
+  };
 
   /** API-only triggers to show inside the local Triggers accordion. */
   const apiOnlyTriggers = [];
@@ -59,7 +69,7 @@ export function getSidebarCatalogGroups({ search = "", apiTriggerCatalog = null 
   for (const { triggers } of apiTriggerCatalog?.groups ?? []) {
     for (const trigger of triggers ?? []) {
       if (!trigger?.key || seenApiKeys.has(trigger.key)) continue;
-      if (localTriggerTypes.has(trigger.key)) continue;
+      if (matchesLocalTrigger(trigger.key)) continue;
       if (localTriggerTitles.has(normalizeTriggerLabel(trigger.name))) continue;
       if (!matchesText(trigger.name, trigger.description, trigger.key)) continue;
       seenApiKeys.add(trigger.key);
@@ -70,7 +80,7 @@ export function getSidebarCatalogGroups({ search = "", apiTriggerCatalog = null 
   // Flat API list (no groups) — same dedupe rules as above.
   for (const trigger of apiTriggerCatalog?.triggers ?? []) {
     if (!trigger?.key || seenApiKeys.has(trigger.key)) continue;
-    if (localTriggerTypes.has(trigger.key)) continue;
+    if (matchesLocalTrigger(trigger.key)) continue;
     if (localTriggerTitles.has(normalizeTriggerLabel(trigger.name))) continue;
     if (!matchesText(trigger.name, trigger.description, trigger.key)) continue;
     seenApiKeys.add(trigger.key);

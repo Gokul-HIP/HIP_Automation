@@ -2207,7 +2207,7 @@ Complete saved node object as produced for workflow configuration persistence (`
 | `tone` | string | No | success | UI tone token from `toneForCategory` | No | Visual tone for the canvas node. |
 | `description` | string | No | Triggers the workflow whenever a patient's reward points balance is updated. | — | No | Human description copied from schema/catalog. |
 | `label` | text | Yes | "Reward Points Updated" | — | No | Trigger Name. Enter trigger name. Placeholder: Enter trigger name |
-| `updateType` | multiselect | Yes | ["any"] | `any` (Any), `points_added` (Points Added), `points_redeemed` (Points Redeemed), `points_adjusted` (Points Adjusted) | No | Update Type |
+| `updateType` | multiselect | No | ["any"] | `any` (Any), `earned` (Points Added), `redeemed` (Points Redeemed), `adjusted` (Points Adjusted). An empty list also means every balance change. Legacy `points_added`, `points_redeemed`, and `points_adjusted` are normalized to `earned`, `redeemed`, and `adjusted` on save and reload. | No | Update Type |
 | `status` | string | No | "draft" | — | No | Present on node.data via schema defaults / createNodeDefaults (saved with the node). _(Default key not declared as a schema.fields entry)_ |
 
 ## Validation
@@ -2227,7 +2227,13 @@ Complete saved node object as produced for workflow configuration persistence (`
 
 ## Variable Support
 
-No variable picker on this node’s property panel.
+No variable picker on this trigger’s property panel. Messaging nodes used after this trigger insert these placeholders exactly. Laravel `VariableResolver` resolves them at execution time.
+
+| Placeholder | Resolves to |
+|---|---|
+| `{{patient_name}}` and `{{PatientName}}` | The same patient name. `PatientName` is normalized to `patient_name`. |
+| `{{patient_mobile}}` and `{{PatientMobile}}` | The same patient mobile (`patient.mobile`, or context `patient_mobile`). `PatientMobile` is normalized to `patient_mobile`. `{{patient_mobile}}` stays available for other triggers. |
+| `{{rewards.previous_balance}}`, `{{rewards.current_balance}}`, `{{rewards.points_changed}}`, `{{rewards.coins_earned}}`, `{{rewards.change_type}}`, `{{rewards.source}}` | The matching `context.rewards` field when that value is present. `0` and negative numbers are real values. A missing or null field stays as the placeholder. `{{rewards.coins_earned}}` is the persisted payment award, and preview does not calculate it from the wallet delta. `reward_source` is not a substitute for `{{rewards.source}}`. |
 
 ## Full Frontend JSON
 
@@ -2276,7 +2282,7 @@ Complete saved node object as produced for workflow configuration persistence (`
 ## Backend Mapping
 
 | Frontend Node ID | `rewardUpdated` |
-| Trigger aliases (NodeTypeNormalizer-style, frontend) | _None in frontend `TRIGGER_TYPE_ALIASES`_ |
+| Trigger aliases (NodeTypeNormalizer-style, frontend) | `RewardPointsUpdated`, `rewardPointsUpdated`, `reward_points_updated`, and `reward_updated` all resolve to `rewardUpdated` |
 | Canonical backend type (from contracts) | `rewardUpdated` (same id; Laravel `NodeTypeNormalizer` **not in this repo**) |
 | Executor (from `automation/node-contracts.json`) | JS NodeExecutorRegistry.#executeTrigger (generic passthrough). Laravel executor not present in this repo. |
 | Backend status (contracts) | `partial` |
@@ -2284,8 +2290,11 @@ Complete saved node object as produced for workflow configuration persistence (`
 ## Limitations / Notes
 
 - Catalog description: Reward Points Updated
+- Update Type `any` and an empty selection both include every balance change. Family Package Plan Tier Updated keeps its own Update Type values: `any`, `upgraded`, and `downgraded`.
+- Local preview substitutes a placeholder only when that value is already in the preview context, including `0` and negative reward numbers. Missing placeholders stay visible. Preview does not send the message. Laravel remains the runtime resolver.
+- A blank patient mobile is stored by Laravel as an empty `patient_mobile` string. Preview leaves `{{patient_mobile}}` and `{{PatientMobile}}` visible when no mobile is present.
 - Next-step behavior (contracts): action=continue; follow first outgoing edge (parallel fan-out not implemented)
-- Frontend schema is complete; Laravel-specific executor for this trigger is not present in this repository (contracts: partial).
+- Frontend schema is complete; Laravel-specific executor for this trigger is not present in this repository (contracts: partial). The saved workflow still carries unresolved placeholders. Frontend tests do not verify provider delivery.
 
 ---
 # Node: rewardsTierUpgraded

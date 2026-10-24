@@ -86,7 +86,7 @@ export default function MessageTemplateEditor({
       </div>
 
       <p className={styles.hint}>
-        Templates are managed in Template Manager. Variables resolve at runtime.
+        Templates are managed in Template Manager. Preview fills a placeholder only when a sample value is already present. Missing placeholders stay visible. This preview does not send the message.
       </p>
 
       <div className={styles.previewMessage}>

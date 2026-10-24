@@ -14,6 +14,7 @@ import {
   MESSAGE_TYPE_OPTIONS,
   CANCELLED_BY_OPTIONS,
   REWARD_UPDATE_OPTIONS,
+  REWARD_SOURCE_OPTIONS,
   PAYMENT_MODE_OPTIONS,
   normalizeChannelList,
 } from "@/components/flow/config/triggers/shared";
@@ -63,6 +64,8 @@ function multiSelectFallbackOptions(field) {
       return CANCELLED_BY_OPTIONS;
     case "updateType":
       return REWARD_UPDATE_OPTIONS;
+    case "rewardSource":
+      return REWARD_SOURCE_OPTIONS;
     case "paymentMode":
       return PAYMENT_MODE_OPTIONS;
     default:

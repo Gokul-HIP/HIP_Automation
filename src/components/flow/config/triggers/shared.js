@@ -123,13 +123,173 @@ export const EXPIRY_TIMING_OPTIONS = [
   { value: "after_expiry", label: "After Expiry" },
 ];
 
-/** Reward points update types. */
+/**
+ * Reward points update types.
+ * Values are the backend contract: any/empty = every balance change.
+ */
 export const REWARD_UPDATE_OPTIONS = [
   { value: "any", label: "Any" },
-  { value: "points_added", label: "Points Added" },
-  { value: "points_redeemed", label: "Points Redeemed" },
-  { value: "points_adjusted", label: "Points Adjusted" },
+  { value: "earned", label: "Points Added" },
+  { value: "redeemed", label: "Points Redeemed" },
+  { value: "adjusted", label: "Points Adjusted" },
 ];
+
+/**
+ * Reward sources already emitted on reward_source.
+ * payment_earnings is the builder group for the four payment earnings.
+ * any and an empty selection include every source.
+ */
+export const PAYMENT_EARNING_SOURCES = [
+  "appointment_payment",
+  "package_booking",
+  "second_opinion_payment",
+  "pharmacy_payment",
+];
+
+export const REWARD_SOURCE_OPTIONS = [
+  { value: "any", label: "Any Source" },
+  { value: "payment_earnings", label: "Payment Earnings" },
+  { value: "appointment_payment", label: "Appointment Payment" },
+  { value: "package_booking", label: "Package Booking" },
+  { value: "second_opinion_payment", label: "Second Opinion Payment" },
+  { value: "pharmacy_payment", label: "Pharmacy Payment" },
+  { value: "payment", label: "Payment" },
+  { value: "appointment_redemption", label: "Appointment Redemption" },
+  { value: "package_redemption", label: "Package Redemption" },
+  { value: "second_opinion_redemption", label: "Second Opinion Redemption" },
+  { value: "redemption", label: "Redemption" },
+  { value: "hip_points", label: "HIP Points" },
+  { value: "bill_analysis", label: "Bill Analysis" },
+  { value: "wallet", label: "Wallet" },
+];
+
+const REWARD_SOURCE_ALIASES = {
+  any: "any",
+  any_source: "any",
+  "any source": "any",
+  all: "any",
+  payment_earnings: "payment_earnings",
+  "payment earnings": "payment_earnings",
+  appointment_payment: "appointment_payment",
+  "appointment payment": "appointment_payment",
+  package_booking: "package_booking",
+  "package booking": "package_booking",
+  second_opinion_payment: "second_opinion_payment",
+  "second opinion payment": "second_opinion_payment",
+  pharmacy_payment: "pharmacy_payment",
+  "pharmacy payment": "pharmacy_payment",
+  payment: "payment",
+  appointment_redemption: "appointment_redemption",
+  "appointment redemption": "appointment_redemption",
+  package_redemption: "package_redemption",
+  "package redemption": "package_redemption",
+  second_opinion_redemption: "second_opinion_redemption",
+  "second opinion redemption": "second_opinion_redemption",
+  redemption: "redemption",
+  hip_points: "hip_points",
+  "hip points": "hip_points",
+  bill_analysis: "bill_analysis",
+  "bill analysis": "bill_analysis",
+  wallet: "wallet",
+};
+
+/** Legacy builder values saved before the backend contract used earned/redeemed/adjusted. */
+const LEGACY_REWARD_UPDATE_TYPES = {
+  any: "any",
+  points_added: "earned",
+  points_redeemed: "redeemed",
+  points_adjusted: "adjusted",
+  earned: "earned",
+  redeemed: "redeemed",
+  adjusted: "adjusted",
+};
+
+const REWARD_POINTS_NODE_ALIASES = new Set([
+  "rewardUpdated",
+  "reward_updated",
+  "RewardPointsUpdated",
+  "rewardPointsUpdated",
+  "reward_points_updated",
+]);
+
+/**
+ * Map one Update Type entry onto the backend value.
+ * Empty input stays empty. Unknown values are dropped.
+ * @param {unknown} value
+ * @returns {string[]}
+ */
+export function normalizeRewardUpdateTypeList(value) {
+  if (value == null || value === "") return [];
+  const list = Array.isArray(value) ? value : [value];
+  const next = [];
+  const seen = new Set();
+  for (const item of list) {
+    const raw = String(item ?? "").trim();
+    if (!raw) continue;
+    const mapped =
+      LEGACY_REWARD_UPDATE_TYPES[raw] ||
+      LEGACY_REWARD_UPDATE_TYPES[raw.toLowerCase()];
+    if (!mapped || seen.has(mapped)) continue;
+    seen.add(mapped);
+    next.push(mapped);
+  }
+  return next;
+}
+
+/**
+ * Map one Reward Source entry onto the stored value.
+ * Empty input stays empty. Unknown values are dropped.
+ * @param {unknown} value
+ * @returns {string[]}
+ */
+export function normalizeRewardSourceList(value) {
+  if (value == null || value === "") return [];
+  const list = Array.isArray(value) ? value : [value];
+  const next = [];
+  const seen = new Set();
+  for (const item of list) {
+    const raw = String(item ?? "").trim();
+    if (!raw) continue;
+    const mapped =
+      REWARD_SOURCE_ALIASES[raw] ||
+      REWARD_SOURCE_ALIASES[raw.toLowerCase()] ||
+      REWARD_SOURCE_ALIASES[raw.toLowerCase().replace(/[\s-]+/g, "_")];
+    if (!mapped || seen.has(mapped)) continue;
+    seen.add(mapped);
+    next.push(mapped);
+  }
+  return next;
+}
+
+/**
+ * Persist Reward Points Updated with backend update types.
+ * `any` and an empty list both mean every balance change.
+ * Does not rewrite other triggers that also store `updateType`.
+ * @param {Record<string, unknown>} data
+ */
+export function normalizeRewardUpdatedData(data = {}) {
+  if (!data || typeof data !== "object") return data;
+  const nodeType = String(data.nodeType || "");
+  const triggerKey = String(data.triggerKey || "");
+  if (
+    !REWARD_POINTS_NODE_ALIASES.has(nodeType) &&
+    !REWARD_POINTS_NODE_ALIASES.has(triggerKey)
+  ) {
+    return data;
+  }
+
+  const next = { ...data };
+  if (REWARD_POINTS_NODE_ALIASES.has(nodeType) && nodeType !== "rewardUpdated") {
+    next.nodeType = "rewardUpdated";
+  }
+  if (Object.prototype.hasOwnProperty.call(data, "updateType")) {
+    next.updateType = normalizeRewardUpdateTypeList(data.updateType);
+  }
+  if (Object.prototype.hasOwnProperty.call(data, "rewardSource")) {
+    next.rewardSource = normalizeRewardSourceList(data.rewardSource);
+  }
+  return next;
+}
 
 /** Family package tier update types. */
 export const FAMILY_TIER_UPDATE_OPTIONS = [
@@ -223,15 +383,63 @@ export function createBaseTriggerDefaults(overrides = {}) {
   };
 }
 
+const PREVIEW_TOKEN = /\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g;
+
+function normalizePreviewKey(key) {
+  return key.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
+}
+
+function previewScalar(value) {
+  if (value == null || value === "") return undefined;
+  if (typeof value === "number") return Number.isFinite(value) ? value : undefined;
+  if (typeof value === "string" || typeof value === "boolean") return value;
+  return undefined;
+}
+
+function readPreviewPath(source, path) {
+  if (source == null || typeof source !== "object") return undefined;
+  if (Object.prototype.hasOwnProperty.call(source, path)) return source[path];
+  if (!path.includes(".")) return undefined;
+  let current = source;
+  for (const part of path.split(".")) {
+    if (
+      current == null ||
+      typeof current !== "object" ||
+      !Object.prototype.hasOwnProperty.call(current, part)
+    ) {
+      return undefined;
+    }
+    current = current[part];
+  }
+  return current;
+}
+
 /**
+ * Local preview only. Substitutes a placeholder when that value is already
+ * present, including 0 and negative numbers. Missing or blank values stay
+ * visible as the original placeholder. This does not send a message.
  * @param {string} template
- * @param {Record<string, string | number>} [context]
+ * @param {Record<string, unknown>} [context]
  */
 export function renderTemplate(template, context = {}) {
   if (!template) return "";
-  return template.replace(/\{\{(\w+)\}\}/g, (match, key) => {
-    const value = context[key];
-    return value == null || value === "" ? match : String(value);
+  return template.replace(PREVIEW_TOKEN, (match, key) => {
+    const direct = previewScalar(readPreviewPath(context, key));
+    if (direct !== undefined) return String(direct);
+    if (key.includes(".")) return match;
+
+    const normalized = normalizePreviewKey(key);
+    const alias = previewScalar(readPreviewPath(context, normalized));
+    if (alias !== undefined) return String(alias);
+    if (normalized === "patient_mobile") {
+      const mobile = previewScalar(readPreviewPath(context, "patient.mobile"));
+      if (mobile !== undefined) return String(mobile);
+    }
+    if (normalized === "patient_name") {
+      const name = previewScalar(readPreviewPath(context, "patient.name"));
+      if (name !== undefined) return String(name);
+    }
+    return match;
   });
 }
 

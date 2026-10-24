@@ -86,8 +86,8 @@ export default function TriggerMessageTemplate({
       </div>
 
       <p className={styles.hint}>
-        Variables resolve from Laravel context at runtime — never hardcode
-        clinical or appointment data.
+        Preview fills a placeholder only when a sample value is already present.
+        Missing placeholders stay visible. This preview does not send the message.
       </p>
 
       <div className={styles.previewMessage}>

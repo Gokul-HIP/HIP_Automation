@@ -7,6 +7,7 @@
 
 import {
   makeVariableEntry,
+  REWARD_POINTS_VARIABLE_DEFS,
   REWARD_TIER_VARIABLE_DEFS,
 } from "@/utils/workflowVariableTokens";
 
@@ -104,6 +105,99 @@ export function applyRewardTierVariableGroups(groups = [], triggerKey = null) {
     ...stripped.slice(0, systemIndex),
     rewards,
     ...stripped.slice(systemIndex),
+  ];
+}
+
+const REWARD_POINTS_HIDDEN_KEYS = new Set([
+  "patient.first_name",
+  "reward_source",
+]);
+
+/**
+ * True for the Reward Points Updated entry trigger, including RewardPointsUpdated.
+ * @param {unknown} triggerKey
+ */
+export function isRewardPointsUpdatedTrigger(triggerKey) {
+  const compact = String(triggerKey || "")
+    .trim()
+    .replace(/[_-]/g, "")
+    .toLowerCase();
+  return compact === "rewardupdated" || compact === "rewardpointsupdated";
+}
+
+function withoutKeys(groups, keys) {
+  return groups
+    .map((group) => {
+      const variables = (group.variables || []).filter(
+        (variable) => !keys.has(variable?.key)
+      );
+      const subgroups = (group.subgroups || [])
+        .map((subgroup) => ({
+          ...subgroup,
+          variables: (subgroup.variables || []).filter(
+            (variable) => !keys.has(variable?.key)
+          ),
+        }))
+        .filter((subgroup) => subgroup.variables.length > 0);
+      return {
+        ...group,
+        variables,
+        ...(group.subgroups ? { subgroups } : {}),
+      };
+    })
+    .filter((group) => {
+      if (group.subgroups?.length) return true;
+      return group.variables.length > 0;
+    });
+}
+
+/**
+ * RewardPointsUpdated picker entries. Tier placeholders stay on their own trigger.
+ * PatientName and PatientMobile are added only for this trigger.
+ * @param {Array<{ label: string, variables?: { key?: string }[], subgroups?: { label?: string, variables?: { key?: string }[] }[] }>} groups
+ * @param {unknown} [triggerKey]
+ */
+export function applyRewardPointsVariableGroups(groups = [], triggerKey = null) {
+  const managedKeys = new Set([
+    ...REWARD_POINTS_VARIABLE_DEFS.map((def) => def.key),
+    ...REWARD_POINTS_HIDDEN_KEYS,
+  ]);
+  const stripped = withoutKeys(groups, managedKeys);
+  if (!isRewardPointsUpdatedTrigger(triggerKey)) return stripped;
+
+  const patientAliases = REWARD_POINTS_VARIABLE_DEFS.filter(
+    (def) => def.group === "Patient"
+  ).map((def) => makeVariableEntry(def.key, def.label));
+  const rewardVariables = REWARD_POINTS_VARIABLE_DEFS.filter(
+    (def) => def.group === "Rewards"
+  ).map((def) => makeVariableEntry(def.key, def.label));
+
+  let withPatient = stripped.map((group) => {
+    if (group.label !== "Patient") return group;
+    const seen = new Set((group.variables || []).map((variable) => variable.key));
+    const variables = [...(group.variables || [])];
+    for (const variable of patientAliases) {
+      if (seen.has(variable.key)) continue;
+      seen.add(variable.key);
+      variables.push(variable);
+    }
+    return { ...group, variables };
+  });
+
+  if (!withPatient.some((group) => group.label === "Patient")) {
+    withPatient = [{ label: "Patient", variables: patientAliases }, ...withPatient];
+  }
+
+  const rewards = {
+    label: "Rewards",
+    variables: rewardVariables,
+  };
+  const systemIndex = withPatient.findIndex((group) => group.label === "System");
+  if (systemIndex === -1) return [...withPatient, rewards];
+  return [
+    ...withPatient.slice(0, systemIndex),
+    rewards,
+    ...withPatient.slice(systemIndex),
   ];
 }
 

@@ -14,6 +14,7 @@ import {
   DATE_TIMING_OPTIONS,
   EXPIRY_TIMING_OPTIONS,
   REWARD_UPDATE_OPTIONS,
+  REWARD_SOURCE_OPTIONS,
   FAMILY_TIER_UPDATE_OPTIONS,
   PAYMENT_MODE_OPTIONS,
   WEBHOOK_METHOD_OPTIONS,
@@ -639,12 +640,22 @@ export const TRIGGER_SCHEMAS = {
         type: "multiselect",
         label: "Update Type",
         options: REWARD_UPDATE_OPTIONS,
-        required: true,
+        required: false,
+        hint: "Any, or no selection, includes every balance change.",
+      },
+      {
+        key: "rewardSource",
+        type: "multiselect",
+        label: "Reward Source",
+        options: REWARD_SOURCE_OPTIONS,
+        required: false,
+        hint: "Any Source, or no selection, includes every reward source. Payment Earnings includes appointment, package, second-opinion, and pharmacy payments.",
       },
     ],
     defaults: createBaseTriggerDefaults({
       label: "Reward Points Updated",
       updateType: ["any"],
+      rewardSource: ["any"],
     }),
   },
 
@@ -931,6 +942,10 @@ const TRIGGER_TYPE_ALIASES = {
   RewardTierUpgraded: "rewardsTierUpgraded",
   rewards_tier_upgraded: "rewardsTierUpgraded",
   reward_tier_upgraded: "rewardsTierUpgraded",
+  RewardPointsUpdated: "rewardUpdated",
+  rewardPointsUpdated: "rewardUpdated",
+  reward_points_updated: "rewardUpdated",
+  reward_updated: "rewardUpdated",
 };
 
 export { TRIGGER_TYPE_ALIASES };
@@ -942,6 +957,7 @@ function resolveTriggerType(type) {
   if (TRIGGER_TYPE_ALIASES[raw]) return TRIGGER_TYPE_ALIASES[raw];
   const camel = raw.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
   if (TRIGGER_SCHEMAS[camel]) return camel;
+  if (TRIGGER_TYPE_ALIASES[camel]) return TRIGGER_TYPE_ALIASES[camel];
   return raw;
 }
 

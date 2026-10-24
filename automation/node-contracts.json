@@ -1639,8 +1639,8 @@
         },
         "updateType": {
           "type": "array|string",
-          "required": true,
-          "description": "Trigger configuration field from frontend schema. Default: [\"any\"]"
+          "required": false,
+          "description": "any or an empty list means every balance change. earned is Points Added, redeemed is Points Redeemed, and adjusted is Points Adjusted. On save and reload, legacy points_added, points_redeemed, and points_adjusted are normalized to earned, redeemed, and adjusted. A new node defaults to [\"any\"]."
         }
       },
       "contextRequired": [

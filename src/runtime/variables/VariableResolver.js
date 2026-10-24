@@ -230,6 +230,10 @@ export class VariableResolver {
   }
 
   /**
+   * Local execution lookup for flat tokens. Dotted {{rewards.*}} tokens are
+   * not matched, so Laravel remains the authority for those values.
+   * PascalCase aliases follow the backend normalizeKey rule
+   * (PatientMobile → patient_mobile, PatientName → patient_name).
    * @param {string} template
    * @param {import('../types').ExecutionContext} context
    */
@@ -237,7 +241,8 @@ export class VariableResolver {
     if (!template) return "";
     const flat = this.flattenContext(context);
     return template.replace(TOKEN_PATTERN, (match, key) => {
-      const value = flat[key] ?? flat[key.toLowerCase()];
+      const normalized = key.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
+      const value = flat[key] ?? flat[normalized] ?? flat[key.toLowerCase()];
       return value == null || value === "" ? match : String(value);
     });
   }

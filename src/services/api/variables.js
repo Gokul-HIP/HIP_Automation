@@ -1,5 +1,5 @@
 import { apiClient, unwrapData } from "./client";
-import { applyRewardTierVariableGroups } from "@/components/flow/config/variables";
+import { applyRewardPointsVariableGroups, applyRewardTierVariableGroups } from "@/components/flow/config/variables";
 import {
   ensureCoreVariableGroups,
   normalizeVariableEntries,
@@ -143,8 +143,8 @@ export function normalizeVariableGroups(response, triggerKey = null) {
     }
   }
 
-  return applyRewardTierVariableGroups(
-    ensureCoreVariableGroups(groups),
+  return applyRewardPointsVariableGroups(
+    applyRewardTierVariableGroups(ensureCoreVariableGroups(groups), triggerKey),
     triggerKey
   );
 }

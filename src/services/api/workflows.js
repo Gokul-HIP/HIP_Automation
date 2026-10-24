@@ -1,7 +1,7 @@
 import { apiClient, unwrapData } from "./client";
 import { extractWorkflowState } from "@/utils/flowDeserializer";
 import { normalizeConditionNodeData } from "@/utils/conditionNodeSerialization";
-import { normalizeMedicineReminderData } from "@/components/flow/config/triggers";
+import { normalizeMedicineReminderData, normalizeRewardUpdatedData } from "@/components/flow/config/triggers";
 import { normalizeAttachInvoicePdfData } from "@/components/flow/config/messaging/shared";
 import {
   normalizeWorkflowList,
@@ -67,6 +67,7 @@ export function buildWorkflowPayload({
         if (data?.nodeType === "medicineReminder") {
           data = normalizeMedicineReminderData(data);
         }
+        data = normalizeRewardUpdatedData(data);
         data = normalizeAttachInvoicePdfData(data);
         return {
           id: String(node.id),
