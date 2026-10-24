@@ -5,8 +5,11 @@
   padding: 16px;
   /* Parent .panelScrollRegion owns scrolling — do not nest another scrollport. */
   flex: none;
+  min-width: 0;
+  max-width: 100%;
   min-height: min-content;
   overflow: visible;
+  box-sizing: border-box;
 }
 
 .scrollCompact {
@@ -34,6 +37,10 @@
   flex-direction: column;
   gap: 0;
   min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  container-type: inline-size;
+  container-name: property-field;
 }
 
 .label {
@@ -125,12 +132,15 @@
   box-shadow: var(--focus-ring);
 }
 
-/* Channel multi-select — 2×2 grid, no overlap */
+/* Option buttons — two columns when the panel is wide enough, one when it is not. */
 .chipGroup {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
   gap: 8px;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   box-sizing: border-box;
   padding: 10px;
   border-radius: 10px;
@@ -184,22 +194,26 @@
 }
 
 .chip {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 34px;
-  padding: 6px 10px;
+  box-sizing: border-box;
+  padding: 7px 10px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--border-color);
   background: var(--surface);
   color: var(--text-secondary);
   font-size: 11px;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.35;
   text-align: center;
+  white-space: normal;
+  overflow-wrap: break-word;
   cursor: pointer;
-  white-space: nowrap;
   transition:
     background 0.15s ease,
     border-color 0.15s ease,
@@ -718,7 +732,13 @@
   .chipGroup,
   .row2,
   .ruleRow {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container property-field (max-width: 220px) {
+  .chipGroup {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
